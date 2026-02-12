@@ -3,13 +3,182 @@ Service pour l'intégration avec l'API Gemini
 """
 import google.generativeai as genai
 import json
+import re
 import os
+import time
+import logging
 from typing import Dict, Optional, List
 from .data_service import data_service
+
+logger = logging.getLogger(__name__)
+
+
+# Dictionnaire de synonymes pour mapper le langage naturel aux concepts des indicateurs
+QUERY_SYNONYMS = {
+    # Population & Démographie
+    'habitants': 'population total',
+    'nombre d\'habitants': 'population total',
+    'combien de personnes': 'population total',
+    'combien d\'habitants': 'population total',
+    'démographie': 'population total',
+    'gens': 'population total',
+    'peuple': 'population total',
+    'natalité': 'taux de natalité birth rate',
+    'naissances': 'taux de natalité birth rate',
+    'mortalité': 'taux de mortalité death rate mortality',
+    'décès': 'taux de mortalité death rate',
+    'morts': 'taux de mortalité death rate mortality',
+    'espérance de vie': 'espérance de vie life expectancy',
+    'durée de vie': 'espérance de vie life expectancy',
+    'vivre combien de temps': 'espérance de vie life expectancy',
+    'fertilité': 'taux de fertilité fertility rate',
+    'fécondité': 'taux de fertilité fertility rate',
+    'enfants par femme': 'taux de fertilité fertility rate',
+    'migration': 'migration net migration',
+    'urbanisation': 'population urbaine urban population',
+    'ville': 'population urbaine urban population',
+    'rural': 'population rurale rural population',
+    'campagne': 'population rurale rural population',
+    
+    # Économie
+    'richesse': 'PIB GDP produit intérieur brut',
+    'économie': 'PIB GDP produit intérieur brut',
+    'pib': 'PIB GDP produit intérieur brut',
+    'croissance': 'croissance PIB GDP growth',
+    'croissance économique': 'croissance PIB GDP growth',
+    'recession': 'croissance PIB GDP growth',
+    'revenu': 'revenu national GNI income',
+    'revenu par habitant': 'PIB par habitant GDP per capita',
+    'niveau de vie': 'PIB par habitant GDP per capita',
+    'pouvoir d\'achat': 'PIB par habitant GDP per capita PPA PPP',
+    'inflation': 'inflation consumer prices CPI',
+    'prix': 'inflation consumer prices CPI',
+    'cherté de la vie': 'inflation consumer prices CPI',
+    'coût de la vie': 'inflation consumer prices CPI',
+    'dette': 'dette debt',
+    'endettement': 'dette debt',
+    'budget': 'dépenses gouvernement government expenditure',
+    'dépenses publiques': 'dépenses gouvernement government expenditure',
+    'recettes': 'recettes revenue tax',
+    'impôts': 'recettes fiscales tax revenue',
+    'fiscalité': 'recettes fiscales tax revenue fiscal',
+    'pression fiscale': 'recettes fiscales tax revenue pourcentage PIB fiscal pressure',
+    'taux de pression fiscale': 'recettes fiscales tax revenue pourcentage PIB fiscal pressure',
+    'recettes fiscales': 'recettes fiscales tax revenue fiscal',
+    'revenus fiscaux': 'recettes fiscales tax revenue fiscal',
+    'taxes': 'recettes fiscales tax revenue',
+    'investissement': 'investissement investment FDI capital formation',
+    'investissement étranger': 'investissement direct étranger FDI foreign direct',
+    'ide': 'investissement direct étranger FDI',
+    'épargne': 'épargne savings gross domestic',
+    'consommation': 'consommation finale consumption expenditure',
+    'dépenses de santé': 'dépenses santé health expenditure',
+    'dépenses militaires': 'dépenses militaires military expenditure',
+    'transferts': 'transferts remittances',
+    'aide': 'aide au développement ODA aid',
+    'réserves': 'réserves reserves',
+    'taux de change': 'taux de change exchange rate',
+    
+    # Commerce
+    'exportation': 'exportation export',
+    'importation': 'importation import',
+    'commerce': 'commerce trade',
+    'échanges commerciaux': 'commerce trade',
+    'balance commerciale': 'balance commerciale trade balance',
+    
+    # Emploi
+    'chômage': 'chômage unemployment',
+    'emploi': 'emploi employment',
+    'travail': 'emploi employment labor',
+    'sans emploi': 'chômage unemployment',
+    'travailleurs': 'emploi employment labor force',
+    'main d\'oeuvre': 'population active labor force',
+    
+    # Éducation
+    'école': 'éducation education enrollment school',
+    'scolarisation': 'scolarisation enrollment education',
+    'alphabétisation': 'alphabétisation literacy',
+    'lire et écrire': 'alphabétisation literacy',
+    'éducation': 'éducation education enrollment',
+    'université': 'enseignement supérieur tertiary education',
+    'primaire': 'enseignement primaire primary education',
+    'secondaire': 'enseignement secondaire secondary education',
+    'enseignants': 'enseignants teachers',
+    'professeurs': 'enseignants teachers',
+    
+    # Santé
+    'santé': 'santé health',
+    'maladie': 'santé health disease',
+    'hôpital': 'santé health hospital',
+    'médecins': 'médecins physicians doctors',
+    'docteurs': 'médecins physicians doctors',
+    'vaccination': 'vaccination immunization',
+    'vaccin': 'vaccination immunization',
+    'sida': 'VIH HIV AIDS',
+    'vih': 'VIH HIV AIDS',
+    'paludisme': 'paludisme malaria',
+    'malaria': 'paludisme malaria',
+    'tuberculose': 'tuberculose tuberculosis',
+    'mortalité infantile': 'mortalité infantile infant mortality',
+    'mortalité maternelle': 'mortalité maternelle maternal mortality',
+    'malnutrition': 'malnutrition nutrition',
+    'eau potable': 'eau potable drinking water access',
+    'assainissement': 'assainissement sanitation',
+    
+    # Énergie & Environnement
+    'électricité': 'électricité electricity access energy',
+    'énergie': 'énergie energy',
+    'co2': 'émissions CO2 emissions',
+    'pollution': 'émissions CO2 emissions pollution',
+    'forêt': 'forêt forest',
+    'déforestation': 'forêt forest area',
+    'environnement': 'environnement forest emissions CO2',
+    'climat': 'changement climatique CO2 emissions',
+    
+    # Agriculture
+    'agriculture': 'agriculture agricultural',
+    'terres agricoles': 'terres agricoles agricultural land',
+    'cacao': 'cacao cocoa agriculture',
+    'café': 'café coffee agriculture',
+    'récolte': 'agriculture agricultural crop',
+    
+    # Technologie
+    'internet': 'internet individuals using',
+    'téléphone': 'téléphone mobile cellular',
+    'portable': 'téléphone mobile cellular subscriptions',
+    'numérique': 'internet technology ICT',
+    'technologie': 'internet technology ICT',
+    
+    # Développement humain
+    'idh': 'IDH développement humain human development index espérance de vie éducation revenu',
+    'développement humain': 'IDH développement humain human development index',
+    'indice de développement': 'IDH développement humain human development index',
+    
+    # Pauvreté & Inégalités
+    'pauvreté': 'pauvreté poverty',
+    'pauvre': 'pauvreté poverty',
+    'inégalité': 'inégalité inequality GINI',
+    'gini': 'inégalité inequality GINI',
+    
+    # Gouvernance
+    'corruption': 'corruption governance control',
+    'gouvernance': 'gouvernance governance',
+    'démocratie': 'démocratie governance political stability',
+    'stabilité': 'stabilité politique political stability',
+    'sécurité': 'sécurité security stability violence',
+    
+    # Infrastructure
+    'routes': 'routes roads infrastructure',
+    'infrastructure': 'infrastructure',
+    'transport': 'transport infrastructure roads',
+}
 
 
 class GeminiService:
     """Service pour interpréter les requêtes utilisateur via Gemini"""
+    
+    MAX_RETRIES = 3
+    RETRY_BASE_DELAY = 2  # seconds
     
     def __init__(self, api_key: str):
         """
@@ -20,149 +189,395 @@ class GeminiService:
         """
         genai.configure(api_key=api_key)
         self.model = genai.GenerativeModel('gemini-2.5-flash')
+        self.fallback_model = genai.GenerativeModel('gemini-2.0-flash-lite')
+        self._quota_exhausted = False
+    
+    def _call_gemini(self, prompt: str, use_fallback: bool = False) -> str:
+        """
+        Appelle l'API Gemini avec retry automatique et fallback model.
+        Retourne le texte de la réponse.
+        Lève une exception si tous les essais échouent.
+        """
+        models_to_try = [self.model, self.fallback_model] if not use_fallback else [self.fallback_model]
+        if self._quota_exhausted:
+            models_to_try = [self.fallback_model]
+        
+        last_error = None
+        for model in models_to_try:
+            for attempt in range(self.MAX_RETRIES):
+                try:
+                    response = model.generate_content(prompt)
+                    self._quota_exhausted = False
+                    return response.text
+                except Exception as e:
+                    last_error = e
+                    error_str = str(e).lower()
+                    is_quota_error = '429' in error_str or 'quota' in error_str or 'resource_exhausted' in error_str or 'resourceexhausted' in str(type(e).__name__).lower()
+                    if is_quota_error:
+                        logger.warning(f"Quota exceeded for {model.model_name} (attempt {attempt+1}/{self.MAX_RETRIES})")
+                        # If daily quota hit (limit: 0), no point retrying
+                        if 'limit: 0' in error_str or 'perdayperproject' in error_str.replace(' ', '').replace('_', ''):
+                            if model == self.model:
+                                self._quota_exhausted = True
+                                break  # Try fallback model
+                            else:
+                                raise  # Both models exhausted, fail fast
+                        if model == self.model:
+                            self._quota_exhausted = True
+                            break  # Switch to fallback model immediately
+                        delay = self.RETRY_BASE_DELAY * (2 ** attempt)
+                        time.sleep(delay)
+                    else:
+                        logger.error(f"Gemini API error: {e}")
+                        raise
+        
+        raise last_error
+    
+    def _enrich_query(self, user_query: str) -> str:
+        """
+        Enrichit la requête utilisateur avec des mots-clés pertinents
+        à partir du dictionnaire de synonymes pour améliorer la compréhension.
+        """
+        query_lower = user_query.lower().strip()
+        enrichments = set()
+        
+        # Chercher les correspondances dans le dictionnaire de synonymes
+        for key, value in QUERY_SYNONYMS.items():
+            if key in query_lower:
+                enrichments.add(value)
+        
+        if enrichments:
+            enrichment_text = ', '.join(enrichments)
+            return f"{user_query} [Mots-clés associés: {enrichment_text}]"
+        
+        return user_query
+    
+    def _try_fallback_search(self, user_query: str) -> Optional[Dict]:
+        """
+        Tente une recherche par mots-clés dans la base de données
+        quand Gemini ne trouve pas de correspondance.
+        Retourne le meilleur indicateur trouvé ou None.
+        """
+        query_lower = user_query.lower()
+        
+        # Étape 1: Chercher avec les synonymes enrichis
+        search_terms = set()
+        for key, value in QUERY_SYNONYMS.items():
+            if key in query_lower:
+                # Ajouter chaque mot du mapping comme terme de recherche
+                for word in value.split():
+                    if len(word) > 2:
+                        search_terms.add(word)
+        
+        # Étape 2: Ajouter les mots significatifs de la requête originale
+        stop_words = {
+            'le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'en', 'au', 'aux',
+            'et', 'ou', 'est', 'sont', 'a', 'ont', 'ce', 'cette', 'ces',
+            'qui', 'que', 'quoi', 'quel', 'quelle', 'quels', 'quelles',
+            'comment', 'combien', 'pourquoi', 'quand', 'où',
+            'il', 'elle', 'ils', 'elles', 'on', 'nous', 'vous',
+            'mon', 'ton', 'son', 'ma', 'ta', 'sa', 'mes', 'tes', 'ses',
+            'je', 'tu', 'me', 'te', 'se', 'ne', 'pas', 'plus', 'moins',
+            'par', 'pour', 'avec', 'sans', 'dans', 'sur', 'sous',
+            'très', 'trop', 'peu', 'beaucoup', 'bien', 'mal',
+            'fait', 'faire', 'être', 'avoir', 'aller', 'dire',
+            'peut', 'doit', 'faut', 'y', 'ci', 'là',
+            'côte', 'ivoire', "d'ivoire", 'ivoirien', 'ivoirienne',
+            'quel', 'quelle', 'donnez', 'donne', 'moi', 'svp', 'stp',
+            'merci', 'bonjour', 'salut', 'hey', 'bonsoir',
+            'veux', 'voudrais', 'savoir', 'connaître', 'cherche',
+            'information', 'informations', 'données', 'donnée',
+            'statistique', 'statistiques', 'chiffre', 'chiffres',
+            'pays', 'nation', 'état', 'republic', 'république',
+            'actuel', 'actuelle', 'actuellement', 'récent', 'récente',
+            'dernier', 'dernière', 'derniers', 'dernières',
+            'année', 'années', 'ans', 'depuis', 'entre',
+        }
+        
+        query_words = re.findall(r'[a-zàâäéèêëïîôùûüÿç]+', query_lower)
+        for word in query_words:
+            if word not in stop_words and len(word) > 2:
+                search_terms.add(word)
+        
+        if not search_terms:
+            return None
+        
+        # Étape 3: Chercher dans les indicateurs avec les termes enrichis
+        best_match = None
+        best_score = 0
+        
+        for term in search_terms:
+            results = data_service.search_indicators(term)
+            if results:
+                # Le premier résultat a le meilleur score
+                match = results[0]
+                # Bonus si plusieurs termes correspondent au même indicateur
+                indicator_lower = match['name'].lower()
+                score = sum(1 for t in search_terms if t in indicator_lower) * 100
+                score += 50  # Base score for having a match
+                
+                if score > best_score:
+                    best_score = score
+                    best_match = match
+        
+        return best_match
+    
+    def _clean_json_response(self, response_text: str) -> str:
+        """Nettoie la réponse de Gemini pour extraire le JSON valide."""
+        text = response_text.strip()
+        if text.startswith('```json'):
+            text = text[7:]
+        if text.startswith('```'):
+            text = text[3:]
+        if text.endswith('```'):
+            text = text[:-3]
+        return text.strip()
+    
+    def _build_data_analysis_prompt(self, indicator_name: str, values: list,
+                                     methodology: str, user_query: str,
+                                     match_type: str = 'exact',
+                                     proxy_explanation: str = None) -> str:
+        """
+        Construit un prompt d'analyse statistique avec les données réelles.
+        Phase 2: Gemini analyse les données comme un économiste/statisticien.
+        Gère les cas exact match vs proxy indicator.
+        """
+        # Formater les données
+        data_str = "\n".join([f"  {v['year']}: {v['value']}" for v in values])
+        
+        # Calculer des stats de base pour aider l'analyse
+        vals = [v['value'] for v in values]
+        years = [v['year'] for v in values]
+        
+        stats_context = ""
+        if len(vals) >= 2:
+            variation_totale = ((vals[-1] - vals[0]) / vals[0]) * 100 if vals[0] != 0 else 0
+            val_min = min(vals)
+            val_max = max(vals)
+            moyenne = sum(vals) / len(vals)
+            year_min = years[vals.index(val_min)]
+            year_max = years[vals.index(val_max)]
+            
+            stats_context = f"""
+STATISTIQUES CALCULÉES (vérifiées, tu peux les utiliser):
+- Valeur min: {val_min:.4g} (en {year_min})
+- Valeur max: {val_max:.4g} (en {year_max})
+- Moyenne: {moyenne:.4g}
+- Variation totale: {variation_totale:+.2f}% entre {years[0]} et {years[-1]}
+- Nombre de points: {len(vals)}"""
+        
+        methodology_section = ""
+        if methodology:
+            meth_text = methodology[:1500] if len(methodology) > 1500 else methodology
+            methodology_section = f"""
+
+MÉTHODOLOGIE DE COLLECTE:
+{meth_text}"""
+
+        # Section proxy/exact match
+        proxy_section = ""
+        if match_type == 'proxy' and proxy_explanation:
+            proxy_section = f"""
+ATTENTION — INDICATEUR PROXY:
+L'utilisateur a demandé quelque chose que notre base ne contient PAS directement.
+L'indicateur ci-dessous est un PROXY (indicateur approché/composant).
+Explication du lien: {proxy_explanation}
+
+Tu DOIS ABSOLUMENT:
+1. Commencer par dire clairement que l'indicateur exact demandé n'est pas disponible dans la base.
+2. Expliquer le LIEN entre ce que l'utilisateur a demandé et l'indicateur que tu présentes.
+3. Ensuite seulement, analyser les données de l'indicateur proxy."""
+        
+        return f"""Tu es un statisticien-économiste expert de la Côte d'Ivoire.
+
+Ta mission: RÉPONDRE DIRECTEMENT à la question de l'utilisateur. Tu n'es PAS un robot qui récite des fiches. Tu es un expert qui dialogue avec quelqu'un qui te pose une vraie question. Adapte ta réponse au contexte précis de la question.
+
+INDICATEUR FOURNI: {indicator_name}
+
+DONNÉES:
+{data_str}
+{stats_context}
+{methodology_section}
+{proxy_section}
+
+QUESTION DE L'UTILISATEUR: "{user_query}"
+
+RÈGLES STRICTES:
+1. RÉPONDS à la question posée. Si on te demande "quel est l'IDH ?", ne commence pas par "L'espérance de vie est...". Commence par répondre à ce que l'utilisateur a demandé.
+2. UTILISE UNIQUEMENT les données fournies. NE JAMAIS inventer de chiffres.
+3. Sois CONCIS: 3-5 paragraphes courts maximum.
+4. Donne la tendance GLOBALE avec les chiffres clés. Pas de détail année par année.
+5. Interprétations PRUDENTES: "cela pourrait s'expliquer par...", "possiblement lié à..."
+6. Utilise **gras** pour les chiffres clés et concepts importants.
+7. Termine par: "Les données détaillées sont présentées dans le graphique et le tableau ci-dessous."
+8. Ton ton doit être naturel, comme un expert qui parle à un collègue. PAS de langage robotique.
+
+Réponds UNIQUEMENT en JSON:
+{{
+    "analysis": "TA RÉPONSE PERSONNALISÉE ICI (paragraphes séparés par \\n\\n)",
+    "related_indicators": ["Indicateur connexe 1", "Indicateur connexe 2", "Indicateur connexe 3"]
+}}"""
     
     def interpret_query(self, user_query: str) -> Dict:
         """
-        Interprète une requête utilisateur et retourne une réponse structurée
-        
-        Args:
-            user_query: La question de l'utilisateur en langage naturel
-            
-        Returns:
-            Dict contenant:
-            - success: bool
-            - message: str (texte de réponse)
-            - indicator_code: str (code de l'indicateur identifié)
-            - indicator_name: str
-            - start_year: int (optionnel)
-            - end_year: int (optionnel)
-            - data: List[Dict] (données avec année, valeur)
-            - unit: str
-            - source: str
-            - source_link: str
-            - calculation: str (si un calcul est demandé)
-            - chart_type: str ('line', 'bar', 'none')
+        Interprète une requête utilisateur en 2 phases:
+        Phase 1: Identifier l'indicateur pertinent
+        Phase 2: Analyser les données réelles comme un statisticien
         """
         
-        # Obtenir le catalogue complet des indicateurs
-        indicators_summary = data_service.get_full_dataset_summary()
+        # === PHASE 1: IDENTIFICATION DE L'INDICATEUR ===
+        enriched_query = self._enrich_query(user_query)
         
-        # Construire le prompt pour Gemini
-        prompt = f"""Tu es un assistant expert en analyse de données statistiques de la Côte d'Ivoire.
+        # Extraire les termes de recherche pour pré-filtrer les indicateurs
+        search_terms = set()
+        query_lower = user_query.lower()
+        for key, value in QUERY_SYNONYMS.items():
+            if key in query_lower:
+                for word in value.split():
+                    if len(word) > 2:
+                        search_terms.add(word)
+        # Ajouter les mots significatifs de la requête
+        for word in re.findall(r'[a-zàâäéèêëïîôùûüÿç]+', query_lower):
+            if len(word) > 3:
+                search_terms.add(word)
+        
+        indicators_list = data_service.get_compact_indicator_list(
+            search_terms=list(search_terms) if search_terms else None
+        )
+        
+        phase1_prompt = f"""Identifie l'indicateur le plus pertinent pour la question ci-dessous.
+Voici la liste des indicateurs disponibles (Côte d'Ivoire, 2000-2024).
+Format: CODE|NOM ou CODE|NOM|DESCRIPTION (la description aide à comprendre ce que mesure l'indicateur).
 
-{indicators_summary}
+{indicators_list}
 
-RÈGLES STRICTES:
-1. NE JAMAIS inventer de données ou de valeurs
-2. Si tu ne peux pas trouver l'information demandée, réponds UNIQUEMENT: {{"success": false, "message": "Je ne sais pas."}}
-3. Identifie l'indicateur le plus pertinent basé sur son CODE et son NOM
-4. Extrais les années demandées (si spécifié)
-5. Si un calcul est demandé (moyenne, variation, etc.), note-le mais ne calcule rien
-6. Réponds UNIQUEMENT en JSON valide
+GUIDE RAPIDE:
+- Population → SP.POP.TOTL
+- PIB → NY.GDP.MKTP.CD
+- Croissance PIB → NY.GDP.MKTP.KD.ZG
+- Inflation → FP.CPI.TOTL.ZG
+- Chômage → SL.UEM.TOTL.ZS
+- Espérance de vie → SP.DYN.LE00.IN
+- Mortalité infantile → SP.DYN.IMRT.IN
+- Internet → IT.NET.USER.ZS
+- Électricité → EG.ELC.ACCS.ZS
+- Pression fiscale / Recettes fiscales (% PIB) → GC.TAX.TOTL.GD.ZS
+- Dépenses publiques (% PIB) → GC.XPN.TOTL.GD.ZS
+- Dette publique → GC.DOD.TOTL.GD.ZS
 
-REQUÊTE UTILISATEUR: "{user_query}"
+RÈGLES IMPORTANTES:
+1. Choisis l'indicateur le PLUS pertinent parmi la liste.
+2. UTILISE LA DESCRIPTION (3ème colonne) pour mieux comprendre ce que mesure chaque indicateur. Le nom seul peut être trompeur.
+3. Si l'indicateur EXACT demandé existe dans la liste, match_type = "exact".
+4. Si l'indicateur exact N'EXISTE PAS dans la liste (ex: IDH, GINI, etc.) mais qu'un indicateur PROCHE ou COMPOSANT existe, match_type = "proxy" et explique le lien dans proxy_explanation.
+5. success=false seulement si AUCUN rapport avec des statistiques.
+6. Exemple: "taux de pression fiscale" = recettes fiscales en % du PIB → cherche un indicateur qui mesure les recettes fiscales ou "tax revenue" dans la liste.
 
-Réponds en JSON avec cette structure exacte:
-{{
-    "success": true/false,
-    "indicator_code": "CODE_EXACT" ou null,
-    "start_year": année_debut ou null,
-    "end_year": année_fin ou null,
-    "calculation_requested": "moyenne" / "variation" / "somme" / null,
-    "message": "Explication courte si pas trouvé"
-}}
+REQUÊTE: "{enriched_query}"
 
-Exemples:
-- "Taux d'inflation 2018-2023" → {{"success": true, "indicator_code": "FP.CPI.TOTL.ZG", "start_year": 2018, "end_year": 2023}}
-- "Accès électricité" → {{"success": true, "indicator_code": "EG.ELC.ACCS.ZS", "start_year": null, "end_year": null}}
-- "Population de chats" → {{"success": false, "message": "Je ne sais pas. Aucun indicateur ne correspond à cette recherche."}}
-"""
+Réponds UNIQUEMENT en JSON:
+{{"success":true,"indicator_code":"CODE_EXACT","match_type":"exact ou proxy","proxy_explanation":"explication du lien si proxy, sinon null","start_year":null,"end_year":null,"calculation_requested":null}}"""
         
         try:
-            # Appeler Gemini
-            response = self.model.generate_content(prompt)
-            response_text = response.text.strip()
-            
-            # Nettoyer la réponse (enlever les marqueurs markdown si présents)
-            if response_text.startswith('```json'):
-                response_text = response_text[7:]
-            if response_text.startswith('```'):
-                response_text = response_text[3:]
-            if response_text.endswith('```'):
-                response_text = response_text[:-3]
-            response_text = response_text.strip()
-            
-            # Parser la réponse JSON
+            # Phase 1: Identifier l'indicateur
+            response_text = self._call_gemini(phase1_prompt)
+            response_text = self._clean_json_response(response_text)
             gemini_response = json.loads(response_text)
             
-            # Vérifier si l'indicateur a été trouvé
-            if not gemini_response.get('success', False):
-                return {
-                    'success': False,
-                    'message': gemini_response.get('message', 'Je ne sais pas.'),
-                    'data': [],
-                    'chart_type': 'none'
-                }
-            
             indicator_code = gemini_response.get('indicator_code')
+            match_type = gemini_response.get('match_type', 'exact')
+            proxy_explanation = gemini_response.get('proxy_explanation')
             start_year = gemini_response.get('start_year')
             end_year = gemini_response.get('end_year')
             calculation = gemini_response.get('calculation_requested')
             
-            if not indicator_code:
-                return {
-                    'success': False,
-                    'message': 'Je ne sais pas. Aucun indicateur correspondant trouvé.',
-                    'data': [],
-                    'chart_type': 'none'
-                }
+            # Fallback si Gemini échoue
+            if not gemini_response.get('success', False) or not indicator_code:
+                fallback_match = self._try_fallback_search(user_query)
+                if fallback_match:
+                    indicator_code = fallback_match['code']
+                else:
+                    return {
+                        'success': False,
+                        'message': gemini_response.get('message',
+                            'Désolé, je n\'ai pas trouvé d\'indicateur correspondant. '
+                            'Essayez de préciser le thème (population, économie, santé, éducation...).'),
+                        'data': [],
+                        'chart_type': 'none'
+                    }
             
-            # Récupérer les données de l'indicateur
+            # Récupérer les données
             indicator_data = data_service.get_indicator_data_for_query(
-                indicator_code, 
-                start_year, 
-                end_year
+                indicator_code, start_year, end_year
             )
             
+            # Fallback si le code ne correspond pas
             if not indicator_data or not indicator_data.get('values'):
-                return {
-                    'success': False,
-                    'message': 'Je ne sais pas. Aucune donnée disponible pour cet indicateur sur la période demandée.',
-                    'data': [],
-                    'chart_type': 'none'
-                }
+                fallback_match = self._try_fallback_search(user_query)
+                if fallback_match:
+                    indicator_data = data_service.get_indicator_data_for_query(
+                        fallback_match['code'], start_year, end_year
+                    )
+                    if indicator_data and indicator_data.get('values'):
+                        indicator_code = fallback_match['code']
+                
+                if not indicator_data or not indicator_data.get('values'):
+                    if start_year or end_year:
+                        indicator_data = data_service.get_indicator_data_for_query(indicator_code)
+                    
+                    if not indicator_data or not indicator_data.get('values'):
+                        return {
+                            'success': False,
+                            'message': 'Aucune donnée disponible pour cet indicateur. '
+                                       'Essayez avec un autre indicateur ou une période différente.',
+                            'data': [],
+                            'chart_type': 'none'
+                        }
             
-            # Préparer les données pour la réponse
             values = indicator_data['values']
             
-            # Effectuer le calcul si demandé et possible
+            # Calcul si demandé
             calculation_result = None
             calculation_formula = None
-            
             if calculation and values:
-                if calculation == 'moyenne' or calculation == 'average':
+                if calculation in ('moyenne', 'average'):
                     total = sum(v['value'] for v in values)
                     calculation_result = total / len(values)
                     calculation_formula = f"({' + '.join(str(v['value']) for v in values)}) / {len(values)}"
-                
                 elif calculation == 'variation' and len(values) >= 2:
                     first_value = values[0]['value']
                     last_value = values[-1]['value']
-                    calculation_result = ((last_value - first_value) / first_value) * 100
-                    calculation_formula = f"(({last_value} - {first_value}) / {first_value}) × 100"
+                    if first_value != 0:
+                        calculation_result = ((last_value - first_value) / first_value) * 100
+                        calculation_formula = f"(({last_value} - {first_value}) / {first_value}) × 100"
             
-            # Générer un message textuel clair
-            message = self._generate_response_message(
+            # === PHASE 2: ANALYSE STATISTIQUE DES DONNÉES RÉELLES ===
+            analysis_prompt = self._build_data_analysis_prompt(
                 indicator_data['name'],
                 values,
-                indicator_data['unit'],
-                start_year,
-                end_year,
-                calculation_result,
-                calculation_formula
+                indicator_data.get('methodology', ''),
+                user_query,
+                match_type=match_type,
+                proxy_explanation=proxy_explanation
             )
             
-            # Déterminer le type de graphique
+            try:
+                analysis_text = self._call_gemini(analysis_prompt)
+                analysis_text = self._clean_json_response(analysis_text)
+                analysis_json = json.loads(analysis_text)
+                message = analysis_json.get('analysis', '')
+                related_indicators = analysis_json.get('related_indicators', [])
+            except:
+                # Fallback: générer un message basique
+                message = self._generate_response_message(
+                    indicator_data['name'], values, '',
+                    start_year, end_year, calculation_result, calculation_formula
+                )
+                related_indicators = []
+            
+            if not related_indicators:
+                related_indicators = data_service.get_related_indicators(indicator_code, limit=5)
+            
             chart_type = 'line' if len(values) > 1 else 'bar'
             
             return {
@@ -170,31 +585,68 @@ Exemples:
                 'message': message,
                 'indicator_code': indicator_code,
                 'indicator_name': indicator_data['name'],
+                'match_type': match_type,
+                'proxy_explanation': proxy_explanation,
                 'data': values,
-                'unit': indicator_data['unit'],
-                'source': indicator_data['source'],
-                'source_link': indicator_data['source_link'],
+                'source_link': indicator_data.get('source_link', ''),
+                'methodology': indicator_data.get('methodology', ''),
                 'calculation_result': calculation_result,
                 'calculation_formula': calculation_formula,
-                'chart_type': chart_type
+                'chart_type': chart_type,
+                'related_indicators': related_indicators
             }
             
         except json.JSONDecodeError as e:
-            return {
-                'success': False,
-                'message': f'Je ne sais pas. Erreur d\'interprétation de la requête.',
-                'data': [],
-                'chart_type': 'none',
-                'error': str(e)
-            }
+            return self._handle_fallback(user_query, str(e))
         except Exception as e:
-            return {
-                'success': False,
-                'message': 'Je ne sais pas. Une erreur s\'est produite lors du traitement de votre requête.',
-                'data': [],
-                'chart_type': 'none',
-                'error': str(e)
-            }
+            error_str = str(e).lower()
+            if '429' in error_str or 'quota' in error_str or 'resourceexhausted' in str(type(e).__name__).lower():
+                logger.error(f"Gemini quota exhausted: {e}")
+                return {
+                    'success': False,
+                    'message': '⚠️ Le service d\'intelligence artificielle est temporairement indisponible '
+                               '(quota API dépassé). Veuillez réessayer dans quelques minutes. '
+                               'En attendant, les données sont toujours consultables via le tableau de bord.',
+                    'data': [],
+                    'chart_type': 'none',
+                    'error': 'quota_exceeded'
+                }
+            return self._handle_fallback(user_query, str(e))
+    
+    def _handle_fallback(self, user_query: str, error_msg: str = '') -> Dict:
+        """Gestion unifiée du fallback quand Gemini échoue."""
+        fallback_match = self._try_fallback_search(user_query)
+        if fallback_match:
+            try:
+                indicator_data = data_service.get_indicator_data_for_query(fallback_match['code'])
+                if indicator_data and indicator_data.get('values'):
+                    values = indicator_data['values']
+                    return {
+                        'success': True,
+                        'message': self._generate_response_message(
+                            indicator_data['name'], values, '',
+                            None, None, None, None
+                        ),
+                        'indicator_code': fallback_match['code'],
+                        'indicator_name': indicator_data['name'],
+                        'data': values,
+                        'source_link': indicator_data.get('source_link', ''),
+                        'methodology': indicator_data.get('methodology', ''),
+                        'calculation_result': None,
+                        'calculation_formula': None,
+                        'chart_type': 'line' if len(values) > 1 else 'bar',
+                        'related_indicators': data_service.get_related_indicators(fallback_match['code'], limit=5)
+                    }
+            except:
+                pass
+        return {
+            'success': False,
+            'message': 'Désolé, je n\'ai pas pu traiter votre question. '
+                       'Essayez de reformuler, par exemple: "PIB de la Côte d\'Ivoire" ou "population en 2023".',
+            'data': [],
+            'chart_type': 'none',
+            'error': error_msg
+        }
     
     def _generate_response_message(self, indicator_name: str, values: List[Dict], 
                                    unit: str, start_year: Optional[int], 
@@ -235,6 +687,20 @@ Exemples:
 
 # Instance globale (sera initialisée dans settings.py)
 gemini_service = None
+
+# Cache des services par clé API (pour ne pas recréer à chaque requête)
+_user_services = {}
+
+
+def get_service_for_key(api_key: str) -> 'GeminiService':
+    """Retourne un GeminiService pour une clé API donnée (avec cache)"""
+    if api_key not in _user_services:
+        _user_services[api_key] = GeminiService(api_key)
+        # Limiter la taille du cache
+        if len(_user_services) > 100:
+            oldest = list(_user_services.keys())[0]
+            del _user_services[oldest]
+    return _user_services[api_key]
 
 
 def init_gemini_service(api_key: str):

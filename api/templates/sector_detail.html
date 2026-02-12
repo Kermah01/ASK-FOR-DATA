@@ -1,0 +1,272 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ sector|title }} - Ask For Data{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Breadcrumb -->
+    <div class="mb-4">
+        <a href="{% url 'sectors' %}" class="text-muted" style="text-decoration: none;">← Retour aux secteurs</a>
+    </div>
+
+    <!-- Header -->
+    <div class="card mb-4">
+        <div style="display: flex; align-items: center; gap: 1.5rem;">
+            <div class="sector-icon-wrapper" style="width: 60px; height: 60px; font-size: 2rem;">
+                <i class="fas fa-layer-group" id="sector-icon-i"></i>
+            </div>
+            <div style="flex: 1;">
+                <h1 id="sector-title" style="margin-bottom: 0.5rem;">{{ sector|title }}</h1>
+                <p class="text-muted" id="sector-description">Exploration des indicateurs thématiques</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search & Filter -->
+    <div class="card mb-4">
+        <div class="chart-controls" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <div style="flex: 2; min-width: 300px;">
+                <div class="input-group">
+                    <span class="input-group-text" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #64748b; z-index: 10;">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="search" id="indicator-search" placeholder="Rechercher un indicateur..." style="width: 100%; padding-left: 2.5rem;">
+                </div>
+            </div>
+            <div style="flex: 1; min-width: 200px;">
+                <select id="sort-select" onchange="sortIndicators()" style="width: 100%;">
+                    <option value="name">Trier: Nom (A-Z)</option>
+                    <option value="code">Trier: Code</option>
+                    <option value="recent">Trier: Plus récent</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Indicators Grid -->
+    <div id="indicators-grid" class="grid grid-2">
+        <!-- Indicators will be loaded here -->
+        <div class="card" style="grid-column: span 2; text-align: center; padding: 3rem;">
+            <div class="spinner" style="margin: 0 auto 1rem;"></div>
+            <p class="text-muted">Chargement des indicateurs...</p>
+        </div>
+    </div>
+
+    <!-- No Results Message -->
+    <div id="no-results" style="display: none; text-align: center; padding: 3rem;">
+        <div style="font-size: 3rem; margin-bottom: 1rem; color: var(--text-muted);"><i class="fas fa-search"></i></div>
+        <h3>Aucun indicateur trouvé</h3>
+        <p class="text-muted">Essayez d'ajuster votre recherche</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const sectorName = "{{ sector }}";
+
+    // Sector metadata
+    const sectorData = {
+        'economie-finance': {
+            iconClass: 'fa-coins',
+            title: 'Économie & Finance IA',
+            description: 'Analyse prédictive des marchés, PIB, inflation, investissements',
+            keywords: ['PIB', 'GDP', 'inflation', 'finance', 'economic', 'croissance', 'growth', 'investment', 'debt']
+        },
+        'intelligence-sociale': {
+            iconClass: 'fa-user-friends',
+            title: 'Intelligence Sociale',
+            description: 'Démographie intelligente, éducation 4.0, e-santé, emploi numérique',
+            keywords: ['population', 'education', 'health', 'santé', 'employment', 'emploi', 'social', 'demographic']
+        },
+        'territoires-connectes': {
+            iconClass: 'fa-map-marked-alt',
+            title: 'Territoires Connectés',
+            description: 'Smart cities, régions numériques, développement territorial intelligent',
+            keywords: ['urban', 'city', 'ville', 'territoire', 'region', 'infrastructure']
+        },
+        'agritech': {
+            iconClass: 'fa-seedling',
+            title: 'AgriTech IA',
+            description: 'Agriculture de précision, IoT agricole, blockchain cacao-café',
+            keywords: ['agriculture', 'farming', 'crop', 'cacao', 'coffee', 'café', 'food', 'rural']
+        },
+        'energie-environnement': {
+            iconClass: 'fa-bolt',
+            title: 'Énergie & Environnement',
+            description: 'Smart grids, énergies renouvelables, efficacité énergétique',
+            keywords: ['energy', 'électricité', 'electricity', 'renewable', 'environment', 'climat', 'emission']
+        },
+        'infrastructure': {
+            iconClass: 'fa-city',
+            title: 'Infrastructure & Transport',
+            description: 'Routes, ponts, télécommunications, transport intelligent',
+            keywords: ['infrastructure', 'transport', 'road', 'route', 'telecom', 'internet', 'mobile']
+        },
+        'economie-numerique': {
+            iconClass: 'fa-laptop-code',
+            title: 'Économie Numérique',
+            description: 'Innovation tech, startups, digital entrepreneurship, e-commerce',
+            keywords: ['digital', 'technology', 'innovation', 'tech', 'internet', 'mobile', 'computer']
+        },
+        'gouvernance': {
+            iconClass: 'fa-university',
+            title: 'Gouvernance & Services Publics',
+            description: 'E-gouvernement, transparence, services digitaux',
+            keywords: ['governance', 'government', 'public', 'politique', 'democracy', 'service']
+        },
+        'commerce': {
+            iconClass: 'fa-shipping-fast',
+            title: 'Commerce & Exportations',
+            description: 'Exportations, importations, balances commerciales',
+            keywords: ['export', 'import', 'trade', 'commerce', 'balance', 'goods', 'merchandise']
+        }
+    };
+
+    let allIndicators = [];
+    let filteredIndicators = [];
+
+    // Set sector metadata
+    const sector = sectorData[sectorName];
+    if (sector) {
+        const iconEl = document.getElementById('sector-icon-i');
+        iconEl.className = `fas ${sector.iconClass} sector-icon`;
+        // Remove hardcoded text content if any
+        document.getElementById('sector-title').textContent = sector.title;
+        document.getElementById('sector-description').textContent = sector.description;
+    }
+
+    // Load indicators
+    async function loadSectorIndicators() {
+        try {
+            const response = await fetch('/api/indicators');
+            const data = await response.json();
+
+            if (data.success) {
+                allIndicators = data.indicators;
+                filterBySector();
+            }
+        } catch (error) {
+            console.error('Error loading indicators:', error);
+            displayError();
+        }
+    }
+
+    // Filter indicators by sector keywords
+    function filterBySector() {
+        const sector = sectorData[sectorName];
+        if (!sector) {
+            filteredIndicators = allIndicators;
+        } else {
+            filteredIndicators = allIndicators.filter(ind => {
+                const text = (ind.name + ' ' + ind.code + ' ' + ind.definition).toLowerCase();
+                return sector.keywords.some(keyword => text.includes(keyword.toLowerCase()));
+            });
+        }
+
+        displayIndicators();
+    }
+
+    // Display indicators
+    function displayIndicators() {
+        const grid = document.getElementById('indicators-grid');
+        const noResults = document.getElementById('no-results');
+
+        if (filteredIndicators.length === 0) {
+            grid.style.display = 'none';
+            noResults.style.display = 'block';
+            return;
+        }
+
+        grid.style.display = 'grid';
+        noResults.style.display = 'none';
+        grid.innerHTML = '';
+
+        filteredIndicators.forEach(indicator => {
+            const card = createIndicatorCard(indicator);
+            grid.appendChild(card);
+        });
+    }
+
+    // Create indicator card
+    function createIndicatorCard(indicator) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.style.cursor = 'pointer';
+        card.onclick = () => openInDashboard(indicator.code);
+
+        card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                <h4 style="flex: 1; margin: 0; color: var(--text-main); font-size: 1.1rem;">${indicator.name}</h4>
+                <span class="sector-badge" style="flex-shrink: 0; font-size: 0.75rem;">${indicator.code}</span>
+            </div>
+            <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 1rem; min-height: 3rem;">
+                ${indicator.definition ? indicator.definition.substring(0, 100) + '...' : 'Aucune description disponible'}
+            </p>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="text-muted" style="font-size: 0.85rem;">
+                    <i class="fas fa-ruler-combined"></i> ${indicator.unit || 'N/A'}
+                </span>
+                <button class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="event.stopPropagation(); openInDashboard('${indicator.code}')">
+                    Analyser <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        `;
+
+        return card;
+    }
+
+    // Open indicator in dashboard
+    function openInDashboard(code) {
+        window.location.href = `/dashboard?indicator=${code}`;
+    }
+
+    // Search indicators
+    document.addEventListener('DOMContentLoaded', () => {
+        loadSectorIndicators();
+
+        document.getElementById('indicator-search').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+
+            if (!searchTerm) {
+                filterBySector();
+                return;
+            }
+
+            filteredIndicators = allIndicators.filter(ind => {
+                const text = (ind.name + ' ' + ind.code + ' ' + ind.definition).toLowerCase();
+                return text.includes(searchTerm);
+            });
+
+            displayIndicators();
+        });
+    });
+
+    // Sort indicators
+    function sortIndicators() {
+        const sortBy = document.getElementById('sort-select').value;
+
+        if (sortBy === 'name') {
+            filteredIndicators.sort((a, b) => a.name.localeCompare(b.name));
+        } else if (sortBy === 'code') {
+            filteredIndicators.sort((a, b) => a.code.localeCompare(b.code));
+        }
+
+        displayIndicators();
+    }
+
+    // Display error
+    function displayError() {
+        const grid = document.getElementById('indicators-grid');
+        grid.innerHTML = `
+            <div class="card" style="grid-column: span 2; text-align: center; padding: 3rem;">
+                <div style="font-size: 3rem; margin-bottom: 1rem; color: var(--accent-red);"><i class="fas fa-exclamation-triangle"></i></div>
+                <h3>Erreur de chargement</h3>
+                <p class="text-muted">Impossible de charger les indicateurs</p>
+                <button class="btn btn-primary" onclick="location.reload()">Réessayer</button>
+            </div>
+        `;
+    }
+</script>
+{% endblock %}

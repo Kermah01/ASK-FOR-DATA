@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Inscription - Ask For Data{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 480px; margin: 2rem auto;">
+    <div class="text-center mb-4">
+        <a href="{% url 'home' %}">
+            <img src="{% static 'img/logo.png' %}" alt="Ask For Data" style="height: 130px; width: auto; margin-bottom: 1rem;">
+        </a>
+        <h1><i class="fas fa-user-plus text-primary"></i> Créer un compte</h1>
+        <p class="subtitle">Inscrivez-vous pour accéder à l'IA</p>
+    </div>
+
+    <div class="card" style="padding: 2rem;">
+        {% if form.errors %}
+        <div style="padding: 0.75rem 1rem; background: rgba(231,76,60,0.1); border: 1px solid rgba(231,76,60,0.3); border-radius: 8px; margin-bottom: 1.5rem; color: #e74c3c; font-size: 0.9rem;">
+            <i class="fas fa-exclamation-circle"></i>
+            {% for field in form %}
+                {% for error in field.errors %}
+                    {{ error }}
+                {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+                {{ error }}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="POST" action="{% url 'account_signup' %}">
+            {% csrf_token %}
+
+            <div style="margin-bottom: 1.25rem;">
+                <label for="id_email" style="display: block; font-weight: 600; margin-bottom: 0.4rem; font-size: 0.9rem; color: var(--text-dark);">
+                    <i class="fas fa-envelope"></i> Email
+                </label>
+                <input type="email" name="email" id="id_email" placeholder="votre@gmail.com" required autofocus
+                    style="width: 100%; padding: 0.75rem 1rem; border: 2px solid var(--border-light); border-radius: 8px; font-size: 1rem; background: var(--bg-surface); color: var(--text-dark); box-sizing: border-box;">
+            </div>
+
+            <div style="margin-bottom: 1.25rem;">
+                <label for="id_password1" style="display: block; font-weight: 600; margin-bottom: 0.4rem; font-size: 0.9rem; color: var(--text-dark);">
+                    <i class="fas fa-lock"></i> Mot de passe
+                </label>
+                <input type="password" name="password1" id="id_password1" placeholder="Min. 8 caractères" required
+                    style="width: 100%; padding: 0.75rem 1rem; border: 2px solid var(--border-light); border-radius: 8px; font-size: 1rem; background: var(--bg-surface); color: var(--text-dark); box-sizing: border-box;">
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label for="id_password2" style="display: block; font-weight: 600; margin-bottom: 0.4rem; font-size: 0.9rem; color: var(--text-dark);">
+                    <i class="fas fa-lock"></i> Confirmer le mot de passe
+                </label>
+                <input type="password" name="password2" id="id_password2" placeholder="Répétez le mot de passe" required
+                    style="width: 100%; padding: 0.75rem 1rem; border: 2px solid var(--border-light); border-radius: 8px; font-size: 1rem; background: var(--bg-surface); color: var(--text-dark); box-sizing: border-box;">
+            </div>
+
+            {% if redirect_field_value %}
+            <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+            {% endif %}
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 1rem;">
+                <i class="fas fa-user-plus"></i> Créer mon compte
+            </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-light);">
+            <p style="color: var(--text-muted); font-size: 0.9rem;">
+                Déjà inscrit ?
+                <a href="{% url 'account_login' %}" style="color: var(--primary); font-weight: 600; text-decoration: none;">
+                    Se connecter
+                </a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

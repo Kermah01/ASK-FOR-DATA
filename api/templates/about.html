@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}À Propos - Ask For Data{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Hero Section -->
+    <div class="text-center mb-4">
+        <img src="{% static 'img/logo.png' %}" alt="Ask For Data" style="height: 250px; width: auto; margin-bottom: 0 rem;">
+        <p class="subtitle">
+            La plateforme qui révolutionne l'accès aux statistiques en Côte d'Ivoire grâce à l'intelligence artificielle.
+        </p>
+    </div>
+
+    <!-- Mission -->
+    <div class="card mb-4">
+        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+            <div style="font-size: 5rem; flex-shrink: 0; color: var(--primary);"><i class="fas fa-bullseye"></i></div>
+            <div>
+                <h2 style="font-size: 1.75rem;">Notre Mission</h2>
+                <p style="font-size: 1.1rem; line-height: 1.8;">
+                    Démocratiser l'accès aux données statistiques ivoiriennes en rendant leur consultation
+                    aussi simple qu'une conversation. Ask For Data utilise l'intelligence artificielle de pointe
+                    pour comprendre vos questions en langage naturel et vous fournir des réponses précises,
+                    accompagnées de visualisations claires et de sources vérifiées.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vision -->
+    <div class="grid grid-2 mb-4">
+        <div class="card">
+            <h3 style="color: var(--primary);"><i class="fas fa-lightbulb"></i> Vision</h3>
+            <p>
+                Nous imaginons un futur où chaque citoyen, chercheur, entrepreneur et décideur peut accéder
+                instantanément aux données dont il a besoin pour prendre des décisions éclairées. Notre plateforme
+                transforme des bases de données complexes en connaissances accessibles à tous.
+            </p>
+        </div>
+
+        <div class="card">
+            <h3 style="color: var(--primary);"><i class="fas fa-star"></i> Valeurs</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li style="margin-bottom: 0.5rem;"><i class="fas fa-check-circle text-success"></i> <strong>Transparence:</strong> Sources toujours citées</li>
+                <li style="margin-bottom: 0.5rem;"><i class="fas fa-check-circle text-success"></i> <strong>Précision:</strong> Aucune invention de données</li>
+                <li style="margin-bottom: 0.5rem;"><i class="fas fa-check-circle text-success"></i> <strong>Accessibilité:</strong> Interface intuitive pour tous</li>
+                <li style="margin-bottom: 0.5rem;"><i class="fas fa-check-circle text-success"></i> <strong>Innovation:</strong> Technologies de pointe</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Methodology -->
+    <div class="card mb-4">
+        <h2 class="mb-2"><i class="fas fa-pencil-ruler"></i> Notre Méthodologie</h2>
+        <div class="grid grid-3">
+            <div>
+                <h4 style="color: var(--text-main); margin-bottom: 1rem;">1. Collecte de Données</h4>
+                <p class="text-muted">
+                    Nous agrégeons des données provenant de sources officielles et reconnues :
+                    Banque mondiale, INS Côte d'Ivoire, FMI, et autres institutions internationales.
+                </p>
+            </div>
+
+            <div>
+                <h4 style="color: var(--primary); margin-bottom: 1rem;">2. Traitement IA</h4>
+                <p class="text-muted">
+                    Notre IA (Google Gemini) analyse votre question, identifie les indicateurs pertinents,
+                    et génère une réponse structurée avec explications contextuelles.
+                </p>
+            </div>
+
+            <div>
+                <h4 style="color: var(--secondary); margin-bottom: 1rem;">3. Visualisation</h4>
+                <p class="text-muted">
+                    Les données sont automatiquement transformées en graphiques interactifs pour faciliter
+                    la compréhension des tendances et évolutions.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Technology Stack -->
+    <div class="card mb-4">
+        <h2 class="mb-2"><i class="fas fa-laptop-code"></i> Technologies Utilisées</h2>
+        <div class="grid grid-4">
+            <div class="text-center">
+                <div style="font-size: 3rem; margin-bottom: 0.5rem; color: var(--primary);"><i class="fas fa-robot"></i></div>
+                <h4>Google Gemini</h4>
+                <p class="text-muted" style="font-size: 0.9rem;">Intelligence Artificielle</p>
+            </div>
+
+            <div class="text-center">
+                <div style="font-size: 3rem; margin-bottom: 0.5rem; color: var(--secondary);"><i class="fab fa-python"></i></div>
+                <h4>Django</h4>
+                <p class="text-muted" style="font-size: 0.9rem;">Backend Framework</p>
+            </div>
+
+            <div class="text-center">
+                <div style="font-size: 3rem; margin-bottom: 0.5rem; color: var(--accent-orange);"><i class="fas fa-chart-bar"></i></div>
+                <h4>Chart.js</h4>
+                <p class="text-muted" style="font-size: 0.9rem;">Visualisations</p>
+            </div>
+
+            <div class="text-center">
+                <div style="font-size: 3rem; margin-bottom: 0.5rem; color: var(--accent-purple);"><i class="fas fa-paint-brush"></i></div>
+                <h4>Modern CSS</h4>
+                <p class="text-muted" style="font-size: 0.9rem;">Design Épuré</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Quality -->
+    <div class="card mb-4">
+        <h2 class="mb-2"><i class="fas fa-award"></i> Engagements Qualité</h2>
+        <div class="grid grid-2">
+            <div>
+                <h4 style="color: var(--text-main);"><i class="fas fa-lock text-primary"></i> Fiabilité des Sources</h4>
+                <p class="text-muted">
+                    Toutes nos données proviennent de sources officielles et reconnues internationalement.
+                    Chaque information est accompagnée de sa source et d'un lien de vérification.
+                </p>
+            </div>
+
+            <div>
+                <h4 style="color: var(--text-main);"><i class="fas fa-ban text-danger"></i> Zéro Fabrication</h4>
+                <p class="text-muted">
+                    Notre IA ne fabrique jamais de données. Si une information n'est pas disponible,
+                    elle le dit clairement avec un message "Je ne sais pas".
+                </p>
+            </div>
+
+            <div>
+                <h4 style="color: var(--text-main);"><i class="fas fa-calendar-check text-success"></i> Données Actualisées</h4>
+                <p class="text-muted">
+                    Notre base de données couvre la période 2000-2024 et est régulièrement mise à jour
+                    dès que de nouvelles données officielles sont publiées.
+                </p>
+            </div>
+
+            <div>
+                <h4 style="color: var(--text-main);"><i class="fas fa-crosshairs text-primary"></i> Précision des Réponses</h4>
+                <p class="text-muted">
+                    Chaque réponse inclut l'unité de mesure, la période concernée, et des explications
+                    contextuelles pour une compréhension optimale.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="grid grid-4 mb-4">
+        <div class="card text-center">
+            <div style="font-size: 3rem; color: var(--primary); margin-bottom: 0.5rem;">1500+</div>
+            <h4>Indicateurs</h4>
+            <p class="text-muted" style="font-size: 0.9rem;">Données disponibles</p>
+        </div>
+
+        <div class="card text-center">
+            <div style="font-size: 3rem; color: var(--primary-hover); margin-bottom: 0.5rem;">24</div>
+            <h4>Années</h4>
+            <p class="text-muted" style="font-size: 0.9rem;">De couverture (2000-2024)</p>
+        </div>
+
+        <div class="card text-center">
+            <div style="font-size: 3rem; color: var(--secondary); margin-bottom: 0.5rem;">9</div>
+            <h4>Secteurs</h4>
+            <p class="text-muted" style="font-size: 0.9rem;">Thématiques couvertes</p>
+        </div>
+
+        <div class="card text-center">
+            <div style="font-size: 3rem; color: var(--text-main); margin-bottom: 0.5rem;">∞</div>
+            <h4>Analyses IA</h4>
+            <p class="text-muted" style="font-size: 0.9rem;">Possibilités infinies</p>
+        </div>
+    </div>
+
+    <!-- Partners -->
+    <div class="card text-center mb-4">
+        <h2 class="mb-2"><i class="fas fa-handshake"></i> Partenaires & Sources de Données</h2>
+        <div class="grid grid-3">
+            <div>
+                <div style="font-size: 3rem; margin-bottom: 0.5rem; color: var(--text-muted);"><i class="fas fa-university"></i></div>
+                <h4>Banque Mondiale</h4>
+                <p class="text-muted">Indicateurs de développement</p>
+            </div>
+
+            <div>
+                <div style="font-size: 3rem; margin-bottom: 0.5rem; color: var(--primary);"><i class="fas fa-chart-area"></i></div>
+                <h4>INS Côte d'Ivoire</h4>
+                <p class="text-muted">Institut National de la Statistique</p>
+            </div>
+
+            <div>
+                <div style="font-size: 3rem; margin-bottom: 0.5rem; color: var(--secondary);"><i class="fas fa-coins"></i></div>
+                <h4>FMI</h4>
+                <p class="text-muted">Données économiques et financières</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Call to Action -->
+    <div class="card text-center" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%); border: none;">
+        <h2 style="color: white;"><i class="fas fa-rocket"></i> Prêt à explorer les données ?</h2>
+        <p style="color: rgba(255,255,255,0.9); font-size: 1.1rem; margin-bottom: 2rem;">
+            Commencez dès maintenant à poser vos questions à notre IA
+        </p>
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+            <a href="{% url 'home' %}" class="btn" style="background: white; color: var(--primary);">
+                <i class="fas fa-search"></i> Rechercher des données
+            </a>
+            <a href="{% url 'dashboard' %}" class="btn" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4);">
+                <i class="fas fa-chart-pie"></i> Explorer le Dashboard
+            </a>
+            <a href="{% url 'chat_page' %}" class="btn" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4);">
+                <i class="fas fa-comments"></i> Discuter avec l'IA
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -2,12 +2,12 @@ module.exports = {
   apps: [
     {
       name: 'askfordata',
-      script: 'python',
-      args: 'manage.py runserver 0.0.0.0:3000',
+      script: 'gunicorn',
+      args: 'askfordata.wsgi --bind 0.0.0.0:3000 --workers 3 --timeout 120',
       cwd: '/home/user/webapp',
       env: {
         PYTHONUNBUFFERED: '1',
-        GEMINI_API_KEY: 'AIzaSyB_LJ5-Rw5BlLnAt2Avl8eat7RZ-tNiYSY'
+        DJANGO_DEBUG: 'False',
       },
       watch: false,
       instances: 1,

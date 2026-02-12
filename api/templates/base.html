@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Ask For Data - Plateforme intelligente d'accès aux statistiques de la Côte d'Ivoire via IA">
+    <meta name="keywords" content="statistiques, Côte d'Ivoire, données, IA, intelligence artificielle">
+    <meta name="author" content="Ask For Data">
+
+    <title>{% block title %}Ask For Data{% endblock %}</title>
+
+    {% load static %}
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{% static 'img/logo.png' %}">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {% block extra_css %}{% endblock %}
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body>
+    {% block layout_override %}
+    <header>
+        <div class="container">
+            <nav>
+                <a href="{% url 'home' %}" class="logo" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <img src="{% static 'img/logo.png' %}" alt="Ask For Data" style="height: 80px; width: auto;">
+                </a>
+                <div class="nav-links">
+                    <a href="{% url 'home' %}"
+                        class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">Accueil</a>
+                    <a href="{% url 'dashboard' %}"
+                        class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Analytics</a>
+                    <a href="{% url 'chat_page' %}"
+                        class="nav-link {% if request.resolver_match.url_name == 'chat_page' %}active{% endif %}">Discuter avec les données</a>
+                    <a href="{% url 'about' %}"
+                        class="nav-link {% if request.resolver_match.url_name == 'about' %}active{% endif %}">À propos</a>
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'setup_api_key' %}" class="nav-link" style="margin-left: 1rem;" title="Mon compte">
+                        <i class="fas fa-key"></i> API
+                    </a>
+                    <a href="{% url 'account_logout' %}" class="nav-link" style="font-size:0.85rem;">
+                        <i class="fas fa-sign-out-alt"></i> {{ user.email|truncatechars:20 }}
+                    </a>
+                    {% else %}
+                    <a href="{% url 'account_login' %}" class="nav-link" style="margin-left: 1rem;">
+                        <i class="fas fa-sign-in-alt"></i> Connexion
+                    </a>
+                    {% endif %}
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <!-- About Section -->
+                <div class="footer-section">
+                    <img src="{% static 'img/logo.png' %}" alt="Ask For Data" style="height: 60px; width: auto; margin-bottom: 0.75rem;">
+                    <p class="text-muted">
+                        La plateforme qui révolutionne l'accès aux statistiques en Côte d'Ivoire grâce à l'intelligence
+                        artificielle.
+                    </p>
+                    <div class="social-links mt-2">
+                        <!-- Social links can be added here -->
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="footer-section">
+                    <h4>Navigation</h4>
+                    <ul>
+                        <li><a href="{% url 'home' %}">Accueil</a></li>
+                        <li><a href="{% url 'dashboard' %}">Analytics</a></li>
+                        <li><a href="{% url 'chat_page' %}">Discuter avec les données</a></li>
+                    </ul>
+                </div>
+
+                <!-- Resources -->
+                <div class="footer-section">
+                    <h4>Ressources</h4>
+                    <ul>
+                        <li><a href="/api/indicators" target="_blank">API Indicateurs</a></li>
+                        <li><a href="https://data.worldbank.org" target="_blank">Banque Mondiale</a></li>
+                        <li><a href="https://www.ins.ci" target="_blank">INS Côte d'Ivoire</a></li>
+                    </ul>
+                </div>
+
+                <!-- Contact -->
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <ul>
+                        <li><a href="mailto:contact@askfordata.ci">contact@askfordata.ci</a></li>
+                        <li><a href="#">Mentions légales</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p>&copy; 2025 Ask For Data Côte d'Ivoire. Tous droits réservés.</p>
+                <p class="text-muted" style="margin-top: 0.5rem; font-size: 0.85rem;">
+                    Propulsé par l'IA Google Gemini • Données : Banque mondiale, INS CI
+                </p>
+            </div>
+        </div>
+    </footer>
+    {% endblock %}
+
+    <!-- Global Scripts -->
+    <script src="{% static 'js/main.js' %}?v=2.0"></script>
+    {% block scripts %}
+    {% endblock %}
+</body>
+
+</html>

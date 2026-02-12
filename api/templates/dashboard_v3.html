@@ -1,0 +1,1801 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Observatoire National - Côte d'Ivoire</title>
+    <link rel="icon" type="image/png" href="{% static 'img/logo.png' %}">
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="{% static 'css/dashboard-v3.css' %}?v=1.0">
+</head>
+<body class="dashboard-body">
+
+    <div class="dashboard-layout">
+        
+        <!-- 1. MAIN NAVBAR (Global App Nav) -->
+        <nav class="main-navbar">
+            <div class="nav-brand-group">
+                <button id="sidebar-toggle" class="mobile-toggle"><i class="fas fa-bars"></i></button>
+                <a href="{% url 'home' %}" class="brand" style="display: flex; align-items: center;">
+                    <img src="{% static 'img/logo.png' %}" alt="Ask For Data" style="height: 80px; width: auto;">
+                </a>
+            </div>
+            <div class="nav-links-main">
+                <a href="{% url 'home' %}" class="nav-link-main">Accueil</a>
+                <a href="{% url 'dashboard' %}" class="nav-link-main active">Analytics</a>
+                <a href="{% url 'chat_page' %}" class="nav-link-main">Discuter avec les données</a>
+                <a href="{% url 'about' %}" class="nav-link-main">À propos</a>
+            </div>
+            <div class="user-profile-spacer"> <!-- Spacer or User Profile -->
+                <div class="user-avatar">AD</div>
+            </div>
+        </nav>
+
+        <!-- 2. SUB NAVBAR (Contextual) -->
+        <nav class="sub-navbar">
+            <a href="#" class="sub-tab active" data-subtab="dashboards">Dashboards Synthétiques</a>
+            <a href="#" class="sub-tab" data-subtab="explorer">Explorer les données</a>
+            <a href="#" class="sub-tab" data-subtab="custom">Créer son dashboard</a>
+            <a href="#" class="sub-tab" data-subtab="advanced">Outils d'analyses avancées</a>
+        </nav>
+
+        <!-- 3. DASHBOARD CONTAINER -->
+        <div class="dashboard-container">
+            <!-- Mobile Overlay -->
+            <div class="sidebar-overlay"></div>
+            
+            <!-- SIDEBAR -->
+            <aside class="dash-sidebar">
+                <div class="sidebar-menu-wrapper">
+                    <div class="sidebar-search-wrapper">
+                        <input type="text" id="sidebar-search" class="sidebar-search-input" placeholder="Rechercher...">
+                    </div>
+                    
+                    <div class="sidebar-group-title">Tableau de Bord</div>
+                    <ul class="sidebar-menu">
+                        <li class="sidebar-item active" data-target="section-overview">
+                            <i class="fas fa-th-large sidebar-icon"></i> Vue d'ensemble
+                        </li>
+                    </ul>
+
+                    <div class="sidebar-group-title">Thématiques</div>
+                    <ul class="sidebar-menu">
+                        <li class="sidebar-item" data-target="section-macro">
+                            <i class="fas fa-chart-line sidebar-icon"></i> Macro-économie
+                        </li>
+                        <li class="sidebar-item" data-target="section-finance">
+                            <i class="fas fa-coins sidebar-icon"></i> Finances Publiques
+                        </li>
+                        <li class="sidebar-item" data-target="section-demo">
+                            <i class="fas fa-users sidebar-icon"></i> Démographie
+                        </li>
+                        
+                        <!-- Accordion for Sectors -->
+                        <li>
+                            <div class="sidebar-item has-sub">
+                                <i class="fas fa-industry sidebar-icon"></i> Secteurs Productifs
+                                <i class="fas fa-chevron-down arrow-icon"></i>
+                            </div>
+                            <ul class="sidebar-sub-menu">
+                                <li class="sidebar-sub-item" data-target="section-sec-primary">Secteur Primaire</li>
+                                <li class="sidebar-sub-item" data-target="section-sec-secondary">Secteur Secondaire</li>
+                                <li class="sidebar-sub-item" data-target="section-sec-tertiary">Secteur Tertiaire</li>
+                            </ul>
+                        </li>
+
+                        <li class="sidebar-item" data-target="section-education">
+                            <i class="fas fa-graduation-cap sidebar-icon"></i> Éducation
+                        </li>
+                        <li class="sidebar-item" data-target="section-emploi">
+                            <i class="fas fa-briefcase sidebar-icon"></i> Emploi
+                        </li>
+                        <li class="sidebar-item" data-target="section-sante">
+                            <i class="fas fa-heartbeat sidebar-icon"></i> Santé
+                        </li>
+                        <li class="sidebar-item" data-target="section-politique">
+                            <i class="fas fa-landmark sidebar-icon"></i> Politique & Gouv.
+                        </li>
+                        <li class="sidebar-item" data-target="section-culture">
+                            <i class="fas fa-futbol sidebar-icon"></i> Sport & Culture
+                        </li>
+                        <li class="sidebar-item" data-target="section-territory">
+                            <i class="fas fa-map-marked-alt sidebar-icon"></i> Analyse Territoriale
+                        </li>
+                        <li class="sidebar-item" data-target="section-inter">
+                            <i class="fas fa-globe-africa sidebar-icon"></i> Partenariat & International
+                        </li>
+                    </ul>
+                </div>
+            </aside>
+
+            <!-- CONTENT AREA -->
+            <main class="dash-content">
+                
+                <!-- SECTION: VUE D'ENSEMBLE -->
+                <div id="section-overview" class="content-section">
+                    <div class="overview-header" style="display:flex; justify-content:space-between; align-items:end;">
+                        <button class="btn-action btn-export" onclick="window.print()">
+                            <i class="fas fa-print"></i> Imprimer
+                        </button>
+                    </div>
+                    <!-- 1. INFOGRAPHIC COUNTRY INFO -->
+                    <div class="country-info-section infographic-layout">
+                        <div class="flag-header-centered">
+                            <div class="country-header-text">
+                                <h2>République de Côte d'Ivoire</h2>
+                                <div class="motto">" Union - Discipline - Travail "</div>
+                            </div>
+                        </div>
+
+                        <!-- Personalities -->
+                        <div class="personalities-row">
+                            <!-- VP -->
+                            <div class="personality-card small">
+                                <div class="photo-frame">
+                                    <img src="{% static 'img/tiemoko_kone.webp' %}" alt="Tiémoko Meyliet KONÉ" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
+                                </div>
+                                <div class="p-name">Tiémoko Meyliet KONÉ</div>
+                                <div class="p-role">Vice-Président</div>
+                            </div>
+                            
+                            <!-- President (Center) -->
+                            <div class="personality-card main">
+                                <div class="photo-frame">
+                                    <img src="{% static 'img/alassane_ouattara.jpg' %}" alt="Alassane Ouattara" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
+                                </div>
+                                <div class="p-name">Alassane Ouattara</div>
+                                <div class="p-role">Président de la République</div>
+                            </div>
+
+                            <!-- PM -->
+                            <div class="personality-card small">
+                                <div class="photo-frame">
+                                    <img src="{% static 'img/robert_mambe.jpg' %}" alt="Robert Beugré MAMBÉ" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
+                                </div>
+                                <div class="p-name">Robert Beugré MAMBÉ</div>
+                                <div class="p-role">Premier Ministre</div>
+                            </div>
+
+                            <div class="personality-group">
+                                <div class="personality-card small">
+                                    <div class="photo-frame" style="width:80px; height:80px;">
+                                        <img src="{% static 'img/patrick_achi.jpg' %}" alt="Patrick ACHI" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
+                                    </div>
+                                    <div class="p-name" style="font-size:0.9rem;">Patrick ACHI</div>
+                                    <div class="p-role" style="font-size:0.7rem;">Président de l'Assemblée Nationale</div>
+                                </div>
+                                <div class="personality-card small">
+                                    <div class="photo-frame" style="width:80px; height:80px;">
+                                        <img src="{% static 'img/kandia_camara.jpg' %}" alt="Kandia CAMARA" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
+                                    </div>
+                                    <div class="p-name" style="font-size:0.9rem;">Kandia CAMARA</div>
+                                    <div class="p-role" style="font-size:0.7rem;">Présidente du Sénat</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Key Stats Grid -->
+                        <div class="infographic-stats-grid">
+                            <div class="stat-box">
+                                <i class="fas fa-map-marked-alt icon-bg"></i>
+                                <div class="stat-label">Capitale Politique</div>
+                                <div class="stat-value">Yamoussoukro</div>
+                                <div class="stat-sub">6° 51′ N, 5° 18′ O</div>
+                            </div>
+                            <div class="stat-box">
+                                <i class="fas fa-city icon-bg"></i>
+                                <div class="stat-label">Capitale Économique</div>
+                                <div class="stat-value">Abidjan</div>
+                                <div class="stat-sub">6.3 Millions d'hab.</div>
+                            </div>
+                            <div class="stat-box">
+                                <i class="fas fa-ruler-combined icon-bg"></i>
+                                <div class="stat-label">Superficie</div>
+                                <div class="stat-value">322 462 km²</div>
+                                <div class="stat-sub">69e (rang mondial)</div>
+                            </div>
+                            <div class="stat-box">
+                                <i class="fas fa-language icon-bg"></i>
+                                <div class="stat-label">Langue & Monnaie</div>
+                                <div class="stat-value">Français / XOF</div>
+                                <div class="stat-sub">Zone UEMOA</div>
+                            </div>
+                            <div class="stat-box">
+                                <i class="fas fa-clock icon-bg"></i>
+                                <div class="stat-label">Fuseau Horaire</div>
+                                <div class="stat-value">GMT +0</div>
+                                <div class="stat-sub">Pas de chgmt d'heure</div>
+                            </div>
+                            <div class="stat-box">
+                                <i class="fas fa-phone icon-bg"></i>
+                                <div class="stat-label">Indicatif</div>
+                                <div class="stat-value">+225</div>
+                                <div class="stat-sub">Domaine web : .ci</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 2. KPI CARDS (valeurs alimentées dynamiquement via /api/dashboard-data) -->
+                    <div class="kpi-row">
+                        <!-- PIB -->
+                        <div class="kpi-card-v3">
+                            <div class="label" id="kpi-gdp-label">PIB Nominal</div>
+                            <div class="value" id="kpi-gdp-val">Chargement...</div>
+                            <div class="trend up" id="kpi-gdp-trend"></div>
+                        </div>
+                        <!-- Inflation -->
+                        <div class="kpi-card-v3">
+                            <div class="label" id="kpi-inf-label">Inflation</div>
+                            <div class="value" id="kpi-inf-val">Chargement...</div>
+                            <div class="trend up" id="kpi-inf-trend"></div>
+                        </div>
+                        <!-- Population -->
+                        <div class="kpi-card-v3">
+                            <div class="label" id="kpi-pop-label">Population Totale</div>
+                            <div class="value" id="kpi-pop-val">Chargement...</div>
+                            <div class="trend neutral" id="kpi-pop-trend"></div>
+                        </div>
+                        <!-- Esperance vie -->
+                        <div class="kpi-card-v3">
+                            <div class="label" id="kpi-life-label">Espérance de Vie</div>
+                            <div class="value" id="kpi-life-val">Chargement...</div>
+                            <div class="trend up" id="kpi-life-trend"></div>
+                        </div>
+                        <!-- Chomage -->
+                        <div class="kpi-card-v3">
+                            <div class="label" id="kpi-unemp-label">Taux Chômage</div>
+                            <div class="value" id="kpi-unemp-val">Chargement...</div>
+                            <div class="trend neutral" id="kpi-unemp-trend"></div>
+                        </div>
+                        <!-- Notation -->
+                        <div class="kpi-card-v3">
+                            <div class="label">Notation S&P</div>
+                            <div class="value" id="kpi-rating-val">BB-</div>
+                            <div class="trend up" id="kpi-rating-trend">Perspective Positive</div>
+                        </div>
+                    </div>
+                    <!-- 3. PREVIEW GRID (Dashboard-in-Dashboard) -->
+                    <h3 class="preview-section-title">Tableaux de Bord Thématiques</h3>
+                    <div class="preview-grid">
+                        
+                        <!-- MACRO -->
+                        <div class="preview-card-v2" data-target="section-macro">
+                            <div class="preview-header-v2">
+                                <div class="icon-box"><i class="fas fa-chart-line"></i></div>
+                                <div class="text-box">
+                                    <h4>Macro-économie</h4>
+                                    <span>Croissance, Inflation, Inv.</span>
+                                </div>
+                                <i class="fas fa-external-link-alt link-icon"></i>
+                            </div>
+                            <div class="mini-charts-container">
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Croissance PIB</div><div id="mini-macro-1" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Inflation</div><div id="mini-macro-2" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Dette Publique</div><div id="mini-macro-3" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Inv. % PIB</div><div id="mini-macro-4" class="mini-chart-box"></div></div>
+                            </div>
+                        </div>
+
+                        <!-- FINANCE -->
+                        <div class="preview-card-v2" data-target="section-finance">
+                            <div class="preview-header-v2">
+                                <div class="icon-box"><i class="fas fa-coins"></i></div>
+                                <div class="text-box">
+                                    <h4>Finances Publiques</h4>
+                                    <span>Budget, Recettes, Dépenses</span>
+                                </div>
+                                <i class="fas fa-external-link-alt link-icon"></i>
+                            </div>
+                            <div class="mini-charts-container">
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Solde Budgétaire</div><div id="mini-fin-1" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Recettes Totales</div><div id="mini-fin-2" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Dépenses Totales</div><div id="mini-fin-3" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Service Dette</div><div id="mini-fin-4" class="mini-chart-box"></div></div>
+                            </div>
+                        </div>
+
+                        <!-- DEMO -->
+                        <div class="preview-card-v2" data-target="section-demo">
+                            <div class="preview-header-v2">
+                                <div class="icon-box"><i class="fas fa-users"></i></div>
+                                <div class="text-box">
+                                    <h4>Démographie</h4>
+                                    <span>Population, Répartition</span>
+                                </div>
+                                <i class="fas fa-external-link-alt link-icon"></i>
+                            </div>
+                            <div class="mini-charts-container">
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Pyramide Âges</div><div id="mini-demo-1" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Urbain/Rural</div><div id="mini-demo-2" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Croissance Pop</div><div id="mini-demo-3" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Densité</div><div id="mini-demo-4" class="mini-chart-box"></div></div>
+                            </div>
+                        </div>
+
+                        <!-- PRIMAIRE -->
+                        <div class="preview-card-v2" data-target="section-sec-primary">
+                            <div class="preview-header-v2">
+                                <div class="icon-box"><i class="fas fa-leaf"></i></div>
+                                <div class="text-box">
+                                    <h4>Secteur Primaire</h4>
+                                    <span>Agri, Cacao, Mines</span>
+                                </div>
+                                <i class="fas fa-external-link-alt link-icon"></i>
+                            </div>
+                            <div class="mini-charts-container">
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Prod. Cacao</div><div id="mini-prim-1" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Prod. Vivrière</div><div id="mini-prim-2" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Export Agri</div><div id="mini-prim-3" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Mines (Or)</div><div id="mini-prim-4" class="mini-chart-box"></div></div>
+                            </div>
+                        </div>
+
+                        <!-- SECONDAIRE -->
+                        <div class="preview-card-v2" data-target="section-sec-secondary">
+                            <div class="preview-header-v2">
+                                <div class="icon-box"><i class="fas fa-industry"></i></div>
+                                <div class="text-box">
+                                    <h4>Secteur Secondaire</h4>
+                                    <span>Industrie, Énergie, BTP</span>
+                                </div>
+                                <i class="fas fa-external-link-alt link-icon"></i>
+                            </div>
+                            <div class="mini-charts-container">
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Indice IPI</div><div id="mini-sec-1" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Mix Énergétique</div><div id="mini-sec-2" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Croissance BTP</div><div id="mini-sec-3" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Pétrole/Gaz</div><div id="mini-sec-4" class="mini-chart-box"></div></div>
+                            </div>
+                        </div>
+
+                        <!-- TERTIAIRE -->
+                        <div class="preview-card-v2" data-target="section-sec-tertiary">
+                            <div class="preview-header-v2">
+                                <div class="icon-box"><i class="fas fa-store"></i></div>
+                                <div class="text-box">
+                                    <h4>Secteur Tertiaire</h4>
+                                    <span>Services, Transport, Tic</span>
+                                </div>
+                                <i class="fas fa-external-link-alt link-icon"></i>
+                            </div>
+                            <div class="mini-charts-container">
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Part PIB</div><div id="mini-tert-1" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Vol. Transport</div><div id="mini-tert-2" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Abonnés Mobile</div><div id="mini-tert-3" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Tourisme</div><div id="mini-tert-4" class="mini-chart-box"></div></div>
+                            </div>
+                        </div>
+                        
+                        <!-- EDUCATION -->
+                        <div class="preview-card-v2" data-target="section-education">
+                            <div class="preview-header-v2">
+                                <div class="icon-box"><i class="fas fa-graduation-cap"></i></div>
+                                <div class="text-box">
+                                    <h4>Éducation</h4>
+                                    <span>Scolarisation, Alphabétisation</span>
+                                </div>
+                                <i class="fas fa-external-link-alt link-icon"></i>
+                            </div>
+                            <div class="mini-charts-container">
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Taux Scol.</div><div id="mini-edu-1" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Budget</div><div id="mini-edu-2" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Parité F/H</div><div id="mini-edu-3" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Réussite</div><div id="mini-edu-4" class="mini-chart-box"></div></div>
+                            </div>
+                        </div>
+                        
+                        <!-- SANTE -->
+                        <div class="preview-card-v2" data-target="section-sante">
+                            <div class="preview-header-v2">
+                                <div class="icon-box"><i class="fas fa-heartbeat"></i></div>
+                                <div class="text-box">
+                                    <h4>Santé</h4>
+                                    <span>Espérance Vie, Soins</span>
+                                </div>
+                                <i class="fas fa-external-link-alt link-icon"></i>
+                            </div>
+                            <div class="mini-charts-container">
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Espérance Vie</div><div id="mini-sante-1" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Mortalité</div><div id="mini-sante-2" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Infras. San.</div><div id="mini-sante-3" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Couv. CMU</div><div id="mini-sante-4" class="mini-chart-box"></div></div>
+                            </div>
+                        </div>
+                        
+                         <!-- TERRITOIRE -->
+                        <div class="preview-card-v2" data-target="section-territory">
+                            <div class="preview-header-v2">
+                                <div class="icon-box"><i class="fas fa-map-marked-alt"></i></div>
+                                <div class="text-box">
+                                    <h4>Territoire</h4>
+                                    <span>Infrastructures, Régions</span>
+                                </div>
+                                <i class="fas fa-external-link-alt link-icon"></i>
+                            </div>
+                            <div class="mini-charts-container">
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Répartition PIB</div><div id="mini-terr-1" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Accès Élec</div><div id="mini-terr-2" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Routes Bitum.</div><div id="mini-terr-3" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Projets</div><div id="mini-terr-4" class="mini-chart-box"></div></div>
+                            </div>
+                        </div>
+
+                        <!-- EMPLOI -->
+                        <div class="preview-card-v2" data-target="section-emploi">
+                            <div class="preview-header-v2">
+                                <div class="icon-box"><i class="fas fa-briefcase"></i></div>
+                                <div class="text-box">
+                                    <h4>Emploi</h4>
+                                    <span>Chômage, Secteurs</span>
+                                </div>
+                                <i class="fas fa-external-link-alt link-icon"></i>
+                            </div>
+                            <div class="mini-charts-container">
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Chômage</div><div id="mini-emp-1" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Secteurs</div><div id="mini-emp-2" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Informel</div><div id="mini-emp-3" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Création</div><div id="mini-emp-4" class="mini-chart-box"></div></div>
+                            </div>
+                        </div>
+
+                        <!-- POLITIQUE -->
+                        <div class="preview-card-v2" data-target="section-politique">
+                            <div class="preview-header-v2">
+                                <div class="icon-box"><i class="fas fa-landmark"></i></div>
+                                <div class="text-box">
+                                    <h4>Politique & Gouv.</h4>
+                                    <span>Gouvernance, Indices</span>
+                                </div>
+                                <i class="fas fa-external-link-alt link-icon"></i>
+                            </div>
+                            <div class="mini-charts-container">
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Corruption</div><div id="mini-pol-1" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Gouvernance</div><div id="mini-pol-2" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Climat Affaires</div><div id="mini-pol-3" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Votes</div><div id="mini-pol-4" class="mini-chart-box"></div></div>
+                            </div>
+                        </div>
+
+                        <!-- CULTURE -->
+                        <div class="preview-card-v2" data-target="section-culture">
+                            <div class="preview-header-v2">
+                                <div class="icon-box"><i class="fas fa-futbol"></i></div>
+                                <div class="text-box">
+                                    <h4>Sport & Culture</h4>
+                                    <span>Tourisme, CAN</span>
+                                </div>
+                                <i class="fas fa-external-link-alt link-icon"></i>
+                            </div>
+                            <div class="mini-charts-container">
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Impact CAN</div><div id="mini-cult-1" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Tourisme</div><div id="mini-cult-2" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Art/Musique</div><div id="mini-cult-3" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Infra Sport</div><div id="mini-cult-4" class="mini-chart-box"></div></div>
+                            </div>
+                        </div>
+
+                        <!-- INTERNATIONAL -->
+                        <div class="preview-card-v2" data-target="section-inter">
+                            <div class="preview-header-v2">
+                                <div class="icon-box"><i class="fas fa-globe-africa"></i></div>
+                                <div class="text-box">
+                                    <h4>International</h4>
+                                    <span>Partenariats, IDE</span>
+                                </div>
+                                <i class="fas fa-external-link-alt link-icon"></i>
+                            </div>
+                            <div class="mini-charts-container">
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Balance Com.</div><div id="mini-int-1" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Partenaires</div><div id="mini-int-2" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">IDE</div><div id="mini-int-3" class="mini-chart-box"></div></div>
+                                <div class="mini-chart-wrapper"><div class="mini-chart-title">Dons/Prêts</div><div id="mini-int-4" class="mini-chart-box"></div></div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- SECTION: MACRO -->
+                <div id="section-macro" class="content-section hidden">
+                    <div class="overview-header">
+                        <h1 class="overview-title">Dynamique Macroéconomique</h1>
+                    </div>
+                    <!-- Toolbar -->
+                    <div class="section-toolbar">
+                        <div class="filter-group">
+                            <label><i class="far fa-calendar-alt"></i> Année:</label>
+                            <select class="filter-select year-filter">
+                                <option value="2024">2024</option>
+                                <option value="2023">2023</option>
+                                <option value="2022">2022</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label><i class="fas fa-globe-africa"></i> Périmètre:</label>
+                            <select class="filter-select region-filter">
+                                <option value="all">National</option>
+                                <option value="uemoa">UEMOA</option>
+                                <option value="cedeao">CEDEAO</option>
+                            </select>
+                        </div>
+                        <button class="btn-action btn-export"><i class="fas fa-download"></i> Exporter</button>
+                    </div>
+
+                    <div class="chart-grid-2x2">
+                        <div class="chart-card">
+                            <div class="chart-title">Croissance du PIB Réel</div>
+                            <div class="chart-subtitle">Variation annuelle en pourcentage, prix constants</div>
+                            <div id="chart-macro-gdp" class="chart-container"></div>
+                            <div class="chart-source">
+                                <span class="source-label">Source : Banque Mondiale, FMI</span>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Inflation (IPC)</div>
+                            <div class="chart-subtitle">Indice des Prix à la Consommation, moyenne annuelle</div>
+                            <div id="chart-macro-inflation" class="chart-container"></div>
+                            <div class="chart-source">
+                                <span class="source-label">Source : Banque Mondiale, INS</span>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Structure du PIB par Secteur</div>
+                            <div class="chart-subtitle">Part de chaque secteur dans le PIB nominal (%)</div>
+                            <div id="chart-macro-contrib" class="chart-container"></div>
+                            <div class="chart-source">
+                                <span class="source-label">Source : Banque Mondiale</span>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Formation Brute de Capital Fixe</div>
+                            <div class="chart-subtitle">Investissement total en % du PIB</div>
+                            <div id="chart-macro-invest" class="chart-container"></div>
+                            <div class="chart-source">
+                                <span class="source-label">Source : Banque Mondiale</span>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Dette Publique Totale</div>
+                            <div class="chart-subtitle">Encours de la dette publique en % du PIB</div>
+                            <div id="chart-macro-debt-gdp" class="chart-container"></div>
+                            <div class="chart-source">
+                                <span class="source-label">Source : FMI, Ministère des Finances</span>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Balance Commerciale</div>
+                            <div class="chart-subtitle">Exportations - Importations en % du PIB</div>
+                            <div id="chart-macro-trade-balance" class="chart-container"></div>
+                            <div class="chart-source">
+                                <span class="source-label">Source : Banque Mondiale</span>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Réserves de Change</div>
+                            <div class="chart-subtitle">Couverture en mois d'importations</div>
+                            <div id="chart-macro-reserv" class="chart-container"></div>
+                            <div class="chart-source">
+                                <span class="source-label">Source : BCEAO</span>
+                                <span class="data-note">Données à confirmer</span>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Crédit au Secteur Privé</div>
+                            <div class="chart-subtitle">Croissance annuelle du crédit (%)</div>
+                            <div id="chart-macro-credit" class="chart-container"></div>
+                            <div class="chart-source">
+                                <span class="source-label">Source : BCEAO</span>
+                                <span class="data-note">Données à confirmer</span>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Pression Fiscale</div>
+                            <div class="chart-subtitle">Recettes fiscales en % du PIB</div>
+                            <div id="chart-macro-tax" class="chart-container"></div>
+                            <div class="chart-source">
+                                <span class="source-label">Source : Ministère des Finances</span>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Climat des Affaires</div>
+                            <div class="chart-subtitle">Scores Doing Business par dimension</div>
+                            <div id="chart-macro-business" class="chart-container"></div>
+                            <div class="chart-source">
+                                <span class="source-label">Source : Banque Mondiale (2020)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION: FINANCE -->
+                <div id="section-finance" class="content-section hidden">
+                    <div class="overview-header">
+                        <h1 class="overview-title">Finances Publiques</h1>
+                    </div>
+                    <!-- Toolbar -->
+                    <div class="section-toolbar">
+                        <div class="filter-group">
+                            <label><i class="far fa-calendar-alt"></i> Année:</label>
+                            <select class="filter-select year-filter">
+                                <option value="2024">2024</option>
+                                <option value="2023">2023</option>
+                                <option value="2022">2022</option>
+                            </select>
+                        </div>
+                        <button class="btn-action btn-export"><i class="fas fa-download"></i> Rapport Financier</button>
+                    </div>
+
+                    <div class="chart-grid-2x2">
+                        <div class="chart-card">
+                            <div class="chart-title">Solde Budgétaire Global</div>
+                            <div class="chart-subtitle">Déficit/Excédent en % du PIB (dons inclus)</div>
+                            <div id="chart-fin-balance" class="chart-container"></div>
+                            <div class="chart-source">
+                                <span class="source-label">Source : FMI, Loi de Finances</span>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Recettes vs Dépenses</div>
+                            <div class="chart-subtitle">Évolution en milliards de FCFA</div>
+                            <div id="chart-fin-rev-exp" class="chart-container"></div>
+                            <div class="chart-source">
+                                <span class="source-label">Source : Ministère des Finances</span>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Évolution de la Dette Publique</div>
+                            <div class="chart-subtitle">Encours total en % du PIB</div>
+                            <div id="chart-fin-debt" class="chart-container"></div>
+                            <div class="chart-source">
+                                <span class="source-label">Source : FMI Article IV</span>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Service de la Dette</div>
+                            <div class="chart-subtitle">Ratio service dette / recettes fiscales (%)</div>
+                            <div id="chart-fin-service" class="chart-container"></div>
+                            <div class="chart-source">
+                                <span class="source-label">Source : Ministère des Finances</span>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Masse Salariale</div>
+                            <div class="chart-subtitle">Part dans les recettes fiscales (%)</div>
+                            <div id="chart-fin-wage-bill" class="chart-container"></div>
+                            <div class="chart-source">
+                                <span class="source-label">Source : Loi de Finances</span>
+                                <span class="data-note">Données à confirmer</span>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Dépenses d'Investissement</div>
+                            <div class="chart-subtitle">Budget d'investissement en Mds FCFA</div>
+                            <div id="chart-fin-investment-budget" class="chart-container"></div>
+                            <div class="chart-source">
+                                <span class="source-label">Source : Loi de Finances</span>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Subventions Énergie & Carburant</div>
+                            <div class="chart-subtitle">Répartition en milliards de FCFA</div>
+                            <div id="chart-fin-subsidy" class="chart-container"></div>
+                            <div class="chart-source">
+                                <span class="source-label">Source : FMI</span>
+                                <span class="data-note">Données à confirmer</span>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Financement du Déficit</div>
+                            <div class="chart-subtitle">Répartition intérieur vs extérieur (%)</div>
+                            <div id="chart-fin-deficit-financing" class="chart-container"></div>
+                            <div class="chart-source">
+                                <span class="source-label">Source : Ministère des Finances</span>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Structure des Recettes</div>
+                            <div class="chart-subtitle">Répartition par type de recettes fiscales</div>
+                            <div id="chart-fin-tax-structure" class="chart-container"></div>
+                            <div class="chart-source">
+                                <span class="source-label">Source : DGI, Loi de Finances</span>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Composition de la Dette</div>
+                            <div class="chart-subtitle">Dette extérieure vs intérieure (% PIB)</div>
+                            <div id="chart-fin-ext-debt" class="chart-container"></div>
+                            <div class="chart-source">
+                                <span class="source-label">Source : FMI, DGCPT</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION: DEMOGRAPHIE -->
+                <div id="section-demo" class="content-section hidden">
+                    <div class="overview-header">
+                        <h1 class="overview-title">Démographie</h1>
+                    </div>
+                    <!-- Toolbar -->
+                    <div class="section-toolbar">
+                        <div class="filter-group">
+                            <label><i class="far fa-calendar-alt"></i> Année:</label>
+                            <select class="filter-select year-filter">
+                                <option value="2024">2024</option>
+                                <option value="2023">2023</option>
+                                <option value="2022">2022</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label><i class="fas fa-map-marker-alt"></i> District:</label>
+                            <select class="filter-select region-filter">
+                                <option value="all">Tout le territoire</option>
+                                <option value="abidjan">District Abidjan</option>
+                                <option value="yamoussoukro">District Yamoussoukro</option>
+                            </select>
+                        </div>
+                        <button class="btn-action btn-export"><i class="fas fa-download"></i> Exporter</button>
+                    </div>
+
+                    <div class="chart-grid-2x2">
+                        <div class="chart-card">
+                            <div class="chart-title">Pyramide des Âges</div>
+                            <div id="chart-demo-pyramid" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Répartition Urbain / Rural</div>
+                            <div id="chart-demo-urban" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Densité de Population par Région</div>
+                            <div id="chart-demo-density" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Projection Population (2025-2050)</div>
+                            <div id="chart-demo-proj" class="chart-container"></div>
+                        </div>
+                        <!-- New Charts -->
+                        <div class="chart-card">
+                            <div class="chart-title">Taux de Fécondité (Enfants/Femme)</div>
+                            <div id="chart-demo-fertility" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Espérance de Vie (Hommes vs Femmes)</div>
+                            <div id="chart-demo-life-exp-gender" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Solde Migratoire</div>
+                            <div id="chart-demo-migration" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Structure des Ménages</div>
+                            <div id="chart-demo-households" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Croissance Démographique Annuelle (%)</div>
+                            <div id="chart-demo-growth-rate" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Population Scolarisable (6-15 ans)</div>
+                            <div id="chart-demo-school-pop" class="chart-container"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- SECTION: SECTEUR PRIMAIRE -->
+                <div id="section-sec-primary" class="content-section hidden">
+                    <div class="overview-header">
+                        <h1 class="overview-title">Secteur Primaire (Agriculture & Mines)</h1>
+                    </div>
+                    <!-- Toolbar -->
+                    <div class="section-toolbar">
+                        <div class="filter-group">
+                            <label><i class="far fa-calendar-alt"></i> Année:</label>
+                            <select class="filter-select year-filter">
+                                <option value="2024">2024</option>
+                                <option value="2023">2023</option>
+                                <option value="2022">2022</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label><i class="fas fa-seedling"></i> Filière:</label>
+                            <select class="filter-select sector-filter">
+                                <option value="all">Toutes filières</option>
+                                <option value="cacao">Cacao / Café</option>
+                                <option value="anacarde">Anacarde</option>
+                                <option value="coton">Coton</option>
+                            </select>
+                        </div>
+                        <button class="btn-action btn-export"><i class="fas fa-download"></i> Exporter</button>
+                    </div>
+
+                    <div class="chart-grid-2x2">
+                        <div class="chart-card">
+                            <div class="chart-title">Production Cacao & Anacarde (Milliers de Tonnes)</div>
+                            <div id="chart-prim-cash-crops" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Production Vivrière (Riz, Igname, Manioc)</div>
+                            <div id="chart-prim-food-crops" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Exportations Agricoles vs Total</div>
+                            <div id="chart-prim-export-share" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Emploi dans le Secteur Agricole</div>
+                            <div id="chart-prim-employment" class="chart-container"></div>
+                        </div>
+                        <!-- New Charts -->
+                        <div class="chart-card">
+                            <div class="chart-title">Production Hévéa & Palmier (Tonnes)</div>
+                            <div id="chart-prim-rubber-palm" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Production Halieutique (Pêche)</div>
+                            <div id="chart-prim-fishery" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Cheptel National (Têtes)</div>
+                            <div id="chart-prim-livestock" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Cours Mondiaux Cacao (USD/T)</div>
+                            <div id="chart-prim-cocoa-price" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Surfaces Cultivées (Hectares)</div>
+                            <div id="chart-prim-land-use" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Revenus Paysans (Estimation Moyenne)</div>
+                            <div id="chart-prim-farmers-income" class="chart-container"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION: SECTEUR SECONDAIRE -->
+                <div id="section-sec-secondary" class="content-section hidden">
+                    <div class="overview-header">
+                        <h1 class="overview-title">Secteur Secondaire (Industrie & Énergie)</h1>
+                    </div>
+                    <!-- Toolbar -->
+                    <div class="section-toolbar">
+                        <div class="filter-group">
+                            <label><i class="far fa-calendar-alt"></i> Année:</label>
+                            <select class="filter-select year-filter">
+                                <option value="2024">2024</option>
+                                <option value="2023">2023</option>
+                                <option value="2022">2022</option>
+                            </select>
+                        </div>
+                        <button class="btn-action btn-export"><i class="fas fa-download"></i> Exporter</button>
+                    </div>
+
+                    <div class="chart-grid-2x2">
+                        <div class="chart-card">
+                            <div class="chart-title">Indice de Production Industrielle</div>
+                            <div id="chart-sec-ipi" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Production Minière (Or en Tonnes)</div>
+                            <div id="chart-sec-mining" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Mix Énergétique & Puissance Installée</div>
+                            <div id="chart-sec-energy" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">BTP & Construction (% Croissance)</div>
+                            <div id="chart-sec-btp" class="chart-container"></div>
+                        </div>
+                        <!-- New Charts -->
+                        <div class="chart-card">
+                            <div class="chart-title">Production Pétrole Brut (Barils/Jour)</div>
+                            <div id="chart-sec-oil" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Production Ciment (Tonnes)</div>
+                            <div id="chart-sec-cement" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Consommation Élec. Industrielle (GWh)</div>
+                            <div id="chart-sec-elec-consumption" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Agro-industrie (Transformation %)</div>
+                            <div id="chart-sec-agro-trans" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Prix Production Industrielle (IPPI)</div>
+                            <div id="chart-sec-ippi" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Emploi Industriel Formel</div>
+                            <div id="chart-sec-ind-jobs" class="chart-container"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION: SECTEUR TERTIAIRE -->
+                <div id="section-sec-tertiary" class="content-section hidden">
+                    <div class="overview-header">
+                        <h1 class="overview-title">Secteur Tertiaire (Services)</h1>
+                    </div>
+                    <!-- Toolbar -->
+                    <div class="section-toolbar">
+                        <div class="filter-group">
+                            <label><i class="far fa-calendar-alt"></i> Année:</label>
+                            <select class="filter-select year-filter">
+                                <option value="2024">2024</option>
+                                <option value="2023">2023</option>
+                                <option value="2022">2022</option>
+                            </select>
+                        </div>
+                        <button class="btn-action btn-export"><i class="fas fa-download"></i> Exporter</button>
+                    </div>
+
+                    <div class="chart-grid-2x2">
+                        <div class="chart-card">
+                            <div class="chart-title">Commerce & Transport (% PIB)</div>
+                            <div id="chart-tert-trade" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Télécoms & Économie Numérique</div>
+                            <div id="chart-tert-telecom" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Tourisme & Hôtellerie</div>
+                            <div id="chart-tert-tourism" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Services Bancaires & Inclusion Financière</div>
+                            <div id="chart-tert-banking" class="chart-container"></div>
+                        </div>
+                        <!-- New Charts -->
+                        <div class="chart-card">
+                            <div class="chart-title">Indice Chiffre d'Affaires Commerce</div>
+                            <div id="chart-tert-retail" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Croissance Secteur TIC (%)</div>
+                            <div id="chart-tert-ict-growth" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Trafic Aérien (Passagers)</div>
+                            <div id="chart-tert-transport-air" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Trafic Portuaire (Tonnes)</div>
+                            <div id="chart-tert-transport-port" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Exportations de Services</div>
+                            <div id="chart-tert-services-export" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Crédit au Secteur Privé</div>
+                            <div id="chart-tert-credit-private" class="chart-container"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- SECTION: EDUCATION -->
+                <div id="section-education" class="content-section hidden">
+                    <div class="overview-header">
+                        <h1 class="overview-title">Éducation & Formation</h1>
+                    </div>
+                    <!-- Toolbar -->
+                    <div class="section-toolbar">
+                        <div class="filter-group">
+                            <label><i class="far fa-calendar-alt"></i> Année:</label>
+                            <select class="filter-select year-filter">
+                                <option value="2024">2024</option>
+                                <option value="2023">2023</option>
+                                <option value="2022">2022</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label><i class="fas fa-school"></i> Niveau:</label>
+                            <select class="filter-select level-filter">
+                                <option value="all">Tous niveaux</option>
+                                <option value="primary">Primaire</option>
+                                <option value="secondary">Secondaire</option>
+                                <option value="superior">Supérieur</option>
+                            </select>
+                        </div>
+                        <button class="btn-action btn-export"><i class="fas fa-download"></i> Exporter</button>
+                    </div>
+
+                    <div class="chart-grid-2x2">
+                        <div class="chart-card">
+                            <div class="chart-title">Taux de Scolarisation (Primaire / Secondaire)</div>
+                            <div id="chart-edu-rates" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Dépenses Publiques en Éducation (% Budget)</div>
+                            <div id="chart-edu-budget" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Taux d'Alphabétisation (15-24 ans)</div>
+                            <div id="chart-edu-literacy" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Répartition Étudiants (Public / Privé)</div>
+                            <div id="chart-edu-distribution" class="chart-container"></div>
+                        </div>
+                        <!-- New Charts -->
+                        <div class="chart-card">
+                            <div class="chart-title">Taux d'Achèvement (Primaire)</div>
+                            <div id="chart-edu-completion" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Indice de Parité (Filles/Garçons)</div>
+                            <div id="chart-edu-gender-parity" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Ratio Élèves / Enseignant</div>
+                            <div id="chart-edu-teachers" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Diplômés Supérieur par Filière</div>
+                            <div id="chart-edu-uni-graduates" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Effectifs Formation Professionnelle</div>
+                            <div id="chart-edu-vocational" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Construction Salles de Classe</div>
+                            <div id="chart-edu-infra" class="chart-container"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION: EMPLOI -->
+                <div id="section-emploi" class="content-section hidden">
+                    <div class="overview-header">
+                        <h1 class="overview-title">Marché du Travail & Emploi</h1>
+                    </div>
+                    <!-- Toolbar -->
+                    <div class="section-toolbar">
+                        <div class="filter-group">
+                            <label><i class="far fa-calendar-alt"></i> Année:</label>
+                            <select class="filter-select year-filter">
+                                <option value="2024">2024</option>
+                                <option value="2023">2023</option>
+                                <option value="2022">2022</option>
+                            </select>
+                        </div>
+                        <button class="btn-action btn-export"><i class="fas fa-download"></i> Exporter</button>
+                    </div>
+
+                    <div class="chart-grid-2x2">
+                        <div class="chart-card">
+                            <div class="chart-title">Taux de Chômage & Sous-emploi</div>
+                            <div id="chart-emp-unemployment" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Emploi par Secteur d'Activité</div>
+                            <div id="chart-emp-sectors" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Emploi Informel vs Formel</div>
+                            <div id="chart-emp-informal" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Indice de Création d'Emplois (Net)</div>
+                            <div id="chart-emp-creation" class="chart-container"></div>
+                        </div>
+                        <!-- New Charts -->
+                        <div class="chart-card">
+                            <div class="chart-title">Taux de Chômage des Jeunes (15-35 ans)</div>
+                            <div id="chart-emp-youth" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Chômage par Genre</div>
+                            <div id="chart-emp-gender" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Évolution Salaire Moyen (Privé)</div>
+                            <div id="chart-emp-wages" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Effectifs Fonction Publique</div>
+                            <div id="chart-emp-public" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Adéquation Formation-Emploi</div>
+                            <div id="chart-emp-skills" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Taux de Sous-emploi Visible</div>
+                            <div id="chart-emp-underemployment" class="chart-container"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION: SANTE -->
+                <div id="section-sante" class="content-section hidden">
+                    <div class="overview-header">
+                        <h1 class="overview-title">Santé & Bien-être Social</h1>
+                    </div>
+                    <!-- Toolbar -->
+                    <div class="section-toolbar">
+                        <div class="filter-group">
+                            <label><i class="far fa-calendar-alt"></i> Année:</label>
+                            <select class="filter-select year-filter">
+                                <option value="2024">2024</option>
+                                <option value="2023">2023</option>
+                                <option value="2022">2022</option>
+                            </select>
+                        </div>
+                        <button class="btn-action btn-export"><i class="fas fa-download"></i> Exporter</button>
+                    </div>
+
+                    <div class="chart-grid-2x2">
+                        <div class="chart-card">
+                            <div class="chart-title">Espérance de Vie à la Naissance</div>
+                            <div id="chart-health-life-exp" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Taux de Mortalité Infantile</div>
+                            <div id="chart-health-infant" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Accès aux Soins (Infrastructures/10k hab)</div>
+                            <div id="chart-health-access" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Couverture Maladie Universelle (CMU)</div>
+                            <div id="chart-health-cmu" class="chart-container"></div>
+                        </div>
+                        <!-- New Charts -->
+                        <div class="chart-card">
+                            <div class="chart-title">Prévalence du VIH/SIDA</div>
+                            <div id="chart-health-hiv" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Incidence du Paludisme</div>
+                            <div id="chart-health-malaria" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Ratio Médecins / Habitants</div>
+                            <div id="chart-health-doctors" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Dépenses de Santé (% Budget)</div>
+                            <div id="chart-health-budget" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Taux de Vaccination (DTP3)</div>
+                            <div id="chart-health-vaccination" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Malnutrition Infantile</div>
+                            <div id="chart-health-malnutrition" class="chart-container"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION: POLITIQUE -->
+                <div id="section-politique" class="content-section hidden">
+                    <div class="overview-header">
+                        <h1 class="overview-title">Politique & Gouvernance</h1>
+                    </div>
+                    <!-- Toolbar -->
+                    <div class="section-toolbar">
+                        <div class="filter-group">
+                            <label><i class="far fa-calendar-alt"></i> Année:</label>
+                            <select class="filter-select year-filter">
+                                <option value="2024">2024</option>
+                                <option value="2023">2023</option>
+                                <option value="2022">2022</option>
+                            </select>
+                        </div>
+                        <button class="btn-action btn-export"><i class="fas fa-download"></i> Exporter</button>
+                    </div>
+
+                    <div class="chart-grid-2x2">
+                        <div class="chart-card">
+                            <div class="chart-title">Indice de Perception de la Corruption (CPI)</div>
+                            <div id="chart-gov-cpi" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Indice Mo Ibrahim (Gouvernance)</div>
+                            <div id="chart-gov-ibrahim" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Doing Business / Climat des Affaires</div>
+                            <div id="chart-gov-business" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Participation Électorale (Dernières Élections)</div>
+                            <div id="chart-gov-votes" class="chart-container"></div>
+                        </div>
+                        <!-- New Charts -->
+                        <div class="chart-card">
+                            <div class="chart-title">Liberté de la Presse (Rang RSF)</div>
+                            <div id="chart-gov-press" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Femmes au Parlement (%)</div>
+                            <div id="chart-gov-women" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Efficacité de l'Administration</div>
+                            <div id="chart-gov-efficiency" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Stabilité Politique (Indice)</div>
+                            <div id="chart-gov-stability" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">État de Droit (Rule of Law)</div>
+                            <div id="chart-gov-law" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Transparence Budgétaire</div>
+                            <div id="chart-gov-transparency" class="chart-container"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- SECTION: SPORT & CULTURE -->
+                <div id="section-culture" class="content-section hidden">
+                    <div class="overview-header">
+                        <h1 class="overview-title">Sport, Culture & Tourisme</h1>
+                    </div>
+                    <!-- Toolbar -->
+                    <div class="section-toolbar">
+                        <div class="filter-group">
+                            <label><i class="far fa-calendar-alt"></i> Année:</label>
+                            <select class="filter-select year-filter">
+                                <option value="2024">2024</option>
+                                <option value="2023">2023</option>
+                                <option value="2022">2022</option>
+                            </select>
+                        </div>
+                        <button class="btn-action btn-export"><i class="fas fa-download"></i> Exporter</button>
+                    </div>
+
+                    <div class="chart-grid-2x2">
+                        <div class="chart-card">
+                            <div class="chart-title">Impact Économique CAN 2023</div>
+                            <div id="chart-cult-can" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Arrivées Touristiques Internationales</div>
+                            <div id="chart-cult-tourism" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Industrie Culturelle & Créative (CA)</div>
+                            <div id="chart-cult-creative" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Infrastructures Sportives</div>
+                            <div id="chart-cult-infra" class="chart-container"></div>
+                        </div>
+                        <!-- New Charts -->
+                        <div class="chart-card">
+                            <div class="chart-title">Fréquentation des Musées & Sites</div>
+                            <div id="chart-cult-museums" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Emplois Directs Tourisme</div>
+                            <div id="chart-cult-tourism-jobs" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Recettes Touristiques (Mds FCFA)</div>
+                            <div id="chart-cult-revenue" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Production Cinéma & Audiovisuel</div>
+                            <div id="chart-cult-cinema" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Festivals & Événements</div>
+                            <div id="chart-cult-events" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Sites Classés UNESCO</div>
+                            <div id="chart-cult-unesco" class="chart-container"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION: TERRITOIRE (Map Focus) -->
+                <div id="section-territory" class="content-section hidden">
+                    <div class="overview-header">
+                        <h1 class="overview-title">Analyse Territoriale & Infrastructures</h1>
+                    </div>
+                    <!-- Toolbar -->
+                    <div class="section-toolbar">
+                        <div class="filter-group">
+                            <label><i class="fas fa-map"></i> Carte:</label>
+                            <select class="filter-select map-filter">
+                                <option value="all">Tous les Projets</option>
+                                <option value="infra">Transport & Infra</option>
+                                <option value="energy">Énergie</option>
+                                <option value="agri">Agro-Industrie</option>
+                            </select>
+                        </div>
+                        <button class="btn-action btn-export"><i class="fas fa-download"></i> Exporter Carte</button>
+                    </div>
+
+                    <!-- Custom Grid for Map -->
+                    <div class="map-grid-layout">
+                        <div class="map-full-container">
+                            <div id="map-territory" style="width:100%; height:100%;"></div>
+                        </div>
+                        <div class="flex-col-gap">
+                            <div class="chart-card chart-card-auto">
+                                <div class="chart-title">Répartition Régionale du PIB</div>
+                                <div id="chart-terr-gdp-reg" class="chart-container"></div>
+                            </div>
+                            <div class="chart-card chart-card-auto">
+                                <div class="chart-title">Taux d'Électrification par District</div>
+                                <div id="chart-terr-elec" class="chart-container"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Additional Territory Charts -->
+                    <div class="chart-grid-2x2">
+                        <div class="chart-card">
+                            <div class="chart-title">Couverture Réseau Routier (km)</div>
+                            <div id="chart-terr-roads" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Accès à l'Eau Potable (Urbain/Rural)</div>
+                            <div id="chart-terr-water" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Densité Médicale par Région</div>
+                            <div id="chart-terr-health-density" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Taux de Bancarisation par Zone</div>
+                            <div id="chart-terr-bank-rate" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Infrastructures Numériques (Fibre)</div>
+                            <div id="chart-terr-digital" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Investissements Publics par District</div>
+                            <div id="chart-terr-invest" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Production Agricole Régionale (Dominante)</div>
+                            <div id="chart-terr-agri-map" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Nombre d'Entreprises par Région</div>
+                            <div id="chart-terr-companies" class="chart-container"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION: INTERNATIONAL -->
+                <div id="section-inter" class="content-section hidden">
+                    <div class="overview-header">
+                        <h1 class="overview-title">Partenariats & Positionnement International</h1>
+                    </div>
+                    <!-- Toolbar -->
+                    <div class="section-toolbar">
+                        <div class="filter-group">
+                            <label><i class="far fa-calendar-alt"></i> Année:</label>
+                            <select class="filter-select year-filter">
+                                <option value="2024">2024</option>
+                                <option value="2023">2023</option>
+                                <option value="2022">2022</option>
+                            </select>
+                        </div>
+                        <button class="btn-action btn-export"><i class="fas fa-download"></i> Exporter</button>
+                    </div>
+
+                    <div class="chart-grid-2x2">
+                        <div class="chart-card">
+                            <div class="chart-title">Balance Commerciale (Mds FCFA)</div>
+                            <div id="chart-int-balance" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Principaux Partenaires (Export)</div>
+                            <div id="chart-int-partners-exp" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Flux IDE Entrants (Invest. Directs Étrangers)</div>
+                            <div id="chart-int-fdi" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Contributions Bailleurs de Fonds</div>
+                            <div id="chart-int-donors" class="chart-container"></div>
+                        </div>
+                        <!-- New Charts -->
+                        <div class="chart-card">
+                            <div class="chart-title">Principaux Produits d'Exportation</div>
+                            <div id="chart-int-products-exp" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Principaux Produits d'Importation</div>
+                            <div id="chart-int-products-imp" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Dette Extérieure par Créancier</div>
+                            <div id="chart-int-debt-creditors" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Transferts de la Diaspora (Mds FCFA)</div>
+                            <div id="chart-int-remittances" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Classement Passeport (Mobilité)</div>
+                            <div id="chart-int-passport" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">Part de Marché Régionale (UEMOA)</div>
+                            <div id="chart-int-uemoa-share" class="chart-container"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION: EXPLORER LES DONNÉES -->
+                <div id="section-explorer" class="content-section hidden">
+                    
+                    <!-- Vue 1: Grille des thématiques -->
+                    <div id="explorer-themes-view">
+                        <div class="explorer-header">
+                            <div class="explorer-title-section">
+                                <h1 class="overview-title"><i class="fas fa-database"></i> Explorer les Données</h1>
+                                <p class="overview-subtitle">Accédez à l'ensemble des indicateurs par thématique ou via la recherche globale</p>
+                            </div>
+                        </div>
+
+                        <!-- Barre de recherche globale -->
+                        <div class="explorer-search-bar">
+                            <div class="search-input-wrapper">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="explorer-global-search" placeholder="Rechercher un indicateur dans toute la base de données...">
+                                <span class="search-shortcut">Ctrl+K</span>
+                            </div>
+                            <div class="search-stats">
+                                <span id="explorer-total-indicators">0</span> indicateurs disponibles
+                            </div>
+                        </div>
+
+                        <!-- Résultats de recherche globale -->
+                        <div id="explorer-search-results" class="explorer-search-results hidden">
+                            <div class="search-results-header">
+                                <span id="search-results-count">0 résultats</span>
+                                <button class="btn-close-search" onclick="ExplorerModule.clearSearch()">
+                                    <i class="fas fa-times"></i> Fermer
+                                </button>
+                            </div>
+                            <div id="search-results-list" class="search-results-list"></div>
+                        </div>
+
+                        <!-- Grille des thématiques -->
+                        <h3 class="explorer-section-title">Parcourir par Thématique</h3>
+                        <div class="explorer-themes-grid">
+                            <!-- Macro-économie -->
+                            <div class="theme-card" data-theme="macro" onclick="ExplorerModule.showTheme('macro')">
+                                <div class="theme-icon" style="background: linear-gradient(135deg, #FF8200 0%, #FF6B00 100%);">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                                <div class="theme-content">
+                                    <h4>Macro-économie</h4>
+                                    <p>PIB, croissance, inflation, investissements</p>
+                                </div>
+                                <div class="theme-count"><span data-theme-count="macro">0</span> indicateurs</div>
+                                <i class="fas fa-chevron-right theme-arrow"></i>
+                            </div>
+
+                            <!-- Finances Publiques -->
+                            <div class="theme-card" data-theme="finance" onclick="ExplorerModule.showTheme('finance')">
+                                <div class="theme-icon" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%);">
+                                    <i class="fas fa-coins"></i>
+                                </div>
+                                <div class="theme-content">
+                                    <h4>Finances Publiques</h4>
+                                    <p>Budget, recettes, dépenses, dette</p>
+                                </div>
+                                <div class="theme-count"><span data-theme-count="finance">0</span> indicateurs</div>
+                                <i class="fas fa-chevron-right theme-arrow"></i>
+                            </div>
+
+                            <!-- Démographie -->
+                            <div class="theme-card" data-theme="demo" onclick="ExplorerModule.showTheme('demo')">
+                                <div class="theme-icon" style="background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div class="theme-content">
+                                    <h4>Démographie</h4>
+                                    <p>Population, urbanisation, migrations</p>
+                                </div>
+                                <div class="theme-count"><span data-theme-count="demo">0</span> indicateurs</div>
+                                <i class="fas fa-chevron-right theme-arrow"></i>
+                            </div>
+
+                            <!-- Secteur Primaire -->
+                            <div class="theme-card" data-theme="primary" onclick="ExplorerModule.showTheme('primary')">
+                                <div class="theme-icon" style="background: linear-gradient(135deg, #22C55E 0%, #16A34A 100%);">
+                                    <i class="fas fa-leaf"></i>
+                                </div>
+                                <div class="theme-content">
+                                    <h4>Secteur Primaire</h4>
+                                    <p>Agriculture, cacao, mines, pêche</p>
+                                </div>
+                                <div class="theme-count"><span data-theme-count="primary">0</span> indicateurs</div>
+                                <i class="fas fa-chevron-right theme-arrow"></i>
+                            </div>
+
+                            <!-- Secteur Secondaire -->
+                            <div class="theme-card" data-theme="secondary" onclick="ExplorerModule.showTheme('secondary')">
+                                <div class="theme-icon" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);">
+                                    <i class="fas fa-industry"></i>
+                                </div>
+                                <div class="theme-content">
+                                    <h4>Secteur Secondaire</h4>
+                                    <p>Industrie, énergie, BTP, mines</p>
+                                </div>
+                                <div class="theme-count"><span data-theme-count="secondary">0</span> indicateurs</div>
+                                <i class="fas fa-chevron-right theme-arrow"></i>
+                            </div>
+
+                            <!-- Secteur Tertiaire -->
+                            <div class="theme-card" data-theme="tertiary" onclick="ExplorerModule.showTheme('tertiary')">
+                                <div class="theme-icon" style="background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);">
+                                    <i class="fas fa-store"></i>
+                                </div>
+                                <div class="theme-content">
+                                    <h4>Secteur Tertiaire</h4>
+                                    <p>Services, commerce, tourisme, TIC</p>
+                                </div>
+                                <div class="theme-count"><span data-theme-count="tertiary">0</span> indicateurs</div>
+                                <i class="fas fa-chevron-right theme-arrow"></i>
+                            </div>
+
+                            <!-- Éducation -->
+                            <div class="theme-card" data-theme="education" onclick="ExplorerModule.showTheme('education')">
+                                <div class="theme-icon" style="background: linear-gradient(135deg, #06B6D4 0%, #0891B2 100%);">
+                                    <i class="fas fa-graduation-cap"></i>
+                                </div>
+                                <div class="theme-content">
+                                    <h4>Éducation</h4>
+                                    <p>Scolarisation, alphabétisation, formation</p>
+                                </div>
+                                <div class="theme-count"><span data-theme-count="education">0</span> indicateurs</div>
+                                <i class="fas fa-chevron-right theme-arrow"></i>
+                            </div>
+
+                            <!-- Emploi -->
+                            <div class="theme-card" data-theme="emploi" onclick="ExplorerModule.showTheme('emploi')">
+                                <div class="theme-icon" style="background: linear-gradient(135deg, #EC4899 0%, #DB2777 100%);">
+                                    <i class="fas fa-briefcase"></i>
+                                </div>
+                                <div class="theme-content">
+                                    <h4>Emploi</h4>
+                                    <p>Chômage, salaires, marché du travail</p>
+                                </div>
+                                <div class="theme-count"><span data-theme-count="emploi">0</span> indicateurs</div>
+                                <i class="fas fa-chevron-right theme-arrow"></i>
+                            </div>
+
+                            <!-- Santé -->
+                            <div class="theme-card" data-theme="sante" onclick="ExplorerModule.showTheme('sante')">
+                                <div class="theme-icon" style="background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);">
+                                    <i class="fas fa-heartbeat"></i>
+                                </div>
+                                <div class="theme-content">
+                                    <h4>Santé</h4>
+                                    <p>Espérance de vie, mortalité, soins</p>
+                                </div>
+                                <div class="theme-count"><span data-theme-count="sante">0</span> indicateurs</div>
+                                <i class="fas fa-chevron-right theme-arrow"></i>
+                            </div>
+
+                            <!-- Gouvernance -->
+                            <div class="theme-card" data-theme="politique" onclick="ExplorerModule.showTheme('politique')">
+                                <div class="theme-icon" style="background: linear-gradient(135deg, #64748B 0%, #475569 100%);">
+                                    <i class="fas fa-landmark"></i>
+                                </div>
+                                <div class="theme-content">
+                                    <h4>Politique & Gouvernance</h4>
+                                    <p>Indices de gouvernance, corruption</p>
+                                </div>
+                                <div class="theme-count"><span data-theme-count="politique">0</span> indicateurs</div>
+                                <i class="fas fa-chevron-right theme-arrow"></i>
+                            </div>
+
+                            <!-- Culture & Sport -->
+                            <div class="theme-card" data-theme="culture" onclick="ExplorerModule.showTheme('culture')">
+                                <div class="theme-icon" style="background: linear-gradient(135deg, #A855F7 0%, #9333EA 100%);">
+                                    <i class="fas fa-futbol"></i>
+                                </div>
+                                <div class="theme-content">
+                                    <h4>Sport & Culture</h4>
+                                    <p>Tourisme, événements, patrimoine</p>
+                                </div>
+                                <div class="theme-count"><span data-theme-count="culture">0</span> indicateurs</div>
+                                <i class="fas fa-chevron-right theme-arrow"></i>
+                            </div>
+
+                            <!-- Territoire -->
+                            <div class="theme-card" data-theme="territory" onclick="ExplorerModule.showTheme('territory')">
+                                <div class="theme-icon" style="background: linear-gradient(135deg, #14B8A6 0%, #0D9488 100%);">
+                                    <i class="fas fa-map-marked-alt"></i>
+                                </div>
+                                <div class="theme-content">
+                                    <h4>Territoire & Environnement</h4>
+                                    <p>Infrastructures, régions, climat</p>
+                                </div>
+                                <div class="theme-count"><span data-theme-count="territory">0</span> indicateurs</div>
+                                <i class="fas fa-chevron-right theme-arrow"></i>
+                            </div>
+
+                            <!-- International -->
+                            <div class="theme-card" data-theme="inter" onclick="ExplorerModule.showTheme('inter')">
+                                <div class="theme-icon" style="background: linear-gradient(135deg, #F97316 0%, #EA580C 100%);">
+                                    <i class="fas fa-globe-africa"></i>
+                                </div>
+                                <div class="theme-content">
+                                    <h4>International</h4>
+                                    <p>Commerce extérieur, IDE, partenariats</p>
+                                </div>
+                                <div class="theme-count"><span data-theme-count="inter">0</span> indicateurs</div>
+                                <i class="fas fa-chevron-right theme-arrow"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vue 2: Liste des indicateurs d'une thématique -->
+                    <div id="explorer-indicators-view" class="hidden">
+                        <div class="explorer-back-nav">
+                            <button class="btn-back" onclick="ExplorerModule.backToThemes()">
+                                <i class="fas fa-arrow-left"></i> Retour aux thématiques
+                            </button>
+                        </div>
+
+                        <div class="explorer-theme-header" id="explorer-theme-header">
+                            <div class="theme-icon-large" id="theme-icon-large">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="theme-header-text">
+                                <h1 id="theme-title">Macro-économie</h1>
+                                <p id="theme-description">Analyse des indicateurs macro-économiques</p>
+                            </div>
+                        </div>
+
+                        <!-- Barre de recherche et tri -->
+                        <div class="indicators-toolbar">
+                            <div class="search-filter-wrapper">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="indicators-search" placeholder="Rechercher un indicateur...">
+                            </div>
+                            <div class="sort-wrapper">
+                                <label>Trier:</label>
+                                <select id="indicators-sort">
+                                    <option value="name-asc">Nom (A-Z)</option>
+                                    <option value="name-desc">Nom (Z-A)</option>
+                                    <option value="code">Code</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Liste des indicateurs -->
+                        <div id="indicators-list" class="indicators-list">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Vue 3: Détail d'un indicateur -->
+                    <div id="explorer-detail-view" class="hidden">
+                        <div class="explorer-back-nav">
+                            <button class="btn-back" onclick="ExplorerModule.backToIndicators()">
+                                <i class="fas fa-arrow-left"></i> Retour à la liste
+                            </button>
+                        </div>
+
+                        <div class="indicator-detail-header">
+                            <div class="indicator-title-section">
+                                <h1 id="detail-indicator-name">Nom de l'indicateur</h1>
+                                <span class="indicator-code" id="detail-indicator-code">CODE.XXX</span>
+                            </div>
+                            <div class="indicator-actions">
+                                <button class="btn-action btn-export" onclick="ExplorerModule.downloadIndicatorCSV()">
+                                    <i class="fas fa-download"></i> Télécharger CSV
+                                </button>
+                                <button class="btn-action" onclick="ExplorerModule.downloadIndicatorExcel()">
+                                    <i class="fas fa-file-excel"></i> Excel
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Métadonnées -->
+                        <div class="indicator-metadata-card" id="indicator-metadata">
+                            <h3><i class="fas fa-info-circle"></i> Métadonnées</h3>
+                            <div class="metadata-grid">
+                                <div class="metadata-item">
+                                    <span class="metadata-label">Unité de mesure</span>
+                                    <span class="metadata-value" id="meta-unit">-</span>
+                                </div>
+                                <div class="metadata-item">
+                                    <span class="metadata-label">Source</span>
+                                    <span class="metadata-value" id="meta-source">-</span>
+                                </div>
+                                <div class="metadata-item full-width">
+                                    <span class="metadata-label">Définition</span>
+                                    <span class="metadata-value" id="meta-definition">-</span>
+                                </div>
+                                <div class="metadata-item">
+                                    <span class="metadata-label">Lien source</span>
+                                    <a href="#" class="metadata-link" id="meta-link" target="_blank">Accéder à la source <i class="fas fa-external-link-alt"></i></a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Graphique -->
+                        <div class="indicator-chart-card">
+                            <div class="chart-header">
+                                <h3><i class="fas fa-chart-area"></i> Évolution temporelle</h3>
+                                <div class="chart-type-toggle">
+                                    <button class="chart-type-btn active" data-type="line" onclick="ExplorerModule.setChartType('line')">
+                                        <i class="fas fa-chart-line"></i> Courbe
+                                    </button>
+                                    <button class="chart-type-btn" data-type="bar" onclick="ExplorerModule.setChartType('bar')">
+                                        <i class="fas fa-chart-bar"></i> Barres
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="explorer-detail-chart" class="explorer-chart-container"></div>
+                        </div>
+
+                        <!-- Tableau des données -->
+                        <div class="indicator-table-card">
+                            <div class="table-header">
+                                <h3><i class="fas fa-table"></i> Données tabulaires</h3>
+                                <span class="table-info" id="table-years-range">-</span>
+                            </div>
+                            <div class="table-wrapper">
+                                <table id="indicator-data-table" class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Année</th>
+                                            <th>Valeur</th>
+                                            <th>Variation</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="indicator-table-body">
+                                        <!-- Populated by JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FOOTER -->
+                <footer class="dash-footer">
+                    <div>
+                        &copy; 2026 Observatoire National - République de Côte d'Ivoire. Tous droits réservés.
+                    </div>
+                    <div style="display:flex; gap:1.5rem;">
+                        <a href="#">Mentions Légales</a>
+                        <a href="#">Confidentialité</a>
+                        <a href="#">Support</a>
+                    </div>
+                </footer>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="{% static 'js/dashboard-v3.js' %}?v=2.0"></script>
+</body>
+</html>

@@ -1,0 +1,282 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Configurer ma clé API - Ask For Data{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 800px; margin: 0 auto;">
+    <div class="text-center mb-4">
+        <a href="{% url 'home' %}">
+            <img src="{% static 'img/logo.png' %}" alt="Ask For Data" style="height: 150px; width: auto; margin-bottom: 1rem;">
+        </a>
+        <h1><i class="fas fa-key text-primary"></i> Ma clé API Gemini</h1>
+        <p class="subtitle">Configurez votre propre clé pour des requêtes illimitées</p>
+    </div>
+
+    <!-- Active Key Display -->
+    <div class="card mb-4" style="border-left: 4px solid {% if has_own_key %}var(--accent-green){% else %}var(--primary){% endif %};">
+        <h3 style="margin-bottom: 1rem;">
+            <i class="fas fa-shield-alt"></i> Clé API active
+        </h3>
+        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 250px;">
+                {% if has_own_key %}
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <span style="display: inline-block; width: 10px; height: 10px; background: var(--accent-green); border-radius: 50%;"></span>
+                    <strong style="color: var(--accent-green);">Clé personnelle active</strong>
+                </div>
+                <code style="background: rgba(46,204,113,0.1); padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.95rem; display: inline-block; border: 1px solid rgba(46,204,113,0.3);">
+                    {{ masked_key }}
+                </code>
+                <p class="text-muted" style="font-size: 0.85rem; margin-top: 0.5rem;">Requêtes illimitées avec votre propre quota Google.</p>
+                {% else %}
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <span style="display: inline-block; width: 10px; height: 10px; background: var(--primary); border-radius: 50%;"></span>
+                    <strong style="color: var(--primary);">Clé partagée du serveur</strong>
+                </div>
+                <code style="background: rgba(52,152,219,0.1); padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.95rem; display: inline-block; border: 1px solid rgba(52,152,219,0.3);">
+                    {{ server_key_masked }}
+                </code>
+                <p class="text-muted" style="font-size: 0.85rem; margin-top: 0.5rem;">Limitée à 5 requêtes/jour. Ajoutez votre clé pour passer en illimité.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if has_own_key %}
+    <!-- Key Management -->
+    <div class="card mb-4">
+        <h3><i class="fas fa-cog"></i> Gestion de la clé</h3>
+        <p>Votre clé API est chiffrée (AES-256) en base de données.</p>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <button class="btn btn-primary" onclick="document.getElementById('setup-section').style.display='block'">
+                <i class="fas fa-sync-alt"></i> Remplacer la clé
+            </button>
+            <button class="btn btn-outline" onclick="deleteApiKey()" style="color: #e74c3c; border-color: #e74c3c;">
+                <i class="fas fa-trash-alt"></i> Supprimer la clé
+            </button>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Setup Guide -->
+    <div id="setup-section" class="card mb-4" {% if has_own_key %}style="display:none;"{% endif %}>
+        <h3><i class="fas fa-magic"></i> Obtenir votre clé en 5 étapes</h3>
+        <p class="text-muted" style="font-size: 0.9rem;">Suivez attentivement chaque étape. C'est gratuit et prend environ 2 minutes.</p>
+
+        <div style="margin-top: 1.5rem;">
+            <!-- Step 1 -->
+            <div style="display: flex; gap: 1rem; margin-bottom: 2rem; align-items: flex-start;">
+                <div style="min-width: 40px; height: 40px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem;">1</div>
+                <div style="flex: 1;">
+                    <h4 style="margin-bottom: 0.3rem;">Ouvrir Google AI Studio</h4>
+                    <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 0.5rem;">
+                        Cliquez le bouton ci-dessous. Connectez-vous avec <strong>votre compte Gmail</strong>.
+                    </p>
+                    <a href="https://aistudio.google.com/apikey" target="_blank" class="btn btn-primary" style="display: inline-flex;">
+                        <i class="fas fa-external-link-alt"></i> Ouvrir Google AI Studio
+                    </a>
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div style="display: flex; gap: 1rem; margin-bottom: 2rem; align-items: flex-start;">
+                <div style="min-width: 40px; height: 40px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem;">2</div>
+                <div style="flex: 1;">
+                    <h4 style="margin-bottom: 0.3rem;">Accepter les conditions d'utilisation</h4>
+                    <p class="text-muted" style="font-size: 0.9rem;">
+                        Si c'est votre première visite, Google vous demandera d'<strong>accepter les conditions d'utilisation de l'API Gemini</strong>. Cochez la case et validez. Si cette étape ne s'affiche pas, c'est que vous avez déjà accepté.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div style="display: flex; gap: 1rem; margin-bottom: 2rem; align-items: flex-start;">
+                <div style="min-width: 40px; height: 40px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem;">3</div>
+                <div style="flex: 1;">
+                    <h4 style="margin-bottom: 0.3rem;">Créer une clé API</h4>
+                    <p class="text-muted" style="font-size: 0.9rem;">
+                        Sur la page des clés API, cliquez sur <strong>"Create API Key"</strong> (bouton bleu).
+                        Puis choisissez <strong>"Create API key in new project"</strong>.
+                        Google va créer un projet et générer une clé pour vous. <strong>Copiez la clé affichée</strong>.
+                    </p>
+                    <div style="background: rgba(255,140,0,0.1); border: 1px solid rgba(255,140,0,0.3); padding: 0.6rem 0.8rem; border-radius: 6px; margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-dark);">
+                        <i class="fas fa-exclamation-triangle" style="color: #FF8C00;"></i>
+                        <strong>Important :</strong> La clé ressemble à <code>AIzaSy...</code> (39 caractères). Copiez-la intégralement.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4 -->
+            <div style="display: flex; gap: 1rem; margin-bottom: 2rem; align-items: flex-start;">
+                <div style="min-width: 40px; height: 40px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem;">4</div>
+                <div style="flex: 1;">
+                    <h4 style="margin-bottom: 0.3rem;">Vérifier que l'API Generative Language est activée</h4>
+                    <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 0.5rem;">
+                        Normalement, Google active automatiquement l'API en créant la clé. Si ça ne fonctionne pas, allez dans la console Google Cloud et activez <strong>"Generative Language API"</strong> manuellement :
+                    </p>
+                    <a href="https://console.cloud.google.com/apis/library/generativelanguage.googleapis.com" target="_blank" style="color: var(--primary); font-weight: 600; text-decoration: none; font-size: 0.9rem;">
+                        <i class="fas fa-external-link-alt"></i> Activer Generative Language API
+                    </a>
+                </div>
+            </div>
+
+            <!-- Step 5 -->
+            <div style="display: flex; gap: 1rem; margin-bottom: 1rem; align-items: flex-start;">
+                <div style="min-width: 40px; height: 40px; background: var(--accent-green); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem;">5</div>
+                <div style="flex: 1;">
+                    <h4 style="margin-bottom: 0.3rem;">Collez votre clé ci-dessous</h4>
+                    <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 0.75rem;">
+                        Nous allons <strong>tester la clé</strong> avant de la sauvegarder. Si elle fonctionne, elle sera chiffrée et stockée de manière sécurisée.
+                    </p>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" id="api-key-input" placeholder="AIzaSy..."
+                            style="flex: 1; padding: 0.75rem 1rem; border: 2px solid var(--border-light); border-radius: 8px; font-family: monospace; font-size: 0.95rem; background: var(--bg-surface); color: var(--text-dark);">
+                        <button class="btn btn-primary" onclick="saveApiKey()" id="save-btn">
+                            <i class="fas fa-save"></i> Tester et enregistrer
+                        </button>
+                    </div>
+                    <div id="key-message" style="margin-top: 0.5rem; font-size: 0.9rem; display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FAQ -->
+    <div class="card mb-4">
+        <h3><i class="fas fa-question-circle"></i> Questions fréquentes</h3>
+        <div style="margin-top: 1rem;">
+            <details style="margin-bottom: 1rem;">
+                <summary style="cursor: pointer; font-weight: 600; color: var(--text-dark);">
+                    C'est vraiment gratuit ?
+                </summary>
+                <p class="text-muted" style="margin-top: 0.5rem; font-size: 0.9rem;">
+                    Oui ! Google offre un quota gratuit généreux : <strong>1 500 requêtes/jour</strong> et <strong>1 million de tokens/minute</strong> avec le modèle Gemini 2.5 Flash. Largement suffisant pour un usage personnel. Aucune carte bancaire n'est requise.
+                </p>
+            </details>
+            <details style="margin-bottom: 1rem;">
+                <summary style="cursor: pointer; font-weight: 600; color: var(--text-dark);">
+                    Ma clé est-elle en sécurité ?
+                </summary>
+                <p class="text-muted" style="margin-top: 0.5rem; font-size: 0.9rem;">
+                    Votre clé est <strong>chiffrée avec AES-256 (Fernet)</strong> avant d'être stockée en base de données. Seul le serveur peut la déchiffrer pour appeler l'API Gemini. Elle n'est jamais affichée en clair.
+                </p>
+            </details>
+            <details style="margin-bottom: 1rem;">
+                <summary style="cursor: pointer; font-weight: 600; color: var(--text-dark);">
+                    Comment savoir si ma clé est bien utilisée ?
+                </summary>
+                <p class="text-muted" style="margin-top: 0.5rem; font-size: 0.9rem;">
+                    Le panneau <strong>"Clé API active"</strong> en haut de cette page affiche quelle clé est utilisée (masquée). Si votre clé personnelle est active, vous verrez son début <code>AIzaSy...</code> et sa fin. Sinon, c'est la clé partagée du serveur.
+                </p>
+            </details>
+            <details style="margin-bottom: 1rem;">
+                <summary style="cursor: pointer; font-weight: 600; color: var(--text-dark);">
+                    Je peux supprimer ma clé ?
+                </summary>
+                <p class="text-muted" style="margin-top: 0.5rem; font-size: 0.9rem;">
+                    Oui, à tout moment depuis cette page. Vous pouvez aussi révoquer la clé directement depuis <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>.
+                </p>
+            </details>
+            <details>
+                <summary style="cursor: pointer; font-weight: 600; color: var(--text-dark);">
+                    Que se passe-t-il sans clé personnelle ?
+                </summary>
+                <p class="text-muted" style="margin-top: 0.5rem; font-size: 0.9rem;">
+                    Vous avez droit à <strong>5 requêtes gratuites par jour</strong> en utilisant le quota partagé du serveur. Au-delà, il faudra ajouter votre clé.
+                </p>
+            </details>
+        </div>
+    </div>
+
+    <div class="text-center mb-4">
+        <a href="{% url 'chat_page' %}" class="btn btn-primary">
+            <i class="fas fa-comments"></i> Retour au Chat
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function showMessage(text, isError) {
+    const el = document.getElementById('key-message');
+    el.style.display = 'block';
+    el.style.color = isError ? '#e74c3c' : 'var(--accent-green)';
+    el.innerHTML = (isError ? '<i class="fas fa-exclamation-circle"></i> ' : '<i class="fas fa-check-circle"></i> ') + text;
+}
+
+async function saveApiKey() {
+    const input = document.getElementById('api-key-input');
+    const btn = document.getElementById('save-btn');
+    const key = input.value.trim();
+
+    if (!key || !key.startsWith('AIza')) {
+        showMessage('La clé doit commencer par "AIza..."', true);
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Test en cours...';
+
+    try {
+        const resp = await fetch('/api/save-api-key', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify({ api_key: key }),
+        });
+        const data = await resp.json();
+
+        if (data.success) {
+            showMessage(data.message + ' Rechargement...', false);
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showMessage(data.message, true);
+        }
+    } catch (e) {
+        showMessage('Erreur de connexion: ' + e.message, true);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> Tester et enregistrer';
+    }
+}
+
+async function deleteApiKey() {
+    if (!confirm('Supprimer votre clé API ? Vous repasserez au quota partagé (5 requêtes/jour).')) return;
+
+    try {
+        const resp = await fetch('/api/delete-api-key', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+        });
+        const data = await resp.json();
+        if (data.success) {
+            location.reload();
+        }
+    } catch (e) {
+        alert('Erreur: ' + e.message);
+    }
+}
+</script>
+{% endblock %}

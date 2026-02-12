@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Discuter avec les données - Ask For Data{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header -->
+    <div class="text-center mb-4">
+        <h1><i class="fas fa-comments text-primary"></i> Discuter avec les données</h1>
+        <p class="subtitle" style="margin-bottom: 0;">
+            Conversez avec notre intelligence artificielle spécialisée en données ivoiriennes
+        </p>
+    </div>
+
+    <!-- Quota Banner -->
+    <div id="quota-banner" style="padding: 0.6rem 1rem; border-radius: 8px; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; font-size: 0.9rem;
+        {% if has_own_key %}background: rgba(46,204,113,0.1); border: 1px solid rgba(46,204,113,0.3);{% else %}background: rgba(52,152,219,0.1); border: 1px solid rgba(52,152,219,0.3);{% endif %}">
+        <span>
+            {% if has_own_key %}
+            <i class="fas fa-infinity" style="color: var(--accent-green);"></i> <strong>Requêtes illimitées</strong> — Clé API personnelle active
+            {% else %}
+            <i class="fas fa-bolt" style="color: var(--primary);"></i> <strong id="remaining-count">{{ queries_today }}/5</strong> requêtes gratuites utilisées aujourd'hui
+            {% endif %}
+        </span>
+        {% if not has_own_key %}
+        <a href="{% url 'setup_api_key' %}" style="color: var(--primary); font-weight: 600; text-decoration: none;">
+            <i class="fas fa-key"></i> Passer en illimité
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Main Chat Container -->
+    <div class="card mb-4">
+        <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+            <!-- Chat Section -->
+            <div style="flex: 1; min-width: 300px;">
+                <div class="chat-container">
+                    <!-- Chat Messages -->
+                    <div class="chat-messages" id="chat-messages">
+                        <!-- Welcome Message -->
+                        <div class="message ai">
+                            <div class="message-avatar"><i class="fas fa-robot"></i></div>
+                            <div class="message-bubble">
+                                <strong>IA DataCôte - Assistant Intelligent</strong><br><br>
+                                Alimenté par GPT-4 & Machine Learning<br><br>
+                                Je peux vous aider avec des analyses prédictives, des insights économiques, des
+                                corrélations démographiques et bien plus !<br><br>
+                                <i class="fas fa-comment-dots"></i> <em>Posez-moi vos questions les plus complexes !</em> <i class="fas fa-rocket"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Typing Indicator -->
+                    <div id="typing-indicator" class="message ai" style="display: none;">
+                        <div class="message-avatar"><i class="fas fa-robot"></i></div>
+                        <div class="message-bubble">
+                            <div class="spinner" style="width: 20px; height: 20px; border-width: 2px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Input -->
+                    <div class="chat-input-area">
+                        <form id="chat-form">
+                            <div class="input-group">
+                                <textarea id="chat-input" placeholder="Posez votre question ou demandez une analyse..."
+                                    rows="2" style="resize: none; min-height: 60px;"></textarea>
+                                <button type="submit" class="btn btn-primary">
+                                    Envoyer <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div style="width: 300px; flex-shrink: 0; min-width: 250px;">
+                <!-- Suggested Questions -->
+                <div class="mb-4">
+                    <h4 class="mb-2" style="color: var(--primary);"><i class="fas fa-lightbulb"></i> Questions suggérées</h4>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <button class="btn-example"
+                            onclick="setSuggestion('Quelle est la tendance de l\'inflation sur les 5 dernières années ?')">
+                            Tendance inflation 5 ans
+                        </button>
+                        <button class="btn-example" onclick="setSuggestion('Compare le PIB de 2020 et 2023')">
+                            Comparer PIB 2020 vs 2023
+                        </button>
+                        <button class="btn-example"
+                            onclick="setSuggestion('Quels sont les indicateurs de santé disponibles ?')">
+                            Indicateurs santé
+                        </button>
+                        <button class="btn-example"
+                            onclick="setSuggestion('Explique l\'évolution de l\'accès à l\'électricité')">
+                            Évolution électricité
+                        </button>
+                        <button class="btn-example"
+                            onclick="setSuggestion('Donne-moi un résumé de la situation économique en 2023')">
+                            Résumé économique 2023
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Conversation Actions -->
+                <div class="mb-4">
+                    <h4 class="mb-2" style="color: var(--primary);"><i class="fas fa-cogs"></i> Actions</h4>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <button class="btn btn-outline" style="justify-content: flex-start;" onclick="clearChat()">
+                            <i class="fas fa-trash-alt"></i> Effacer la conversation
+                        </button>
+                        <button class="btn btn-outline" style="justify-content: flex-start;" onclick="exportChat()">
+                            <i class="fas fa-file-download"></i> Exporter l'historique
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div style="padding: 1rem; background: var(--bg-surface-alt); border-radius: 8px; border: 1px solid var(--border-light);">
+                    <h4 style="font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--primary);"><i class="fas fa-chart-pie"></i> Statistiques
+                    </h4>
+                    <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 0.3rem;">
+                        Messages: <span id="message-count">1</span>
+                    </p>
+                    <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 0;">
+                        Session: Active <i class="fas fa-check-circle text-success"></i>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="grid grid-3 mt-4">
+        <div class="card text-center">
+            <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--primary);"><i class="fas fa-comments"></i></div>
+            <h4>Conversation Continue</h4>
+            <p class="text-muted" style="font-size: 0.9rem;">
+                L'IA garde le contexte de vos questions précédentes
+            </p>
+        </div>
+
+        <div class="card text-center">
+            <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--secondary);"><i class="fas fa-chart-line"></i></div>
+            <h4>Analyses Approfondies</h4>
+            <p class="text-muted" style="font-size: 0.9rem;">
+                Demandez des interprétations et des tendances
+            </p>
+        </div>
+
+        <div class="card text-center">
+            <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--accent-purple);"><i class="fas fa-bullseye"></i></div>
+            <h4>Recommandations</h4>
+            <p class="text-muted" style="font-size: 0.9rem;">
+                L'IA suggère d'autres indicateurs pertinents
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/chat.js' %}?v=1.1"></script>
+{% endblock %}

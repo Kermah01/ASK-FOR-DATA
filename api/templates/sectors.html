@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Explorateur de Secteurs - Ask For Data{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="text-center mb-4">
+        <h1><i class="fas fa-layer-group text-primary"></i> Explorateur de Secteurs</h1>
+        <p class="subtitle">
+            Accédez aux indicateurs par thématique majeure de développement
+        </p>
+    </div>
+
+    <div class="grid grid-3">
+        <!-- Économie & Finance -->
+        <a href="{% url 'sector_detail_page' 'economie-finance' %}" class="sector-card">
+            <i class="fas fa-coins sector-icon" style="color: #f59e0b;"></i>
+            <h3 class="sector-title">Économie & Finance</h3>
+            <p class="text-muted">PIB, inflation, dette, marchés financiers</p>
+            <span class="sector-badge">Macro-économie</span>
+        </a>
+
+        <!-- Intelligence Sociale -->
+        <a href="{% url 'sector_detail_page' 'intelligence-sociale' %}" class="sector-card">
+            <i class="fas fa-user-friends sector-icon" style="color: #ec4899;"></i>
+            <h3 class="sector-title">Intelligence Sociale</h3>
+            <p class="text-muted">Démographie, éducation, santé, emploi</p>
+            <span class="sector-badge">Population</span>
+        </a>
+
+        <!-- Territoires Connectés -->
+        <a href="{% url 'sector_detail_page' 'territoires-connectes' %}" class="sector-card">
+            <i class="fas fa-map-marked-alt sector-icon" style="color: #3b82f6;"></i>
+            <h3 class="sector-title">Territoires Connectés</h3>
+            <p class="text-muted">Urbanisation, régions, smart cities</p>
+            <span class="sector-badge">Géographie</span>
+        </a>
+
+        <!-- AgriTech -->
+        <a href="{% url 'sector_detail_page' 'agritech' %}" class="sector-card">
+            <i class="fas fa-seedling sector-icon" style="color: #16a34a;"></i>
+            <h3 class="sector-title">AgriTech</h3>
+            <p class="text-muted">Agriculture, cacao, café, élevage</p>
+            <span class="sector-badge">Ressources</span>
+        </a>
+
+        <!-- Énergie & Environnement -->
+        <a href="{% url 'sector_detail_page' 'energie-environnement' %}" class="sector-card">
+            <i class="fas fa-bolt sector-icon" style="color: #eab308;"></i>
+            <h3 class="sector-title">Énergie & Climat</h3>
+            <p class="text-muted">Électricité, renouvelables, émissions CO2</p>
+            <span class="sector-badge">Durable</span>
+        </a>
+
+        <!-- Infrastructure -->
+        <a href="{% url 'sector_detail_page' 'infrastructure' %}" class="sector-card">
+            <i class="fas fa-city sector-icon" style="color: #6366f1;"></i>
+            <h3 class="sector-title">Infrastructure</h3>
+            <p class="text-muted">Transport, construction, routes</p>
+            <span class="sector-badge">Développement</span>
+        </a>
+
+        <!-- Économie Numérique -->
+        <a href="{% url 'sector_detail_page' 'economie-numerique' %}" class="sector-card">
+            <i class="fas fa-laptop-code sector-icon" style="color: #8b5cf6;"></i>
+            <h3 class="sector-title">Économie Numérique</h3>
+            <p class="text-muted">Tech, internet, startups, innovation</p>
+            <span class="sector-badge">Innovation</span>
+        </a>
+
+        <!-- Gouvernance -->
+        <a href="{% url 'sector_detail_page' 'gouvernance' %}" class="sector-card">
+            <i class="fas fa-university sector-icon" style="color: #94a3b8;"></i>
+            <h3 class="sector-title">Gouvernance</h3>
+            <p class="text-muted">Institutions, services publics, budget</p>
+            <span class="sector-badge">État</span>
+        </a>
+
+        <!-- Commerce -->
+        <a href="{% url 'sector_detail_page' 'commerce' %}" class="sector-card">
+            <i class="fas fa-shipping-fast sector-icon" style="color: #ef4444;"></i>
+            <h3 class="sector-title">Commerce</h3>
+            <p class="text-muted">Exportations, importations, échanges</p>
+            <span class="sector-badge">International</span>
+        </a>
+    </div>
+
+    <!-- Stats Summary -->
+    <div class="card mt-4 text-center">
+        <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 2rem;">
+            <div>
+                <div style="font-size: 2rem; font-weight: 700; color: var(--primary);">9</div>
+                <div class="text-muted">Secteurs Clés</div>
+            </div>
+            <div>
+                <div style="font-size: 2rem; font-weight: 700; color: var(--primary);">1500+</div>
+                <div class="text-muted">Indicateurs</div>
+            </div>
+            <div>
+                <div style="font-size: 2rem; font-weight: 700; color: var(--primary);">100%</div>
+                <div class="text-muted">Données Officielles</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/sectors.js' %}"></script>
+{% endblock %}
