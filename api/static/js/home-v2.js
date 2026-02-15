@@ -411,22 +411,31 @@ function displayResults(data) {
     
     // Update metadata
     let metaHtml = `<p><strong>Code indicateur :</strong> ${data.indicator_code || 'N/A'}</p>`;
+    if (data.source) {
+        metaHtml += `<p><strong>Source :</strong> ${data.source}</p>`;
+    }
     if (data.source_link) {
-        metaHtml += `<p><strong>Source :</strong> <a href="${data.source_link}" target="_blank" style="color: var(--green-600); text-decoration: none;">Accéder aux données sources <i class="fas fa-external-link-alt" style="font-size: 0.75rem;"></i></a></p>`;
+        metaHtml += `<p><a href="${data.source_link}" target="_blank" style="color: var(--green-600); text-decoration: none;">Accéder aux données sources <i class="fas fa-external-link-alt" style="font-size: 0.75rem;"></i></a></p>`;
     }
     document.getElementById('result-source').innerHTML = metaHtml;
     
-    // Show source card if link exists
+    // Show source card if source info exists
     const sourceCard = document.getElementById('source-card');
-    if (data.source_link) {
+    if (data.source_link || data.source) {
         sourceCard.style.display = 'block';
-        document.getElementById('source-card-link').href = data.source_link;
-        // Extract domain from URL for display
-        try {
-            const url = new URL(data.source_link);
-            document.getElementById('source-card-text').textContent = url.hostname.replace('www.', '');
-        } catch {
-            document.getElementById('source-card-text').textContent = 'Accéder à la source';
+        if (data.source_link) {
+            document.getElementById('source-card-link').href = data.source_link;
+            document.getElementById('source-card-link').style.pointerEvents = 'auto';
+            try {
+                const url = new URL(data.source_link);
+                document.getElementById('source-card-text').textContent = data.source || url.hostname.replace('www.', '');
+            } catch {
+                document.getElementById('source-card-text').textContent = data.source || 'Accéder à la source';
+            }
+        } else {
+            document.getElementById('source-card-link').removeAttribute('href');
+            document.getElementById('source-card-link').style.pointerEvents = 'none';
+            document.getElementById('source-card-text').textContent = data.source;
         }
     } else {
         sourceCard.style.display = 'none';
@@ -616,7 +625,7 @@ function downloadChartAsPNG(data) {
     ctx.fillStyle = '#9CA3AF';
     ctx.font = '10px Inter, sans-serif';
     ctx.textAlign = 'left';
-    const sourceText = data.source_link ? `Source : ${data.source_link}` : 'Source : Côte d\'Ivoire - Données statistiques';
+    const sourceText = data.source ? `Source : ${data.source}` : (data.source_link ? `Source : ${data.source_link}` : 'Source : Côte d\'Ivoire - Données statistiques');
     ctx.fillText(sourceText, padding.left, totalHeight - 35);
     
     // Watermark "Ask For Data"
@@ -654,7 +663,8 @@ function downloadTableAsCSV(data) {
     csv += `Indicateur;${indicatorName}\n`;
     csv += `Code;${indicatorCode}\n`;
     csv += `Période;${periodStr}\n`;
-    if (data.source_link) csv += `Source;${data.source_link}\n`;
+    if (data.source) csv += `Source;${data.source}\n`;
+    if (data.source_link) csv += `Lien source;${data.source_link}\n`;
     csv += `Nombre d'observations;${data.data.length}\n`;
     csv += `Généré par;Ask For Data (askfordata.ci)\n`;
     csv += '\n';
@@ -699,7 +709,8 @@ function downloadTableAsExcel(data) {
     html += `<tr><td class="header" colspan="2">${indicatorName}</td></tr>`;
     html += `<tr><td class="meta">Code</td><td class="meta">${indicatorCode}</td></tr>`;
     html += `<tr><td class="meta">Période</td><td class="meta">${periodStr}</td></tr>`;
-    if (data.source_link) html += `<tr><td class="meta">Source</td><td class="meta">${data.source_link}</td></tr>`;
+    if (data.source) html += `<tr><td class="meta">Source</td><td class="meta">${data.source}</td></tr>`;
+    if (data.source_link) html += `<tr><td class="meta">Lien source</td><td class="meta">${data.source_link}</td></tr>`;
     html += `<tr><td class="meta">Observations</td><td class="meta">${data.data.length}</td></tr>`;
     html += `<tr><td colspan="2"></td></tr>`;
     html += `<tr><th>Année</th><th>Valeur</th></tr>`;

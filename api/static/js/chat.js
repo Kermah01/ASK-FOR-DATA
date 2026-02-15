@@ -159,8 +159,8 @@ function addMessage(text, isUser = false, data = null) {
                         <a href="https://data.worldbank.org/country/CI" target="_blank" rel="noopener noreferrer" class="source-link" style="font-size: 0.85rem;">
                             Banque Mondiale CI
                         </a>
-                        <a href="https://www.ins.ci" target="_blank" rel="noopener noreferrer" class="source-link" style="font-size: 0.85rem;">
-                            INS Côte d'Ivoire
+                        <a href="https://www.anstat.gouv.ci" target="_blank" rel="noopener noreferrer" class="source-link" style="font-size: 0.85rem;">
+                            ANStat Côte d'Ivoire
                         </a>
                     </div>
                 `;

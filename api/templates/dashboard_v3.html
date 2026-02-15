@@ -13,6 +13,7 @@
     
     <!-- CSS -->
     <link rel="stylesheet" href="{% static 'css/dashboard-v3.css' %}?v=1.0">
+    <link rel="stylesheet" href="{% static 'css/dashboard-builder.css' %}?v=1.0">
 </head>
 <body class="dashboard-body">
 
@@ -540,7 +541,7 @@
                             <div class="chart-subtitle">Indice des Prix à la Consommation, moyenne annuelle</div>
                             <div id="chart-macro-inflation" class="chart-container"></div>
                             <div class="chart-source">
-                                <span class="source-label">Source : Banque Mondiale, INS</span>
+                                <span class="source-label">Source : Banque Mondiale, ANStat</span>
                             </div>
                         </div>
                         <div class="chart-card">
@@ -576,21 +577,19 @@
                             </div>
                         </div>
                         <div class="chart-card">
-                            <div class="chart-title">Réserves de Change</div>
-                            <div class="chart-subtitle">Couverture en mois d'importations</div>
+                            <div class="chart-title">Recettes & Dépenses (TOFE)</div>
+                            <div class="chart-subtitle">Évolution en milliards FCFA</div>
                             <div id="chart-macro-reserv" class="chart-container"></div>
                             <div class="chart-source">
-                                <span class="source-label">Source : BCEAO</span>
-                                <span class="data-note">Données à confirmer</span>
+                                <span class="source-label">Source : TOFE / MFB</span>
                             </div>
                         </div>
                         <div class="chart-card">
-                            <div class="chart-title">Crédit au Secteur Privé</div>
-                            <div class="chart-subtitle">Croissance annuelle du crédit (%)</div>
+                            <div class="chart-title">Solde Budgétaire</div>
+                            <div class="chart-subtitle">En % du PIB</div>
                             <div id="chart-macro-credit" class="chart-container"></div>
                             <div class="chart-source">
-                                <span class="source-label">Source : BCEAO</span>
-                                <span class="data-note">Données à confirmer</span>
+                                <span class="source-label">Source : TOFE / MFB, DGE</span>
                             </div>
                         </div>
                         <div class="chart-card">
@@ -598,7 +597,7 @@
                             <div class="chart-subtitle">Recettes fiscales en % du PIB</div>
                             <div id="chart-macro-tax" class="chart-container"></div>
                             <div class="chart-source">
-                                <span class="source-label">Source : Ministère des Finances</span>
+                                <span class="source-label">Source : TOFE / DGE (calculé)</span>
                             </div>
                         </div>
                         <div class="chart-card">
@@ -681,12 +680,11 @@
                             </div>
                         </div>
                         <div class="chart-card">
-                            <div class="chart-title">Subventions Énergie & Carburant</div>
-                            <div class="chart-subtitle">Répartition en milliards de FCFA</div>
+                            <div class="chart-title">Structure des Dépenses</div>
+                            <div class="chart-subtitle">Répartition des dépenses de l'État (dernière année)</div>
                             <div id="chart-fin-subsidy" class="chart-container"></div>
                             <div class="chart-source">
-                                <span class="source-label">Source : FMI</span>
-                                <span class="data-note">Données à confirmer</span>
+                                <span class="source-label">Source : TOFE / MFB</span>
                             </div>
                         </div>
                         <div class="chart-card">
@@ -694,23 +692,23 @@
                             <div class="chart-subtitle">Répartition intérieur vs extérieur (%)</div>
                             <div id="chart-fin-deficit-financing" class="chart-container"></div>
                             <div class="chart-source">
-                                <span class="source-label">Source : Ministère des Finances</span>
+                                <span class="source-label">Source : TOFE / MFB</span>
                             </div>
                         </div>
                         <div class="chart-card">
-                            <div class="chart-title">Structure des Recettes</div>
-                            <div class="chart-subtitle">Répartition par type de recettes fiscales</div>
+                            <div class="chart-title">Structure des Recettes Fiscales</div>
+                            <div class="chart-subtitle">Répartition par type d'impôt (dernière année)</div>
                             <div id="chart-fin-tax-structure" class="chart-container"></div>
                             <div class="chart-source">
-                                <span class="source-label">Source : DGI, Loi de Finances</span>
+                                <span class="source-label">Source : TOFE / MFB</span>
                             </div>
                         </div>
                         <div class="chart-card">
                             <div class="chart-title">Composition de la Dette</div>
-                            <div class="chart-subtitle">Dette extérieure vs intérieure (% PIB)</div>
+                            <div class="chart-subtitle">Dette extérieure vs intérieure (Mds FCFA)</div>
                             <div id="chart-fin-ext-debt" class="chart-container"></div>
                             <div class="chart-source">
-                                <span class="source-label">Source : FMI, DGCPT</span>
+                                <span class="source-label">Source : Base Éco / DGE</span>
                             </div>
                         </div>
                     </div>
@@ -815,19 +813,19 @@
 
                     <div class="chart-grid-2x2">
                         <div class="chart-card">
-                            <div class="chart-title">Production Cacao & Anacarde (Milliers de Tonnes)</div>
+                            <div class="chart-title">Cacao : Production & Transformation</div>
                             <div id="chart-prim-cash-crops" class="chart-container"></div>
                         </div>
                         <div class="chart-card">
-                            <div class="chart-title">Production Vivrière (Riz, Igname, Manioc)</div>
+                            <div class="chart-title">Taux de Transformation du Cacao</div>
                             <div id="chart-prim-food-crops" class="chart-container"></div>
                         </div>
                         <div class="chart-card">
-                            <div class="chart-title">Exportations Agricoles vs Total</div>
+                            <div class="chart-title">Part du Secteur Primaire (% PIB)</div>
                             <div id="chart-prim-export-share" class="chart-container"></div>
                         </div>
                         <div class="chart-card">
-                            <div class="chart-title">Emploi dans le Secteur Agricole</div>
+                            <div class="chart-title">Emploi dans le Primaire (% total)</div>
                             <div id="chart-prim-employment" class="chart-container"></div>
                         </div>
                         <!-- New Charts -->
@@ -1403,7 +1401,7 @@
                             <div id="chart-int-balance" class="chart-container"></div>
                         </div>
                         <div class="chart-card">
-                            <div class="chart-title">Principaux Partenaires (Export)</div>
+                            <div class="chart-title">Exports par Zone Géographique</div>
                             <div id="chart-int-partners-exp" class="chart-container"></div>
                         </div>
                         <div class="chart-card">
@@ -1411,7 +1409,7 @@
                             <div id="chart-int-fdi" class="chart-container"></div>
                         </div>
                         <div class="chart-card">
-                            <div class="chart-title">Contributions Bailleurs de Fonds</div>
+                            <div class="chart-title">Dons Reçus (TOFE)</div>
                             <div id="chart-int-donors" class="chart-container"></div>
                         </div>
                         <!-- New Charts -->
@@ -1424,19 +1422,19 @@
                             <div id="chart-int-products-imp" class="chart-container"></div>
                         </div>
                         <div class="chart-card">
-                            <div class="chart-title">Dette Extérieure par Créancier</div>
+                            <div class="chart-title">Service Dette Ext. par Créancier</div>
                             <div id="chart-int-debt-creditors" class="chart-container"></div>
                         </div>
                         <div class="chart-card">
-                            <div class="chart-title">Transferts de la Diaspora (Mds FCFA)</div>
+                            <div class="chart-title">IDE Reçus (Mds FCFA)</div>
                             <div id="chart-int-remittances" class="chart-container"></div>
                         </div>
                         <div class="chart-card">
-                            <div class="chart-title">Classement Passeport (Mobilité)</div>
+                            <div class="chart-title">Taux de Couverture Commerciale</div>
                             <div id="chart-int-passport" class="chart-container"></div>
                         </div>
                         <div class="chart-card">
-                            <div class="chart-title">Part de Marché Régionale (UEMOA)</div>
+                            <div class="chart-title">Exports par Catégorie de Marchandises</div>
                             <div id="chart-int-uemoa-share" class="chart-container"></div>
                         </div>
                     </div>
@@ -1777,6 +1775,65 @@
                     </div>
                 </div>
 
+                <!-- SECTION: CRÉER SON DASHBOARD -->
+                <div id="section-custom-dashboard" class="content-section hidden">
+                    <div class="builder-layout">
+                        <!-- Sidebar: variable list -->
+                        <aside class="builder-sidebar" id="builder-sidebar">
+                            <div class="builder-sidebar-header">
+                                <h3><i class="fas fa-layer-group"></i> Variables disponibles</h3>
+                                <div class="builder-search-wrap">
+                                    <i class="fas fa-search"></i>
+                                    <input type="text" class="builder-search" id="builder-sidebar-search" placeholder="Rechercher une variable...">
+                                </div>
+                            </div>
+                            <div class="builder-var-list" id="builder-var-list">
+                                <!-- Populated by JS -->
+                            </div>
+                            <div class="builder-sidebar-footer">
+                                <button class="btn-assign" id="builder-assign-btn" disabled>Sélectionner des variables</button>
+                                <button class="btn-clear" id="builder-clear-btn" title="Tout décocher"><i class="fas fa-times"></i></button>
+                            </div>
+                        </aside>
+
+                        <!-- Resize handle for sidebar -->
+                        <div class="builder-sidebar-resize-handle" id="builder-sidebar-resize" title="Glisser pour redimensionner — Double-clic pour masquer"></div>
+
+                        <!-- Main dashboard area -->
+                        <div class="builder-main">
+                            <div class="builder-toolbar">
+                                <button class="builder-btn" id="builder-toggle-sidebar" title="Masquer/Afficher le panneau latéral">
+                                    <i class="fas fa-columns"></i>
+                                </button>
+                                <div class="toolbar-sep"></div>
+                                <button class="builder-btn" id="builder-undo-btn" title="Annuler (Ctrl+Z)" disabled>
+                                    <i class="fas fa-undo"></i>
+                                </button>
+                                <button class="builder-btn" id="builder-redo-btn" title="Rétablir (Ctrl+Y)" disabled>
+                                    <i class="fas fa-redo"></i>
+                                </button>
+                                <div class="toolbar-sep"></div>
+                                <h2><i class="fas fa-th-large"></i> Créer votre Dashboard</h2>
+                                <div class="spacer"></div>
+                                <button class="builder-btn primary" id="builder-add-panel-btn">
+                                    <i class="fas fa-plus"></i> Ajouter un cadran
+                                </button>
+                                <button class="builder-btn success" id="builder-download-btn" title="Télécharger le dashboard en PNG">
+                                    <i class="fas fa-camera"></i> Exporter
+                                </button>
+                                <button class="builder-btn danger" id="builder-reset-btn">
+                                    <i class="fas fa-redo-alt"></i> Réinitialiser
+                                </button>
+                            </div>
+                            <div class="builder-grid-scroll">
+                                <div class="builder-grid" id="builder-grid">
+                                    <!-- Panels populated by JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- FOOTER -->
                 <footer class="dash-footer">
                     <div>
@@ -1796,6 +1853,8 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="{% static 'js/dashboard-v3.js' %}?v=2.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="{% static 'js/dashboard-builder.js' %}?v=2.0"></script>
+    <script src="{% static 'js/dashboard-v3.js' %}?v=4.2"></script>
 </body>
 </html>

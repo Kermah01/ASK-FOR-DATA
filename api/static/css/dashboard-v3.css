@@ -1646,6 +1646,21 @@ body.dashboard-body {
     transform: translateX(3px);
 }
 
+/* National indicator badge */
+.indicator-badge-nat {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: linear-gradient(135deg, #FF8200 0%, #FF6B00 100%);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    vertical-align: middle;
+    margin-left: 6px;
+}
+
 /* Detail View */
 .indicator-detail-header {
     display: flex;

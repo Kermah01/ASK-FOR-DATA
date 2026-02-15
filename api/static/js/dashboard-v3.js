@@ -77,11 +77,11 @@ const DashboardV3 = {
         this.createMiniChart('mini-macro-3', this.sv('fdi_pct', 5) || [1.1, 1.4, 1.9, 2.3, 2.2], 'line', this.colors.purple);
         this.createMiniChart('mini-macro-4', this.sv('exports_pct', 4) || [21, 22, 24, 28], 'bar', this.colors.green);
 
-        // Finance (pas de données budgétaires détaillées en BDD, données indicatives conservées)
-        this.createMiniChart('mini-fin-1', [-5.6, -4.9, -6.8, -5.2, -4.0], 'bar', this.colors.red);
-        this.createMiniChart('mini-fin-2', [85, 91, 102], 'line', this.colors.green);
-        this.createMiniChart('mini-fin-3', [98, 108, 115], 'line', this.colors.slate);
-        this.createMiniChart('mini-fin-4', [35, 38, 42], 'gauge', this.colors.orange);
+        // Finance - real data from TOFE/financements
+        this.createMiniChart('mini-fin-1', this.nv('solde_budgetaire_pct_pib') || [-2.9, -2.2, -5.4, -4.9, -6.7], 'bar', this.colors.red);
+        this.createMiniChart('mini-fin-2', this.nv('recettes_et_dons', 5) || [4764, 5158, 5289, 6140, 6684], 'line', this.colors.green);
+        this.createMiniChart('mini-fin-3', this.nv('depenses_totales', 5) || [5708, 5944, 7255, 8102, 9666], 'line', this.colors.slate);
+        this.createMiniChart('mini-fin-4', this.nv('dette_pct_pib_fin') || [46.3, 50.2, 56.6, 58.1], 'bar', this.colors.orange);
 
         // Demo - real data
         this.createMiniChart('mini-demo-1', this.sv('fertility', 5) || [5.0, 4.9, 4.5, 4.4, 4.3], 'bar', this.colors.blue);
@@ -89,11 +89,11 @@ const DashboardV3 = {
         this.createMiniChart('mini-demo-3', this.sv('pop_growth', 4) || [2.5, 2.5, 2.5, 2.4], 'line', this.colors.green);
         this.createMiniChart('mini-demo-4', this.sv('birth_rate', 4) || [34, 33, 32, 32], 'bar', this.colors.purple);
 
-        // Primary (données sectorielles non dans la BDD)
-        this.createMiniChart('mini-prim-1', this.sv('arable_land_pct', 4) || [12.5, 13.0, 13.4, 13.5], 'bar', this.colors.orange);
-        this.createMiniChart('mini-prim-2', this.sv('forest_pct', 4) || [9.3, 8.9, 8.6, 8.2], 'line', this.colors.green);
-        this.createMiniChart('mini-prim-3', this.sv('exports_pct', 4) || [22, 22, 24, 28], 'line', this.colors.blue);
-        this.createMiniChart('mini-prim-4', [30, 35, 40, 48], 'bar', this.colors.slate);
+        // Primary - real data from base éco
+        this.createMiniChart('mini-prim-1', this.nv('cacao_production', 5) || [2154000, 2180000, 2105000, 2248000, 2200000], 'bar', this.colors.orange);
+        this.createMiniChart('mini-prim-2', this.nv('cacao_taux_transfo', 5) || [30, 32, 34, 33, 35], 'line', this.colors.green);
+        this.createMiniChart('mini-prim-3', this.nv('pib_primaire_pct', 5) || [17.9, 15.7, 16.9, 16.2, 16.6], 'line', this.colors.blue);
+        this.createMiniChart('mini-prim-4', this.sv('arable_land_pct', 4) || [12.5, 13.0, 13.4, 13.5], 'bar', this.colors.slate);
 
         // Secondary - real data where available
         this.createMiniChart('mini-sec-1', this.sv('electricity_consumption', 4) || [250, 280, 310, 324], 'line', this.colors.orange);
@@ -143,16 +143,11 @@ const DashboardV3 = {
         this.createMiniChart('mini-cult-3', [30, 35, 40], 'line', this.colors.purple);
         this.createMiniChart('mini-cult-4', [4, 5, 6], 'bar', this.colors.slate);
 
-        // International - real data
-        this.createMiniChart('mini-int-1', (() => {
-            const exp = this.sv('exports_pct', 4);
-            const imp = this.sv('imports_pct', 4);
-            if (exp.length && imp.length) return exp.map((e, i) => Math.round((e - (imp[i] || 0)) * 10) / 10);
-            return [1.5, 1.2, 0.8, 0.5];
-        })(), 'bar', this.colors.green);
-        this.createMiniChart('mini-int-2', [15, 10, 8, 67], 'bar', this.colors.blue);
+        // International - real data from douanes
+        this.createMiniChart('mini-int-1', this.nv('solde_commercial', 5) || [1308, 1055, 732, -1011, -290], 'bar', this.colors.green);
+        this.createMiniChart('mini-int-2', this.nv('exports_fob', 5) || [6578, 6370, 7284, 8148, 9455], 'line', this.colors.blue);
         this.createMiniChart('mini-int-3', this.sv('fdi_pct', 4) || [1.1, 1.9, 2.3, 2.2], 'line', this.colors.orange);
-        this.createMiniChart('mini-int-4', this.sv('imports_pct', 4) || [21, 23, 28, 27], 'bar', this.colors.slate);
+        this.createMiniChart('mini-int-4', this.nv('imports_caf', 5) || [5271, 5316, 6552, 9158, 9745], 'bar', this.colors.slate);
     },
 
     createMiniChart(domId, data, type, color) {
@@ -300,6 +295,30 @@ const DashboardV3 = {
         const vals = this.dbData.series[key].values;
         if (!vals || vals.length === 0) return null;
         const result = n ? vals.slice(-n) : vals;
+        return result.length > 0 ? result : null;
+    },
+
+    // Helper: get national data series {years, values, name} or null
+    nd(key) {
+        if (!this.dbData || !this.dbData.national || !this.dbData.national[key]) return null;
+        const s = this.dbData.national[key];
+        if (!s.values || s.values.length === 0) return null;
+        return s;
+    },
+
+    // Helper: get last N values from national data
+    nv(key, n) {
+        const s = this.nd(key);
+        if (!s) return null;
+        const result = n ? s.values.slice(-n) : s.values;
+        return result.length > 0 ? result : null;
+    },
+
+    // Helper: get last N years from national data
+    ny(key, n) {
+        const s = this.nd(key);
+        if (!s) return null;
+        const result = n ? s.years.slice(-n).map(String) : s.years.map(String);
         return result.length > 0 ? result : null;
     },
 
@@ -642,6 +661,19 @@ const DashboardV3 = {
                     return;
                 }
 
+                if(subtab === 'custom') {
+                    // Show custom dashboard builder
+                    this.handleSectionChange('section-custom-dashboard');
+                    document.querySelectorAll('.sidebar-item, .sidebar-sub-item').forEach(el => el.classList.remove('active'));
+                    document.querySelector('.dash-sidebar').style.display = 'none';
+                    // Initialize builder once
+                    if (!DashboardBuilder._initialized) {
+                        DashboardBuilder._initialized = true;
+                        DashboardBuilder.init();
+                    }
+                    return;
+                }
+
                 // For other tabs, show "Coming Soon"
                 this.showToast('Cette fonctionnalité sera bientôt disponible.', 'warning');
                 // Revert to previous active tab
@@ -770,8 +802,6 @@ const DashboardV3 = {
         const s = this.dbData ? this.dbData.series : null;
         const gdpG = s ? s.gdp_growth : null;
         const infl = s ? s.inflation : null;
-        const expP = s ? s.exports_pct : null;
-        const impP = s ? s.imports_pct : null;
         const fdi  = s ? s.fdi_pct : null;
 
         // 1. GDP Growth - Croissance du PIB Réel
@@ -854,7 +884,13 @@ const DashboardV3 = {
             }]
         });
 
-        // 3. Structure du PIB par Secteur (pas de données sectorielles détaillées en BDD)
+        // 3. Structure du PIB par Secteur (données réelles base éco)
+        const prim = this.nv('pib_primaire_pct', 1);
+        const sec = this.nv('pib_secondaire_pct', 1);
+        const tert = this.nv('pib_tertiaire_pct', 1);
+        const primVal = prim ? Math.round(prim[0] * 10) / 10 : 22;
+        const secVal = sec ? Math.round(sec[0] * 10) / 10 : 28;
+        const tertVal = tert ? Math.round(tert[0] * 10) / 10 : 50;
         this.createChart('chart-macro-contrib', {
             tooltip: { 
                 trigger: 'item', 
@@ -869,9 +905,9 @@ const DashboardV3 = {
                 label: { show: true, formatter: '{b}\n{d}%', fontSize: 11 },
                 emphasis: { label: { fontSize: 13, fontWeight: 'bold' } },
                 data: [
-                    { value: 22, name: 'Primaire', itemStyle: { color: this.colors.green } },
-                    { value: 28, name: 'Secondaire', itemStyle: { color: this.colors.orange } },
-                    { value: 50, name: 'Tertiaire', itemStyle: { color: this.colors.blue } }
+                    { value: primVal, name: 'Primaire', itemStyle: { color: this.colors.green } },
+                    { value: secVal, name: 'Secondaire', itemStyle: { color: this.colors.orange } },
+                    { value: tertVal, name: 'Tertiaire', itemStyle: { color: this.colors.blue } }
                 ] 
             }]
         });
@@ -909,12 +945,13 @@ const DashboardV3 = {
             }]
         });
 
-        // 5. Dette Publique (% PIB) - pas dans la BDD, données indicatives conservées
+        // 5. Dette Publique (% PIB) - données réelles financements
+        const dettePib = this.nd('dette_pct_pib_fin');
         this.createChart('chart-macro-debt-gdp', {
             tooltip: { trigger: 'axis', valueFormatter: (v) => v.toFixed(1) + '% du PIB' },
             xAxis: { 
                 type: 'category', 
-                data: ['2020', '2021', '2022', '2023', '2024'],
+                data: dettePib ? dettePib.years.map(String) : ['2020', '2021', '2022', '2023'],
                 name: 'Année',
                 nameLocation: 'middle',
                 nameGap: 30,
@@ -933,7 +970,7 @@ const DashboardV3 = {
             },
             series: [{ 
                 name: 'Dette/PIB',
-                data: [47.6, 52.1, 56.7, 58.1, 56.5], 
+                data: dettePib ? dettePib.values.map(v => Math.round(v * 10) / 10) : [46.3, 50.2, 56.6, 58.1], 
                 type: 'bar',
                 barWidth: '50%',
                 itemStyle: { 
@@ -944,14 +981,89 @@ const DashboardV3 = {
             }]
         });
 
-        // 6. Balance Commerciale (Exports - Imports, données réelles)
-        const tradeYears = expP ? expP.years.slice(-5).map(String) : ['2020', '2021', '2022', '2023', '2024'];
-        const tradeBalance = (expP && impP) ? expP.values.slice(-5).map((e, i) => Math.round((e - (impP.values.slice(-5)[i] || 0)) * 10) / 10) : [0.0, -0.5, -4.3, -3.5, 0.5];
+        // 6. Balance Commerciale (données réelles Douanes - Mds FCFA)
+        const soldeComm = this.nd('solde_commercial');
         this.createChart('chart-macro-trade-balance', {
+            tooltip: { trigger: 'axis', valueFormatter: (v) => v.toFixed(1) + ' Mds FCFA' },
+            xAxis: { 
+                type: 'category', 
+                data: soldeComm ? soldeComm.years.map(String) : ['2019', '2020', '2021', '2022', '2023'],
+                name: 'Année',
+                nameLocation: 'middle',
+                nameGap: 30,
+                nameTextStyle: { fontWeight: 'bold', color: '#6B7280' }
+            },
+            yAxis: { 
+                type: 'value',
+                name: 'Mds FCFA',
+                nameLocation: 'middle',
+                nameGap: 50,
+                nameTextStyle: { fontWeight: 'bold', color: '#6B7280' },
+                axisLabel: { formatter: (v) => v.toFixed(0) },
+                splitLine: { lineStyle: { type: 'dashed', color: '#F3F4F6' } }
+            },
+            series: [{ 
+                name: 'Solde commercial',
+                data: soldeComm ? soldeComm.values.map(v => Math.round(v * 10) / 10) : [1307.5, 1054.5, 731.5, -1010.5, -290.2], 
+                type: 'bar',
+                barWidth: '50%',
+                itemStyle: { 
+                    borderRadius: [6,6,0,0],
+                    color: (params) => params.value >= 0 ? this.colors.green : this.colors.red
+                },
+                label: { show: true, position: (params) => params.value >= 0 ? 'top' : 'bottom', formatter: (p) => p.value.toFixed(0), fontSize: 10 }
+            }]
+        });
+
+        // 7. TOFE - Recettes vs Dépenses (données réelles)
+        const recettes = this.nd('recettes_et_dons');
+        const depenses = this.nd('depenses_totales');
+        const tofeYears = recettes ? recettes.years.map(String) : ['2018', '2019', '2020', '2021', '2022', '2023'];
+        this.createChart('chart-macro-reserv', {
+            tooltip: { trigger: 'axis', valueFormatter: (v) => v.toFixed(0) + ' Mds FCFA' },
+            legend: { bottom: 0, textStyle: { fontSize: 10 } },
+            xAxis: { 
+                type: 'category', 
+                data: tofeYears,
+                name: 'Année',
+                nameLocation: 'middle',
+                nameGap: 30,
+                nameTextStyle: { fontWeight: 'bold', color: '#6B7280' }
+            },
+            yAxis: { 
+                type: 'value',
+                name: 'Mds FCFA',
+                nameLocation: 'middle',
+                nameGap: 55,
+                nameTextStyle: { fontWeight: 'bold', color: '#6B7280' },
+                axisLabel: { formatter: (v) => (v/1000).toFixed(0) + 'k' },
+                splitLine: { lineStyle: { type: 'dashed', color: '#F3F4F6' } }
+            },
+            series: [
+                { 
+                    name: 'Recettes & Dons',
+                    data: recettes ? recettes.values.map(v => Math.round(v)) : [4764, 5158, 5289, 6140, 6684, 7771], 
+                    type: 'bar', 
+                    barWidth: '35%',
+                    itemStyle: { borderRadius: [4,4,0,0], color: this.colors.green },
+                },
+                { 
+                    name: 'Dépenses',
+                    data: depenses ? depenses.values.map(v => Math.round(v)) : [5708, 5944, 7255, 8102, 9666, 10279], 
+                    type: 'bar', 
+                    barWidth: '35%',
+                    itemStyle: { borderRadius: [4,4,0,0], color: this.colors.red },
+                }
+            ]
+        });
+
+        // 8. Solde budgétaire (% PIB) - données réelles calculées
+        const soldePib = this.nd('solde_budgetaire_pct_pib');
+        this.createChart('chart-macro-credit', {
             tooltip: { trigger: 'axis', valueFormatter: (v) => v.toFixed(1) + '% du PIB' },
             xAxis: { 
                 type: 'category', 
-                data: tradeYears,
+                data: soldePib ? soldePib.years.map(String) : ['2018', '2019', '2020', '2021', '2022'],
                 name: 'Année',
                 nameLocation: 'middle',
                 nameGap: 30,
@@ -961,88 +1073,27 @@ const DashboardV3 = {
                 type: 'value',
                 name: '% du PIB',
                 nameLocation: 'middle',
-                nameGap: 40,
+                nameGap: 45,
                 nameTextStyle: { fontWeight: 'bold', color: '#6B7280' },
                 axisLabel: { formatter: '{value}%' },
                 splitLine: { lineStyle: { type: 'dashed', color: '#F3F4F6' } }
             },
             series: [{ 
-                name: 'Balance commerciale',
-                data: tradeBalance, 
+                name: 'Solde budgétaire',
+                data: soldePib ? soldePib.values.map(v => Math.round(v * 10) / 10) : [-2.9, -2.2, -5.4, -4.9, -6.7], 
                 type: 'bar',
                 barWidth: '50%',
                 itemStyle: { 
                     borderRadius: [6,6,0,0],
-                    color: (params) => params.value >= 0 ? this.colors.green : this.colors.red
+                    color: (params) => params.value >= -3 ? this.colors.orange : this.colors.red
                 },
-                label: { show: true, position: (params) => params.value >= 0 ? 'top' : 'bottom', formatter: '{c}%', fontSize: 10 }
+                label: { show: true, position: 'bottom', formatter: '{c}%', fontSize: 10 }
             }]
         });
 
-        // 7. Réserves de Change
-        this.createChart('chart-macro-reserv', {
-            tooltip: { trigger: 'axis', valueFormatter: (v) => v.toFixed(1) + ' mois' },
-            xAxis: { 
-                type: 'category', 
-                data: ['2021', '2022', '2023', '2024'],
-                name: 'Année',
-                nameLocation: 'middle',
-                nameGap: 30,
-                nameTextStyle: { fontWeight: 'bold', color: '#6B7280' }
-            },
-            yAxis: { 
-                type: 'value',
-                name: "Mois d'importations",
-                nameLocation: 'middle',
-                nameGap: 45,
-                nameTextStyle: { fontWeight: 'bold', color: '#6B7280' },
-                axisLabel: { formatter: '{value}' },
-                splitLine: { lineStyle: { type: 'dashed', color: '#F3F4F6' } }
-            },
-            series: [{ 
-                name: 'Réserves',
-                data: [5.8, 4.9, 4.2, 4.5], 
-                type: 'bar', 
-                barWidth: '50%',
-                itemStyle: { borderRadius: [6,6,0,0], color: this.colors.green },
-                label: { show: true, position: 'top', formatter: '{c}', fontSize: 10 }
-            }]
-        });
-
-        // 8. Crédit au Secteur Privé
-        this.createChart('chart-macro-credit', {
-            tooltip: { trigger: 'axis', valueFormatter: (v) => v.toFixed(1) + '%' },
-            xAxis: { 
-                type: 'category', 
-                data: ['2020', '2021', '2022', '2023'],
-                name: 'Année',
-                nameLocation: 'middle',
-                nameGap: 30,
-                nameTextStyle: { fontWeight: 'bold', color: '#6B7280' }
-            },
-            yAxis: { 
-                type: 'value',
-                name: 'Croissance annuelle (%)',
-                nameLocation: 'middle',
-                nameGap: 45,
-                nameTextStyle: { fontWeight: 'bold', color: '#6B7280' },
-                axisLabel: { formatter: '{value}%' },
-                splitLine: { lineStyle: { type: 'dashed', color: '#F3F4F6' } }
-            },
-            series: [{ 
-                name: 'Croissance crédit',
-                data: [12, 14, 16, 11], 
-                type: 'line', 
-                smooth: true,
-                symbolSize: 10,
-                lineStyle: { width: 3, color: this.colors.blue },
-                itemStyle: { color: this.colors.blue },
-                areaStyle: { opacity: 0.1 },
-                label: { show: true, formatter: '{c}%', position: 'top', fontSize: 10 }
-            }]
-        });
-
-        // 9. Pression Fiscale
+        // 9. Pression Fiscale (données réelles calculées)
+        const pf = this.nd('pression_fiscale');
+        const pfValue = pf ? Math.round(pf.values[pf.values.length - 1] * 10) / 10 : 13.5;
         this.createChart('chart-macro-tax', {
             series: [{ 
                 type: 'gauge',
@@ -1065,7 +1116,7 @@ const DashboardV3 = {
                     offsetCenter: [0, '40%'],
                     color: this.colors.slate
                 }, 
-                data: [{ value: 13.5, name: 'Objectif UEMOA: 20%' }] 
+                data: [{ value: pfValue, name: 'Objectif UEMOA: 20%' }] 
             }]
         });
 
@@ -1101,12 +1152,13 @@ const DashboardV3 = {
     },
 
     renderFinanceCharts() {
-        // 1. Solde Budgétaire Global
+        // 1. Solde Budgétaire Global (données réelles TOFE)
+        const soldePib = this.nd('solde_budgetaire_pct_pib');
         this.createChart('chart-fin-balance', {
             tooltip: { trigger: 'axis', valueFormatter: (value) => value.toFixed(1) + '% du PIB' },
             xAxis: { 
                 type: 'category',
-                data: ['2020', '2021', '2022', '2023', '2024'],
+                data: soldePib ? soldePib.years.map(String) : ['2018', '2019', '2020', '2021', '2022'],
                 name: 'Année',
                 nameLocation: 'middle',
                 nameGap: 30,
@@ -1124,7 +1176,7 @@ const DashboardV3 = {
                 name: 'Solde budgétaire',
                 type: 'bar', 
                 barWidth: '50%',
-                data: [-5.6, -4.9, -6.8, -5.2, -4.0], 
+                data: soldePib ? soldePib.values.map(v => Math.round(v * 10) / 10) : [-2.9, -2.2, -5.4, -4.9, -6.7], 
                 itemStyle: { 
                     color: (params) => params.value < -5 ? this.colors.red : this.colors.orange, 
                     borderRadius: [6,6,0,0] 
@@ -1133,12 +1185,15 @@ const DashboardV3 = {
             }]
         });
 
-        // 2. Recettes vs Dépenses
+        // 2. Recettes vs Dépenses (données réelles TOFE)
+        const recettes = this.nd('recettes_et_dons');
+        const depenses = this.nd('depenses_totales');
+        const tofeYears = recettes ? recettes.years.map(String) : ['2018', '2019', '2020', '2021', '2022', '2023'];
         this.createChart('chart-fin-rev-exp', {
             legend: { top: 0, itemWidth: 12, itemHeight: 12 },
-            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, valueFormatter: (v) => v.toLocaleString() + ' Mds' },
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, valueFormatter: (v) => Math.round(v).toLocaleString() + ' Mds' },
             xAxis: { 
-                data: ['2021', '2022', '2023'],
+                data: tofeYears,
                 name: 'Année',
                 nameLocation: 'middle',
                 nameGap: 30,
@@ -1153,16 +1208,17 @@ const DashboardV3 = {
                 splitLine: { lineStyle: { type: 'dashed', color: '#F3F4F6' } }
             },
             series: [
-                { name: 'Recettes', type: 'bar', data: [8500, 9100, 10200], itemStyle: { color: this.colors.green, borderRadius: [6,6,0,0] } },
-                { name: 'Dépenses', type: 'bar', data: [9800, 10800, 11500], itemStyle: { color: this.colors.red, borderRadius: [6,6,0,0] } }
+                { name: 'Recettes & Dons', type: 'bar', data: recettes ? recettes.values.map(v => Math.round(v)) : [4764, 5158, 5289, 6140, 6684, 7771], itemStyle: { color: this.colors.green, borderRadius: [6,6,0,0] } },
+                { name: 'Dépenses', type: 'bar', data: depenses ? depenses.values.map(v => Math.round(v)) : [5708, 5944, 7255, 8102, 9666, 10279], itemStyle: { color: this.colors.red, borderRadius: [6,6,0,0] } }
             ]
         });
 
-        // 3. Évolution de la Dette Publique
+        // 3. Évolution de la Dette Publique (données réelles financements)
+        const dettePib = this.nd('dette_pct_pib_fin');
         this.createChart('chart-fin-debt', {
             tooltip: { trigger: 'axis', valueFormatter: (value) => value.toFixed(1) + '% du PIB' },
             xAxis: { 
-                data: ['2019', '2020', '2021', '2022', '2023'],
+                data: dettePib ? dettePib.years.map(String) : ['2020', '2021', '2022', '2023'],
                 name: 'Année',
                 nameLocation: 'middle',
                 nameGap: 30,
@@ -1181,7 +1237,7 @@ const DashboardV3 = {
             series: [{ 
                 name: 'Dette/PIB',
                 type: 'line', 
-                data: [38.5, 46.3, 50.1, 56.8, 58.1], 
+                data: dettePib ? dettePib.values.map(v => Math.round(v * 10) / 10) : [46.3, 50.2, 56.6, 58.1], 
                 smooth: true, 
                 symbolSize: 10,
                 lineStyle: { width: 3, color: this.colors.purple },
@@ -1192,7 +1248,9 @@ const DashboardV3 = {
             }]
         });
 
-        // 4. Service de la Dette
+        // 4. Service de la Dette (données réelles - intérêts/recettes)
+        const intRecettes = this.nd('interets_pct_recettes');
+        const intRecValue = intRecettes ? Math.round(intRecettes.values[intRecettes.values.length - 1] * 10) / 10 : 16.6;
         this.createChart('chart-fin-service', {
             series: [{ 
                 type: 'gauge',
@@ -1207,15 +1265,23 @@ const DashboardV3 = {
                 axisLabel: { distance: 20, color: '#6B7280', fontSize: 10, formatter: '{value}%' },
                 title: { show: true, offsetCenter: [0, '70%'], fontSize: 11, color: '#6B7280' },
                 detail: { valueAnimation: true, formatter: '{value}%', fontSize: 22, fontWeight: 'bold', offsetCenter: [0, '35%'], color: this.colors.slate }, 
-                data: [{ value: 42, name: 'Seuil critique: 50%' }] 
+                data: [{ value: intRecValue, name: 'Intérêts / Recettes' }] 
             }]
         });
 
-        // 5. Masse Salariale
+        // 5. Masse Salariale (données réelles TOFE - rémunération / recettes)
+        const remun = this.nd('remuneration_salaries');
+        const rec = this.nd('recettes_et_dons');
+        let masseSalYears = ['2018', '2019', '2020', '2021', '2022', '2023'];
+        let masseSalData = [34.0, 33.0, 34.6, 30.3, 30.0, 28.9];
+        if (remun && rec && remun.values.length === rec.values.length) {
+            masseSalYears = remun.years.map(String);
+            masseSalData = remun.values.map((v, i) => rec.values[i] > 0 ? Math.round(v / rec.values[i] * 1000) / 10 : 0);
+        }
         this.createChart('chart-fin-wage-bill', {
             tooltip: { trigger: 'axis', valueFormatter: (v) => v + '% des recettes' },
             xAxis: { 
-                data: ['2020', '2021', '2022', '2023'],
+                data: masseSalYears,
                 name: 'Année',
                 nameLocation: 'middle',
                 nameGap: 30,
@@ -1226,15 +1292,15 @@ const DashboardV3 = {
                 nameLocation: 'middle',
                 nameGap: 45,
                 nameTextStyle: { fontWeight: 'bold', color: '#6B7280' },
-                min: 30,
-                max: 50,
+                min: 20,
+                max: 45,
                 axisLabel: { formatter: '{value}%' },
                 splitLine: { lineStyle: { type: 'dashed', color: '#F3F4F6' } }
             },
             series: [{ 
                 name: 'Masse salariale',
                 type: 'line', 
-                data: [38, 40, 41, 39], 
+                data: masseSalData, 
                 itemStyle: { color: this.colors.blue },
                 lineStyle: { width: 3 },
                 symbolSize: 10,
@@ -1244,11 +1310,12 @@ const DashboardV3 = {
             }]
         });
 
-        // 6. Dépenses d'Investissement
+        // 6. Dépenses d'Investissement (données réelles TOFE)
+        const invest = this.nd('depenses_investissement');
         this.createChart('chart-fin-investment-budget', {
-            tooltip: { trigger: 'axis', valueFormatter: (v) => v.toLocaleString() + ' Mds FCFA' },
+            tooltip: { trigger: 'axis', valueFormatter: (v) => Math.round(v).toLocaleString() + ' Mds FCFA' },
             xAxis: { 
-                data: ['2020', '2021', '2022', '2023'],
+                data: invest ? invest.years.map(String) : ['2018', '2019', '2020', '2021', '2022', '2023'],
                 name: 'Année',
                 nameLocation: 'middle',
                 nameGap: 30,
@@ -1264,30 +1331,48 @@ const DashboardV3 = {
             series: [{ 
                 name: 'Investissement',
                 type: 'bar', 
-                data: [2200, 2400, 2800, 3100], 
+                data: invest ? invest.values.map(v => Math.round(v)) : [1547, 1499, 1914, 2172, 3141, 3258], 
                 itemStyle: { color: this.colors.green, borderRadius: [6,6,0,0] },
                 label: { show: true, position: 'top', formatter: '{c}', fontSize: 10 }
             }]
         });
 
-        // 7. Subventions Énergie & Carburant
+        // 7. Structure des Dépenses TOFE (données réelles)
+        const remunVal = remun ? remun.values[remun.values.length - 1] : 2246;
+        const investVal = invest ? invest.values[invest.values.length - 1] : 3258;
+        const interets = this.nd('interets_dette');
+        const interetsVal = interets ? interets.values[interets.values.length - 1] : 1239;
+        const fonct = this.nd('depenses_fonctionnement');
+        const fonctVal = fonct ? fonct.values[fonct.values.length - 1] : 1635;
+        const subv = this.nd('subventions_transferts') || {};
+        const subvVal = subv.values ? subv.values[subv.values.length - 1] : 695;
         this.createChart('chart-fin-subsidy', {
             tooltip: { trigger: 'item', formatter: '{b}: {c} Mds FCFA ({d}%)' },
-            legend: { bottom: 5, itemWidth: 12, itemHeight: 12 },
+            legend: { bottom: 5, itemWidth: 12, itemHeight: 12, textStyle: { fontSize: 9 } },
             series: [{ 
                 type: 'pie', 
                 radius: ['35%', '60%'],
-                center: ['50%', '45%'],
+                center: ['50%', '42%'],
                 itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
-                label: { show: true, formatter: '{b}\n{c} Mds', fontSize: 10 },
+                label: { show: true, formatter: '{b}\n{d}%', fontSize: 9 },
                 data: [
-                    { value: 600, name: 'Carburant', itemStyle: { color: this.colors.slate } }, 
-                    { value: 300, name: 'Électricité', itemStyle: { color: this.colors.orange } }
+                    { value: Math.round(remunVal), name: 'Salaires', itemStyle: { color: this.colors.blue } },
+                    { value: Math.round(investVal), name: 'Investissement', itemStyle: { color: this.colors.green } },
+                    { value: Math.round(interetsVal), name: 'Intérêts dette', itemStyle: { color: this.colors.red } },
+                    { value: Math.round(fonctVal), name: 'Fonctionnement', itemStyle: { color: this.colors.slate } },
+                    { value: Math.round(subvVal), name: 'Subventions', itemStyle: { color: this.colors.orange } }
                 ] 
             }]
         });
 
-        // 8. Financement du Déficit
+        // 8. Financement du Déficit (données réelles TOFE)
+        const finInt = this.nd('financement_interieur') || {};
+        const finExt = this.nd('financement_exterieur') || {};
+        const finIntVal = finInt.values ? Math.round(finInt.values[finInt.values.length - 1]) : 490;
+        const finExtVal = finExt.values ? Math.round(finExt.values[finExt.values.length - 1]) : 2005;
+        const finTotal = Math.abs(finIntVal) + Math.abs(finExtVal);
+        const finIntPct = finTotal > 0 ? Math.round(Math.abs(finIntVal) / finTotal * 100) : 20;
+        const finExtPct = finTotal > 0 ? Math.round(Math.abs(finExtVal) / finTotal * 100) : 80;
         this.createChart('chart-fin-deficit-financing', {
             tooltip: { trigger: 'axis', valueFormatter: (v) => v + '%' },
             xAxis: { 
@@ -1307,15 +1392,23 @@ const DashboardV3 = {
                 name: 'Part',
                 type: 'bar', 
                 barWidth: '50%',
-                data: [45, 55], 
+                data: [finIntPct, finExtPct], 
                 itemStyle: { color: (p) => p.dataIndex === 0 ? this.colors.green : this.colors.blue, borderRadius: [6,6,0,0] },
                 label: { show: true, position: 'top', formatter: '{c}%', fontSize: 12, fontWeight: 'bold' }
             }]
         });
 
-        // 9. Structure des Recettes Fiscales
+        // 9. Structure des Recettes Fiscales (données réelles TOFE)
+        const impDir = this.nd('impots_directs');
+        const impBS = this.nd('impots_biens_services');
+        const droitsImp = this.nd('droits_importation');
+        const taxExp = this.nd('taxes_exportation');
+        const impDirVal = impDir ? Math.round(impDir.values[impDir.values.length - 1]) : 3639;
+        const impBSVal = impBS ? Math.round(impBS.values[impBS.values.length - 1]) : 1705;
+        const droitsImpVal = droitsImp ? Math.round(droitsImp.values[droitsImp.values.length - 1]) : 1825;
+        const taxExpVal = taxExp ? Math.round(taxExp.values[taxExp.values.length - 1]) : 445;
         this.createChart('chart-fin-tax-structure', {
-            tooltip: { trigger: 'item', formatter: '{b}: {d}%' },
+            tooltip: { trigger: 'item', formatter: '{b}: {c} Mds FCFA ({d}%)' },
             legend: { bottom: 5, itemWidth: 12, itemHeight: 12 },
             series: [{ 
                 type: 'pie', 
@@ -1324,36 +1417,39 @@ const DashboardV3 = {
                 itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
                 label: { show: true, formatter: '{b}\n{d}%', fontSize: 10 },
                 data: [
-                    { value: 40, name: 'TVA', itemStyle: { color: this.colors.orange } },
-                    { value: 25, name: 'Impôt Revenu', itemStyle: { color: this.colors.blue } },
-                    { value: 20, name: 'Douanes', itemStyle: { color: this.colors.green } },
-                    { value: 15, name: 'Autres', itemStyle: { color: this.colors.gray } }
+                    { value: impDirVal, name: 'Impôts directs', itemStyle: { color: this.colors.blue } },
+                    { value: impBSVal, name: 'Biens & services', itemStyle: { color: this.colors.orange } },
+                    { value: droitsImpVal, name: 'Droits import', itemStyle: { color: this.colors.green } },
+                    { value: taxExpVal, name: 'Taxes export', itemStyle: { color: this.colors.purple } }
                 ] 
             }]
         });
 
-        // 10. Composition de la Dette
+        // 10. Composition de la Dette (données réelles base éco)
+        const detteExt = this.nd('dette_exterieure_mds');
+        const detteInt = this.nd('dette_interieure_mds');
+        const detteYears = detteExt ? detteExt.years.slice(-5).map(String) : ['2019', '2020', '2021', '2022', '2023'];
         this.createChart('chart-fin-ext-debt', {
-            tooltip: { trigger: 'axis', valueFormatter: (v) => v + '% du PIB' },
+            tooltip: { trigger: 'axis', valueFormatter: (v) => Math.round(v).toLocaleString() + ' Mds FCFA' },
             legend: { top: 0, itemWidth: 12, itemHeight: 12 },
             xAxis: { 
-                data: ['2021', '2022', '2023'],
+                data: detteYears,
                 name: 'Année',
                 nameLocation: 'middle',
                 nameGap: 30,
                 nameTextStyle: { fontWeight: 'bold', color: '#6B7280' }
             },
             yAxis: { 
-                name: '% du PIB',
+                name: 'Mds FCFA',
                 nameLocation: 'middle',
-                nameGap: 40,
+                nameGap: 55,
                 nameTextStyle: { fontWeight: 'bold', color: '#6B7280' },
-                axisLabel: { formatter: '{value}%' },
+                axisLabel: { formatter: (v) => (v/1000).toFixed(0) + 'k' },
                 splitLine: { lineStyle: { type: 'dashed', color: '#F3F4F6' } }
             },
             series: [
-                { name: 'Extérieure', type: 'bar', stack: 'dette', data: [40, 42, 43], itemStyle: { color: this.colors.blue, borderRadius: [0,0,0,0] } },
-                { name: 'Intérieure', type: 'bar', stack: 'dette', data: [15, 18, 20], itemStyle: { color: this.colors.green, borderRadius: [6,6,0,0] } }
+                { name: 'Extérieure', type: 'bar', stack: 'dette', data: detteExt ? detteExt.values.slice(-5).map(v => Math.round(v)) : [10757, 12311, 15069, 17156, 18623], itemStyle: { color: this.colors.blue, borderRadius: [0,0,0,0] } },
+                { name: 'Intérieure', type: 'bar', stack: 'dette', data: detteInt ? detteInt.values.slice(-5).map(v => Math.round(v)) : [6046, 7959, 9705, 10626, 11787], itemStyle: { color: this.colors.green, borderRadius: [6,6,0,0] } }
             ]
         });
     },
@@ -1461,35 +1557,56 @@ const DashboardV3 = {
     },
 
     renderPrimaryCharts() {
+        // 1. Production Cacao (données réelles base éco)
+        const cacaoProd = this.nd('cacao_production');
+        const cacaoTransfo = this.nd('cacao_transforme');
         this.createChart('chart-prim-cash-crops', {
-            legend: { top: 0 },
-            xAxis: { data: ['2021', '2022', '2023'] },
-            yAxis: { name: 'Kilo-tonnes' },
+            legend: { top: 0, textStyle: { fontSize: 10 } },
+            tooltip: { trigger: 'axis', valueFormatter: (v) => Math.round(v).toLocaleString() + ' t' },
+            xAxis: { data: cacaoProd ? cacaoProd.years.slice(-6).map(String) : ['2018', '2019', '2020', '2021', '2022', '2023'] },
+            yAxis: { name: 'Tonnes', axisLabel: { formatter: (v) => (v/1000).toFixed(0) + 'k' } },
             series: [
-                { name: 'Cacao', type: 'bar', data: [2200, 2150, 2200], itemStyle: { color: '#8B4513' } }, // Brown for Cacao
-                { name: 'Anacarde', type: 'bar', data: [980, 1020, 1100], itemStyle: { color: '#F4A460' } } // SandyBrown for Cashew
+                { name: 'Production', type: 'bar', data: cacaoProd ? cacaoProd.values.slice(-6).map(v => Math.round(v)) : [2154000, 2180000, 2105000, 2248000, 2200000, 2300000], itemStyle: { color: '#8B4513', borderRadius: [4,4,0,0] } },
+                { name: 'Transformé', type: 'bar', data: cacaoTransfo ? cacaoTransfo.values.slice(-6).map(v => Math.round(v)) : [660000, 700000, 720000, 750000, 780000, 800000], itemStyle: { color: '#F4A460', borderRadius: [4,4,0,0] } }
             ]
         });
+
+        // 2. Taux de transformation cacao (données réelles)
+        const cacaoTaux = this.nd('cacao_taux_transfo');
         this.createChart('chart-prim-food-crops', {
-            legend: { show: false },
-            xAxis: { data: ['Riz', 'Igname', 'Manioc'] },
-            yAxis: { name: 'Kilo-tonnes' },
-            series: [{ type: 'bar', data: [1500, 7000, 5000], itemStyle: {color: this.colors.green, borderRadius: [4,4,0,0]} }]
+            tooltip: { trigger: 'axis', valueFormatter: (v) => v.toFixed(1) + '%' },
+            xAxis: { data: cacaoTaux ? cacaoTaux.years.slice(-6).map(String) : ['2018', '2019', '2020', '2021', '2022', '2023'] },
+            yAxis: { name: 'Taux (%)', max: 50, axisLabel: { formatter: '{value}%' } },
+            series: [{ type: 'line', data: cacaoTaux ? cacaoTaux.values.slice(-6).map(v => Math.round(v * 10) / 10) : [30, 32, 34, 33, 35, 35], name: 'Taux transformation', smooth: true, symbolSize: 10, lineStyle: { width: 3, color: this.colors.green }, itemStyle: { color: this.colors.green }, areaStyle: { opacity: 0.1 }, label: { show: true, formatter: '{c}%', position: 'top', fontSize: 10 } }]
         });
+
+        // 3. Part du PIB primaire (données réelles)
+        const pibPrim = this.nd('pib_primaire_pct');
+        const lastPrim = pibPrim ? Math.round(pibPrim.values[pibPrim.values.length - 1] * 10) / 10 : 16.6;
         this.createChart('chart-prim-export-share', {
             tooltip: { trigger: 'item', formatter: '{b}: {d}%' },
             series: [{ 
                 type: 'pie', 
                 radius: ['40%', '70%'],
                 itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
-                data: [{value: 40, name: 'Agri Export', itemStyle: {color: this.colors.orange}}, {value: 60, name: 'Autres', itemStyle: {color: '#E5E7EB'}}] 
+                data: [{value: lastPrim, name: 'Secteur Primaire', itemStyle: {color: this.colors.green}}, {value: 100 - lastPrim, name: 'Autres secteurs', itemStyle: {color: '#E5E7EB'}}] 
             }]
         });
+
+        // 4. Emploi dans le primaire (données réelles)
+        const empPrim = this.nd('emploi_primaire');
+        const empTotal = this.nd('emploi_total');
+        let empYears = ['2015', '2018', '2021', '2023'];
+        let empData = [46, 45, 46, 46];
+        if (empPrim && empTotal && empPrim.values.length > 0) {
+            empYears = empPrim.years.map(String);
+            empData = empPrim.values.map((v, i) => empTotal.values[i] > 0 ? Math.round(v / empTotal.values[i] * 1000) / 10 : 0);
+        }
         this.createChart('chart-prim-employment', {
             tooltip: { trigger: 'axis', valueFormatter: (v) => v + '%' },
-            xAxis: { data: ['2010', '2022'] },
-            yAxis: { max: 100 },
-            series: [{ type: 'bar', barWidth: 40, data: [52, 46], name: '% Emploi Total', itemStyle: {color: this.colors.blue} }]
+            xAxis: { data: empYears },
+            yAxis: { max: 60, min: 30, axisLabel: { formatter: '{value}%' } },
+            series: [{ type: 'line', data: empData, name: '% Emploi Total', smooth: true, symbolSize: 10, lineStyle: { width: 3, color: this.colors.blue }, itemStyle: { color: this.colors.blue }, areaStyle: { opacity: 0.1 }, label: { show: true, formatter: '{c}%', position: 'top', fontSize: 10 } }]
         });
 
         // New Primary Sector Charts
@@ -1943,51 +2060,165 @@ const DashboardV3 = {
 
     renderInterCharts() {
         const s = this.dbData ? this.dbData.series : null;
-        const expP = s ? s.exports_pct : null;
-        const impP = s ? s.imports_pct : null;
         const fdi = s ? s.fdi_pct : null;
 
-        // Balance commerciale (données réelles exports - imports)
-        const balYears = expP ? expP.years.slice(-5).map(String) : ['2020', '2021', '2022', '2023', '2024'];
-        const balData = (expP && impP) ? expP.values.slice(-5).map((e, i) => Math.round((e - (impP.values.slice(-5)[i] || 0)) * 10) / 10) : [0.0, -0.5, -4.3, -3.5, 0.5];
+        // 1. Balance commerciale (données réelles Douanes - Mds FCFA)
+        const soldeComm = this.nd('solde_commercial');
+        const impsCaf = this.nd('imports_caf');
+        const expsFob = this.nd('exports_fob');
+        const tradeYears = soldeComm ? soldeComm.years.map(String) : ['2019', '2020', '2021', '2022', '2023'];
         this.createChart('chart-int-balance', {
-            tooltip: { trigger: 'axis', valueFormatter: (v) => v.toFixed(1) + '% du PIB' },
-            xAxis: { data: balYears },
-            series: [{ type: 'bar', data: balData, itemStyle: {color: (p) => p.value >= 0 ? this.colors.green : this.colors.red, borderRadius: [6,6,0,0]}, label: {show: true, position: 'top', formatter: '{c}%', fontSize: 10} }]
+            tooltip: { trigger: 'axis', valueFormatter: (v) => Math.round(v).toLocaleString() + ' Mds FCFA' },
+            legend: { bottom: 0, textStyle: { fontSize: 10 } },
+            xAxis: { data: tradeYears },
+            yAxis: { axisLabel: { formatter: (v) => (v/1000).toFixed(0) + 'k' }, splitLine: { lineStyle: { type: 'dashed', color: '#F3F4F6' } } },
+            series: [
+                { name: 'Exports FOB', type: 'bar', data: expsFob ? expsFob.values.map(v => Math.round(v)) : [6578, 6370, 7284, 8148, 9455], itemStyle: { color: this.colors.green, borderRadius: [4,4,0,0] } },
+                { name: 'Imports CAF', type: 'bar', data: impsCaf ? impsCaf.values.map(v => Math.round(v)) : [5271, 5316, 6552, 9158, 9745], itemStyle: { color: this.colors.red, borderRadius: [4,4,0,0] } },
+                { name: 'Solde', type: 'line', data: soldeComm ? soldeComm.values.map(v => Math.round(v)) : [1308, 1055, 732, -1011, -290], itemStyle: { color: this.colors.slate }, lineStyle: { width: 2, type: 'dashed' }, symbolSize: 8 }
+            ]
         });
+
+        // 2. Exports par zone géographique (données réelles Douanes)
+        const expEurope = this.nd('export_europe');
+        const expAfrique = this.nd('export_afrique');
+        const expAsie = this.nd('export_asie');
+        const expAmerique = this.nd('export_amerique');
+        const lastExpEurope = expEurope ? Math.round(expEurope.values[expEurope.values.length - 1]) : 3600;
+        const lastExpAfrique = expAfrique ? Math.round(expAfrique.values[expAfrique.values.length - 1]) : 2000;
+        const lastExpAsie = expAsie ? Math.round(expAsie.values[expAsie.values.length - 1]) : 2200;
+        const lastExpAmerique = expAmerique ? Math.round(expAmerique.values[expAmerique.values.length - 1]) : 600;
         this.createChart('chart-int-partners-exp', {
-            tooltip: { trigger: 'item' },
-            series: [{ type: 'pie', radius: ['40%', '70%'], data: [{value: 15, name: 'Pays-Bas'}, {value: 10, name: 'Suisse'}, {value: 8, name: 'Mali'}, {value: 67, name: 'Autres'}] }]
+            tooltip: { trigger: 'item', formatter: '{b}: {c} Mds FCFA ({d}%)' },
+            legend: { bottom: 5, itemWidth: 12, itemHeight: 12 },
+            series: [{ type: 'pie', radius: ['40%', '70%'], center: ['50%', '45%'],
+                itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+                label: { show: true, formatter: '{b}\n{d}%', fontSize: 10 },
+                data: [
+                    { value: lastExpEurope, name: 'Europe', itemStyle: { color: this.colors.blue } },
+                    { value: lastExpAfrique, name: 'Afrique', itemStyle: { color: this.colors.green } },
+                    { value: lastExpAsie, name: 'Asie', itemStyle: { color: this.colors.orange } },
+                    { value: lastExpAmerique, name: 'Amérique', itemStyle: { color: this.colors.purple } }
+                ]
+            }]
         });
-        // IDE (données réelles)
+
+        // 3. IDE (données réelles Banque Mondiale)
         this.createChart('chart-int-fdi', {
             tooltip: { trigger: 'axis', valueFormatter: (v) => v.toFixed(2) + '% du PIB' },
             xAxis: { data: fdi ? fdi.years.slice(-5).map(String) : ['2019', '2020', '2021', '2022', '2023'] },
-            series: [{ type: 'line', data: fdi ? fdi.values.slice(-5).map(v => Math.round(v * 100) / 100) : [1.41, 1.13, 1.91, 2.26, 2.20], name: '% du PIB', smooth: true, itemStyle: {color: this.colors.blue}, areaStyle: {opacity: 0.1} }]
-        });
-        this.createChart('chart-int-donors', {
-            tooltip: { trigger: 'item' },
-            series: [{ type: 'pie', data: [{value: 30, name: 'Banque Mondiale'}, {value: 20, name: 'BAD'}, {value: 15, name: 'UE'}, {value: 35, name: 'Autres'}] }]
+            yAxis: { axisLabel: { formatter: '{value}%' }, splitLine: { lineStyle: { type: 'dashed', color: '#F3F4F6' } } },
+            series: [{ type: 'line', data: fdi ? fdi.values.slice(-5).map(v => Math.round(v * 100) / 100) : [1.41, 1.13, 1.91, 2.26, 2.20], name: 'IDE (% PIB)', smooth: true, symbolSize: 10, lineStyle: { width: 3 }, itemStyle: {color: this.colors.blue}, areaStyle: {opacity: 0.1}, label: { show: true, formatter: '{c}%', position: 'top', fontSize: 10 } }]
         });
 
+        // 4. Appuis budgétaires (données réelles TOFE)
+        const appuis = this.nd('dons');
+        this.createChart('chart-int-donors', {
+            tooltip: { trigger: 'axis', valueFormatter: (v) => Math.round(v) + ' Mds FCFA' },
+            xAxis: { data: appuis ? appuis.years.map(String) : ['2018', '2019', '2020', '2021', '2022', '2023'] },
+            yAxis: { axisLabel: { formatter: (v) => v.toFixed(0) }, splitLine: { lineStyle: { type: 'dashed', color: '#F3F4F6' } } },
+            series: [{ type: 'bar', data: appuis ? appuis.values.map(v => Math.round(v)) : [246, 275, 193, 185, 234, 317], name: 'Dons reçus', itemStyle: { color: this.colors.green, borderRadius: [6,6,0,0] }, label: { show: true, position: 'top', formatter: '{c}', fontSize: 10 } }]
+        });
+
+        // 5. Top Produits Exportés (données réelles Douanes)
+        const topExpData = [];
+        for (let i = 0; i < 10; i++) {
+            const s = this.nd('top_export_' + i);
+            if (s) topExpData.push({ name: s.name.substring(0, 20), value: Math.round(s.values[s.values.length - 1]) });
+        }
         this.createChart('chart-int-products-exp', {
-            series: [{ type: 'pie', radius: '60%', data: [{value: 40, name: 'Cacao'}, {value: 20, name: 'Pétrole'}, {value: 10, name: 'Or'}] }]
+            tooltip: { trigger: 'item', formatter: '{b}: {c} Mds FCFA ({d}%)' },
+            legend: { bottom: 0, itemWidth: 10, itemHeight: 10, textStyle: { fontSize: 8 } },
+            series: [{ type: 'pie', radius: ['30%', '60%'], center: ['50%', '42%'],
+                itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 1 },
+                label: { show: false },
+                data: topExpData.length > 0 ? topExpData : [{value: 40, name: 'Cacao'}, {value: 20, name: 'Pétrole'}, {value: 10, name: 'Or'}]
+            }]
         });
+
+        // 6. Top Produits Importés (données réelles Douanes)
+        const topImpData = [];
+        for (let i = 0; i < 10; i++) {
+            const s = this.nd('top_import_' + i);
+            if (s) topImpData.push({ name: s.name.substring(0, 20), value: Math.round(s.values[s.values.length - 1]) });
+        }
         this.createChart('chart-int-products-imp', {
-            series: [{ type: 'pie', radius: '60%', data: [{value: 25, name: 'Pétrole'}, {value: 15, name: 'Riz'}, {value: 10, name: 'Véhicules'}] }]
+            tooltip: { trigger: 'item', formatter: '{b}: {c} Mds FCFA ({d}%)' },
+            legend: { bottom: 0, itemWidth: 10, itemHeight: 10, textStyle: { fontSize: 8 } },
+            series: [{ type: 'pie', radius: ['30%', '60%'], center: ['50%', '42%'],
+                itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 1 },
+                label: { show: false },
+                data: topImpData.length > 0 ? topImpData : [{value: 25, name: 'Pétrole'}, {value: 15, name: 'Riz'}, {value: 10, name: 'Véhicules'}]
+            }]
         });
+
+        // 7. Service dette extérieure par créancier (données réelles financements)
+        const sExtBil = this.nd('service_ext_bilateral');
+        const sExtMul = this.nd('service_ext_multilateral');
+        const sExtObl = this.nd('service_ext_obligations');
+        const lastBil = sExtBil ? Math.round(sExtBil.values[sExtBil.values.length - 1]) : 276;
+        const lastMul = sExtMul ? Math.round(sExtMul.values[sExtMul.values.length - 1]) : 423;
+        const lastObl = sExtObl ? Math.round(sExtObl.values[sExtObl.values.length - 1]) : 597;
         this.createChart('chart-int-debt-creditors', {
-            series: [{ type: 'pie', radius: ['40%', '70%'], data: [{value: 30, name: 'Marché Fin.'}, {value: 40, name: 'Bilatéral'}, {value: 30, name: 'Multilatéral'}] }]
+            tooltip: { trigger: 'item', formatter: '{b}: {c} Mds FCFA ({d}%)' },
+            legend: { bottom: 5, itemWidth: 12, itemHeight: 12 },
+            series: [{ type: 'pie', radius: ['40%', '70%'], center: ['50%', '45%'],
+                itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+                label: { show: true, formatter: '{b}\n{d}%', fontSize: 10 },
+                data: [
+                    { value: lastBil, name: 'Bilatéral', itemStyle: { color: this.colors.green } },
+                    { value: lastMul, name: 'Multilatéral', itemStyle: { color: this.colors.blue } },
+                    { value: lastObl, name: 'Obligations', itemStyle: { color: this.colors.orange } }
+                ]
+            }]
         });
+
+        // 8. IDE reçus en volume (données réelles base éco)
+        const ideTotal = this.nd('ide_total_mds');
         this.createChart('chart-int-remittances', {
-            xAxis: { data: ['2020', '2023'] },
-            series: [{ type: 'bar', data: [200, 250], itemStyle: {color: this.colors.green} }]
+            tooltip: { trigger: 'axis', valueFormatter: (v) => Math.round(v) + ' Mds FCFA' },
+            xAxis: { data: ideTotal ? ideTotal.years.map(String) : ['2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023'] },
+            yAxis: { axisLabel: { formatter: (v) => v.toFixed(0) }, splitLine: { lineStyle: { type: 'dashed', color: '#F3F4F6' } } },
+            series: [{ type: 'bar', data: ideTotal ? ideTotal.values.map(v => Math.round(v)) : [292, 342, 566, 345, 497, 410, 772, 998, 1507], name: 'IDE (Mds FCFA)', itemStyle: { color: this.colors.green, borderRadius: [6,6,0,0] }, label: { show: true, position: 'top', formatter: '{c}', fontSize: 9 } }]
         });
+
+        // 9. Taux de couverture (données réelles Douanes)
+        const tauxCouv = this.nd('taux_couverture');
+        const tauxCouvVal = tauxCouv ? Math.round(tauxCouv.values[tauxCouv.values.length - 1] * 10) / 10 : 97.0;
         this.createChart('chart-int-passport', {
-            series: [{ type: 'gauge', max: 100, detail: {formatter: '{value}'}, data: [{value: 79, name: 'Rang'}] }]
+            series: [{ type: 'gauge', min: 50, max: 150, center: ['50%', '60%'], radius: '80%',
+                progress: { show: true, width: 12 },
+                axisLine: { lineStyle: { width: 12, color: [[0.33, this.colors.red], [0.66, this.colors.orange], [1, this.colors.green]] } },
+                axisTick: { show: false },
+                splitLine: { length: 8, lineStyle: { width: 2, color: '#999' } },
+                axisLabel: { distance: 20, color: '#6B7280', fontSize: 10, formatter: '{value}%' },
+                detail: { valueAnimation: true, formatter: '{value}%', fontSize: 20, fontWeight: 'bold', offsetCenter: [0, '40%'], color: this.colors.slate },
+                data: [{ value: tauxCouvVal, name: 'Exports/Imports' }]
+            }]
         });
+
+        // 10. Exports par catégorie de marchandises (données réelles Douanes)
+        const expAgri = this.nd('export_agri_industrielle');
+        const expTransfo = this.nd('export_premiere_transfo');
+        const expManuf = this.nd('export_manufactures');
+        const expMin = this.nd('export_miniers');
+        const lastAgri = expAgri ? Math.round(expAgri.values[expAgri.values.length - 1]) : 2500;
+        const lastTransfo = expTransfo ? Math.round(expTransfo.values[expTransfo.values.length - 1]) : 2000;
+        const lastManuf = expManuf ? Math.round(expManuf.values[expManuf.values.length - 1]) : 1500;
+        const lastMin = expMin ? Math.round(expMin.values[expMin.values.length - 1]) : 1000;
         this.createChart('chart-int-uemoa-share', {
-            series: [{ type: 'pie', radius: '60%', data: [{value: 40, name: 'Côte d\'Ivoire'}, {value: 60, name: 'Autres UEMOA'}] }]
+            tooltip: { trigger: 'item', formatter: '{b}: {c} Mds FCFA ({d}%)' },
+            legend: { bottom: 5, itemWidth: 12, itemHeight: 12 },
+            series: [{ type: 'pie', radius: ['35%', '65%'], center: ['50%', '42%'],
+                itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+                label: { show: true, formatter: '{b}\n{d}%', fontSize: 9 },
+                data: [
+                    { value: lastAgri, name: 'Agri. industrielle', itemStyle: { color: this.colors.green } },
+                    { value: lastTransfo, name: '1ère transfo.', itemStyle: { color: this.colors.orange } },
+                    { value: lastManuf, name: 'Manufacturés', itemStyle: { color: this.colors.blue } },
+                    { value: lastMin, name: 'Miniers', itemStyle: { color: this.colors.purple } }
+                ]
+            }]
         });
     },
 
@@ -2205,11 +2436,21 @@ const ExplorerModule = {
             ind.themes = [];
             const nameLower = (ind.name || '').toLowerCase();
             const codeLower = (ind.code || '').toLowerCase();
+            const descLower = (ind.description || ind.definition || '').toLowerCase();
+            const searchText = nameLower + ' ' + codeLower + ' ' + descLower;
+            
+            // Special mapping for NAT. codes by source
+            if (codeLower.startsWith('nat.tofe.')) {
+                ind.themes.push('finance');
+            } else if (codeLower.startsWith('nat.douanes.')) {
+                ind.themes.push('inter');
+            } else if (codeLower.startsWith('nat.financements.')) {
+                ind.themes.push('finance');
+            }
             
             for (const [themeKey, theme] of Object.entries(this.themes)) {
-                const match = theme.keywords.some(kw => 
-                    nameLower.includes(kw.toLowerCase()) || codeLower.includes(kw.toLowerCase())
-                );
+                if (ind.themes.includes(themeKey)) continue;
+                const match = theme.keywords.some(kw => searchText.includes(kw.toLowerCase()));
                 if (match) {
                     ind.themes.push(themeKey);
                 }
@@ -2274,6 +2515,28 @@ const ExplorerModule = {
         });
     },
 
+    _scoreMatch(ind, queryLower) {
+        const name = (ind.name || '').toLowerCase();
+        const code = (ind.code || '').toLowerCase();
+        const desc = (ind.description || ind.definition || '').toLowerCase();
+        let score = 0;
+
+        // Name starts with query → highest priority
+        if (name.startsWith(queryLower)) score += 1000;
+        // Name contains query as a whole word
+        else if (name.includes(queryLower)) {
+            score += 500;
+            // Bonus: query appears earlier in name
+            score += Math.max(0, 100 - name.indexOf(queryLower));
+        }
+        // Code match
+        if (code.includes(queryLower)) score += 200;
+        // Description match
+        if (desc.includes(queryLower)) score += 50;
+
+        return score;
+    },
+
     handleGlobalSearch(query) {
         const resultsContainer = document.getElementById('explorer-search-results');
         const resultsList = document.getElementById('search-results-list');
@@ -2285,10 +2548,12 @@ const ExplorerModule = {
         }
 
         const queryLower = query.toLowerCase();
-        const results = this.allIndicators.filter(ind => 
-            (ind.name || '').toLowerCase().includes(queryLower) ||
-            (ind.code || '').toLowerCase().includes(queryLower)
-        ).slice(0, 50);
+        const results = this.allIndicators
+            .map(ind => ({ ind, score: this._scoreMatch(ind, queryLower) }))
+            .filter(r => r.score > 0)
+            .sort((a, b) => b.score - a.score)
+            .map(r => r.ind)
+            .slice(0, 50);
 
         resultsCount.textContent = `${results.length} résultat${results.length > 1 ? 's' : ''}`;
         
@@ -2373,15 +2638,16 @@ const ExplorerModule = {
     filterIndicatorsList(query) {
         if (!query) {
             this.filteredIndicators = this.allIndicators.filter(ind => ind.themes.includes(this.currentTheme));
+            this.sortIndicators();
         } else {
             const queryLower = query.toLowerCase();
-            this.filteredIndicators = this.allIndicators.filter(ind => 
-                ind.themes.includes(this.currentTheme) &&
-                ((ind.name || '').toLowerCase().includes(queryLower) ||
-                 (ind.code || '').toLowerCase().includes(queryLower))
-            );
+            this.filteredIndicators = this.allIndicators
+                .filter(ind => ind.themes.includes(this.currentTheme))
+                .map(ind => ({ ind, score: this._scoreMatch(ind, queryLower) }))
+                .filter(r => r.score > 0)
+                .sort((a, b) => b.score - a.score)
+                .map(r => r.ind);
         }
-        this.sortIndicators();
         this.renderIndicatorsList();
     },
 
@@ -2399,13 +2665,17 @@ const ExplorerModule = {
             return;
         }
 
-        container.innerHTML = this.filteredIndicators.map(ind => `
+        container.innerHTML = this.filteredIndicators.map(ind => {
+            const isNational = (ind.code || '').startsWith('NAT.');
+            const badge = isNational ? '<span class="indicator-badge-nat">National</span>' : '';
+            const desc = ind.description || ind.definition || 'Pas de définition disponible';
+            return `
             <div class="indicator-card" onclick="ExplorerModule.showIndicatorDetail('${ind.code}')">
                 <div class="indicator-card-header">
-                    <div class="indicator-card-name">${ind.name}</div>
+                    <div class="indicator-card-name">${ind.name} ${badge}</div>
                     <span class="indicator-card-code">${ind.code}</span>
                 </div>
-                <div class="indicator-card-meta">${ind.definition || 'Pas de définition disponible'}</div>
+                <div class="indicator-card-meta">${desc}</div>
                 <div class="indicator-card-footer">
                     <span class="indicator-card-unit">
                         <i class="fas fa-ruler"></i>
@@ -2416,7 +2686,7 @@ const ExplorerModule = {
                     </span>
                 </div>
             </div>
-        `).join('');
+        `;}).join('');
     },
 
     async showIndicatorDetail(code) {
@@ -2443,7 +2713,7 @@ const ExplorerModule = {
             // Update metadata
             document.getElementById('meta-unit').textContent = data.indicator.unit || '-';
             document.getElementById('meta-source').textContent = data.indicator.source || '-';
-            document.getElementById('meta-definition').textContent = data.indicator.definition || 'Pas de définition disponible';
+            document.getElementById('meta-definition').textContent = data.indicator.definition || data.indicator.description || 'Pas de définition disponible';
             
             const metaLink = document.getElementById('meta-link');
             if (data.indicator.source_link) {

@@ -15,6 +15,7 @@ from django.contrib.auth.models import User
 
 logger = logging.getLogger('api')
 from .data_service import data_service
+from .national_data_service import national_data_service as nds
 from .gemini_service import gemini_service, get_service_for_key
 from .models import UserProfile, QueryCache
 
@@ -208,19 +209,25 @@ def query_data(request):
 @api_view(['GET'])
 def list_indicators(request):
     """
-    Endpoint pour lister tous les indicateurs
+    Endpoint pour lister tous les indicateurs (Banque Mondiale + nationaux)
     
     GET /api/indicators
     """
     try:
+        # World Bank indicators
         indicators = data_service.get_all_indicators()
+        
+        # National indicators (TOFE, Douanes, Base Éco, Financements)
+        national_indicators = nds.get_all_indicators_for_explorer()
+        indicators.extend(national_indicators)
         
         # Filtrer par recherche si paramètre fourni
         search = request.GET.get('search', '').strip().lower()
         if search:
             indicators = [
                 ind for ind in indicators 
-                if search in str(ind['name']).lower() or search in str(ind['code']).lower()
+                if search in str(ind.get('name', '')).lower() or search in str(ind.get('code', '')).lower()
+                or search in str(ind.get('description', '')).lower()
             ]
         
         return Response({
@@ -241,9 +248,18 @@ def indicator_detail(request, code):
     Endpoint pour obtenir les détails d'un indicateur
     
     GET /api/indicator/<code>
+    Supporte les codes Banque Mondiale (ex: NY.GDP.MKTP.CD) et nationaux (ex: NAT.tofe.recettes_fiscales)
     """
     try:
-        indicator = data_service.get_indicator_detail(code)
+        indicator = None
+
+        # Try national indicator first if code starts with NAT.
+        if code.startswith('NAT.'):
+            indicator = nds.get_indicator_detail_by_code(code)
+        
+        # Fallback to World Bank data
+        if indicator is None:
+            indicator = data_service.get_indicator_detail(code)
         
         if indicator is None:
             return Response({
@@ -385,9 +401,107 @@ def dashboard_data(request):
         'gini': get_series('SI.POV.GINI', 10),
     }
 
+    # --- Données nationales (TOFE, Douanes, Base Éco, Financements) ---
+    def ns(source, key):
+        """Retourne une série nationale {years, values, name}."""
+        s = nds.get_series(source, key)
+        return {'years': s.get('years', []), 'values': s.get('values', []), 'name': s.get('name', key)}
+
+    national_data = {
+        # Structure PIB par secteur (% du PIB)
+        'pib_primaire_pct': ns('base_eco', 'pib_primaire_pct'),
+        'pib_secondaire_pct': ns('base_eco', 'pib_secondaire_pct'),
+        'pib_tertiaire_pct': ns('base_eco', 'pib_tertiaire_pct'),
+        'pib_manufacturier_pct': ns('base_eco', 'pib_manufacturier_pct'),
+        'pib_btp_pct': ns('base_eco', 'pib_btp_pct'),
+        'pib_extractives_pct': ns('base_eco', 'pib_extractives_pct'),
+        'pib_commerce_pct': ns('base_eco', 'pib_commerce_pct'),
+        'pib_transports_pct': ns('base_eco', 'pib_transports_pct'),
+        # Dette publique
+        'dette_pct_pib': ns('base_eco', 'dette_pct_pib'),
+        'dette_stock_total': ns('base_eco', 'dette_stock_total'),
+        'dette_exterieure_mds': ns('base_eco', 'dette_exterieure_mds'),
+        'dette_interieure_mds': ns('base_eco', 'dette_interieure_mds'),
+        # Ratios dette (financements)
+        'dette_pct_pib_fin': ns('financements', 'dette_pct_pib'),
+        'interets_pct_recettes': ns('financements', 'interets_pct_recettes'),
+        'interets_pct_pib': ns('financements', 'interets_pct_pib'),
+        'taux_interet_moyen': ns('financements', 'taux_interet_moyen'),
+        'duree_vie_moyenne': ns('financements', 'duree_vie_moyenne'),
+        'dette_ct_pct': ns('financements', 'dette_ct_pct'),
+        'dette_devises_pct': ns('financements', 'dette_devises_pct'),
+        'service_dette_total': ns('financements', 'service_dette_total'),
+        'remboursement_principal': ns('financements', 'remboursement_principal'),
+        'paiement_interets': ns('financements', 'paiement_interets'),
+        # TOFE
+        'recettes_et_dons': ns('tofe', 'recettes_et_dons'),
+        'recettes_fiscales': ns('tofe', 'recettes_fiscales'),
+        'depenses_totales': ns('tofe', 'depenses_totales'),
+        'solde_budgetaire': ns('tofe', 'solde_budgetaire'),
+        'depenses_investissement': ns('tofe', 'depenses_investissement'),
+        'remuneration_salaries': ns('tofe', 'remuneration_salaries'),
+        'interets_dette': ns('tofe', 'interets_dette'),
+        'dons': ns('tofe', 'dons'),
+        'impots_directs': ns('tofe', 'impots_directs'),
+        'impots_biens_services': ns('tofe', 'impots_biens_services'),
+        'droits_importation': ns('tofe', 'droits_importation'),
+        'taxes_exportation': ns('tofe', 'taxes_exportation'),
+        'subventions_transferts': ns('tofe', 'subventions_transferts'),
+        'depenses_fonctionnement': ns('tofe', 'depenses_fonctionnement'),
+        'financement_interieur': ns('tofe', 'financement_interieur'),
+        'financement_exterieur': ns('tofe', 'financement_exterieur'),
+        # Financements - service dette ext par créancier
+        'service_ext_bilateral': ns('financements', 'service_ext_bilateral'),
+        'service_ext_multilateral': ns('financements', 'service_ext_multilateral'),
+        'service_ext_obligations': ns('financements', 'service_ext_obligations'),
+        # Pression fiscale & solde calculés
+        'pression_fiscale': nds.get_pression_fiscale(),
+        'solde_budgetaire_pct_pib': nds.get_solde_budgetaire_pct_pib(),
+        # Commerce extérieur (Douanes)
+        'imports_caf': ns('douanes', 'imports_caf'),
+        'exports_fob': ns('douanes', 'exports_fob'),
+        'solde_commercial': ns('douanes', 'solde_commercial'),
+        'taux_couverture': ns('douanes', 'taux_couverture'),
+        'export_europe': ns('douanes', 'export_europe'),
+        'export_afrique': ns('douanes', 'export_afrique'),
+        'export_asie': ns('douanes', 'export_asie'),
+        'export_amerique': ns('douanes', 'export_amerique'),
+        'export_agri_industrielle': ns('douanes', 'export_agri_industrielle'),
+        'export_premiere_transfo': ns('douanes', 'export_premiere_transfo'),
+        'export_manufactures': ns('douanes', 'export_manufactures'),
+        'export_miniers': ns('douanes', 'export_miniers'),
+        'recettes_douanieres_brutes': ns('douanes', 'recettes_brutes'),
+        # Agro-industrie
+        'cacao_production': ns('base_eco', 'cacao_production'),
+        'cacao_transforme': ns('base_eco', 'cacao_transforme'),
+        'cacao_taux_transfo': ns('base_eco', 'cacao_taux_transfo'),
+        # PIB & investissement
+        'pib_nominal_mxof': ns('base_eco', 'pib_nominal_mxof'),
+        'croissance_pib_reel': ns('base_eco', 'croissance_pib_reel'),
+        'taux_investissement': ns('base_eco', 'taux_investissement'),
+        'ide_total_mds': ns('base_eco', 'ide_total_mds'),
+        # Emploi par secteur
+        'emploi_primaire': ns('base_eco', 'emploi_primaire'),
+        'emploi_secondaire': ns('base_eco', 'emploi_secondaire'),
+        'emploi_tertiaire': ns('base_eco', 'emploi_tertiaire'),
+        'emploi_total': ns('base_eco', 'emploi_total'),
+    }
+
+    # Top produits exportés/importés
+    for i in range(10):
+        key_exp = f'top_export_{i}'
+        key_imp = f'top_import_{i}'
+        s_exp = nds.get_series('douanes', key_exp)
+        s_imp = nds.get_series('douanes', key_imp)
+        if s_exp.get('values'):
+            national_data[key_exp] = {'years': s_exp['years'], 'values': s_exp['values'], 'name': s_exp['name']}
+        if s_imp.get('values'):
+            national_data[key_imp] = {'years': s_imp['years'], 'values': s_imp['values'], 'name': s_imp['name']}
+
     return Response({
         'kpis': kpis,
         'series': series_data,
+        'national': national_data,
     })
 
 
@@ -459,9 +573,19 @@ def suggest_indicators(request):
         return Response({'suggestions': []})
     
     try:
+        # Search in World Bank indicators
         suggestions = data_service.search_indicators(query)
+        # Search in national indicators
+        nat_suggestions = nds.search_indicators(query)
+        # Merge and deduplicate, national results first for specificity
+        seen = set()
+        merged = []
+        for s in nat_suggestions + suggestions:
+            if s['code'] not in seen:
+                seen.add(s['code'])
+                merged.append(s)
         # Limiter à 10 résultats pour l'autocomplétion
-        return Response({'suggestions': suggestions[:10]})
+        return Response({'suggestions': merged[:10]})
     except Exception as e:
         return Response({'suggestions': [], 'error': str(e)})
 

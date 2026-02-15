@@ -9,6 +9,7 @@ import time
 import logging
 from typing import Dict, Optional, List
 from .data_service import data_service
+from .national_data_service import national_data_service as nds
 
 logger = logging.getLogger(__name__)
 
@@ -55,21 +56,36 @@ QUERY_SYNONYMS = {
     'prix': 'inflation consumer prices CPI',
     'cherté de la vie': 'inflation consumer prices CPI',
     'coût de la vie': 'inflation consumer prices CPI',
-    'dette': 'dette debt',
-    'endettement': 'dette debt',
-    'budget': 'dépenses gouvernement government expenditure',
-    'dépenses publiques': 'dépenses gouvernement government expenditure',
-    'recettes': 'recettes revenue tax',
-    'impôts': 'recettes fiscales tax revenue',
-    'fiscalité': 'recettes fiscales tax revenue fiscal',
-    'pression fiscale': 'recettes fiscales tax revenue pourcentage PIB fiscal pressure',
-    'taux de pression fiscale': 'recettes fiscales tax revenue pourcentage PIB fiscal pressure',
-    'recettes fiscales': 'recettes fiscales tax revenue fiscal',
-    'revenus fiscaux': 'recettes fiscales tax revenue fiscal',
-    'taxes': 'recettes fiscales tax revenue',
-    'investissement': 'investissement investment FDI capital formation',
-    'investissement étranger': 'investissement direct étranger FDI foreign direct',
-    'ide': 'investissement direct étranger FDI',
+    'dette': 'dette debt endettement stock service financements DGF',
+    'endettement': 'dette debt endettement stock PIB financements',
+    'dette publique': 'dette publique stock extérieure intérieure PIB financements DGF',
+    'dette extérieure': 'dette extérieure bilatéral multilatéral obligations financements',
+    'dette intérieure': 'dette intérieure titres publics marché financements',
+    'service de la dette': 'service dette remboursement principal intérêts financements',
+    'viabilité de la dette': 'dette PIB intérêts recettes taux durée financements',
+    'budget': 'TOFE budget dépenses recettes solde budgétaire gouvernement',
+    'tofe': 'TOFE tableau opérations financières État recettes dépenses budget',
+    'dépenses publiques': 'dépenses totales TOFE gouvernement fonctionnement investissement',
+    'recettes': 'recettes fiscales TOFE dons revenue tax',
+    'impôts': 'impôts directs recettes fiscales tax revenue TOFE',
+    'fiscalité': 'recettes fiscales pression fiscale TOFE',
+    'pression fiscale': 'pression fiscale recettes fiscales pourcentage PIB TOFE',
+    'taux de pression fiscale': 'pression fiscale recettes fiscales pourcentage PIB TOFE',
+    'recettes fiscales': 'recettes fiscales impôts TOFE',
+    'revenus fiscaux': 'recettes fiscales tax revenue fiscal TOFE',
+    'taxes': 'recettes fiscales tax revenue TOFE',
+    'masse salariale': 'rémunération salariés masse salariale fonction publique TOFE',
+    'salaires fonction publique': 'rémunération salariés masse salariale TOFE',
+    'solde budgétaire': 'solde budgétaire déficit budget TOFE pourcentage PIB',
+    'déficit budgétaire': 'solde budgétaire déficit budget TOFE',
+    'subventions': 'subventions transferts TOFE dépenses',
+    'dépenses d\'investissement': 'dépenses investissement TOFE capital',
+    'financement du déficit': 'financement intérieur extérieur déficit TOFE',
+    'investissement': 'investissement investment FDI FBCF capital formation taux',
+    'investissement étranger': 'investissement direct étranger IDE FDI foreign direct',
+    'ide': 'investissement direct étranger IDE FDI',
+    'fbcf': 'formation brute capital fixe investissement FBCF',
+    'taux d\'investissement': 'taux investissement FBCF PIB',
     'épargne': 'épargne savings gross domestic',
     'consommation': 'consommation finale consumption expenditure',
     'dépenses de santé': 'dépenses santé health expenditure',
@@ -79,12 +95,15 @@ QUERY_SYNONYMS = {
     'réserves': 'réserves reserves',
     'taux de change': 'taux de change exchange rate',
     
-    # Commerce
-    'exportation': 'exportation export',
-    'importation': 'importation import',
-    'commerce': 'commerce trade',
-    'échanges commerciaux': 'commerce trade',
-    'balance commerciale': 'balance commerciale trade balance',
+    # Commerce & Douanes
+    'exportation': 'exportation export FOB douanes',
+    'importation': 'importation import CAF douanes',
+    'commerce': 'commerce trade balance commerciale douanes',
+    'échanges commerciaux': 'commerce trade exportation importation',
+    'balance commerciale': 'balance commerciale trade balance solde commercial douanes',
+    'douanes': 'douanes recettes douanières importation exportation commerce extérieur',
+    'taux de couverture': 'taux couverture commerciale exportations importations',
+    'commerce extérieur': 'exportation importation balance commerciale douanes FOB CAF',
     
     # Emploi
     'chômage': 'chômage unemployment',
@@ -135,12 +154,14 @@ QUERY_SYNONYMS = {
     'environnement': 'environnement forest emissions CO2',
     'climat': 'changement climatique CO2 emissions',
     
-    # Agriculture
-    'agriculture': 'agriculture agricultural',
+    # Agriculture & Agro-industrie
+    'agriculture': 'agriculture agricultural cacao secteur primaire',
     'terres agricoles': 'terres agricoles agricultural land',
-    'cacao': 'cacao cocoa agriculture',
+    'cacao': 'cacao cocoa production transformation agriculture',
     'café': 'café coffee agriculture',
     'récolte': 'agriculture agricultural crop',
+    'transformation cacao': 'cacao transformé taux transformation broyage',
+    'production cacao': 'cacao production tonnes',
     
     # Technologie
     'internet': 'internet individuals using',
@@ -148,6 +169,14 @@ QUERY_SYNONYMS = {
     'portable': 'téléphone mobile cellular subscriptions',
     'numérique': 'internet technology ICT',
     'technologie': 'internet technology ICT',
+    
+    # Secteurs économiques
+    'secteur primaire': 'secteur primaire agriculture PIB emploi',
+    'secteur secondaire': 'secteur secondaire industrie BTP manufactures PIB emploi',
+    'secteur tertiaire': 'secteur tertiaire services commerce transports PIB emploi',
+    'btp': 'BTP bâtiment travaux publics construction PIB',
+    'industrie': 'industrie manufacturière extractive PIB',
+    'industries extractives': 'industries extractives pétrole mines PIB',
     
     # Développement humain
     'idh': 'IDH développement humain human development index espérance de vie éducation revenu',
@@ -306,16 +335,26 @@ class GeminiService:
         best_match = None
         best_score = 0
         
+        # Search in World Bank indicators
         for term in search_terms:
             results = data_service.search_indicators(term)
             if results:
-                # Le premier résultat a le meilleur score
                 match = results[0]
-                # Bonus si plusieurs termes correspondent au même indicateur
                 indicator_lower = match['name'].lower()
                 score = sum(1 for t in search_terms if t in indicator_lower) * 100
-                score += 50  # Base score for having a match
-                
+                score += 50
+                if score > best_score:
+                    best_score = score
+                    best_match = match
+        
+        # Search in national indicators
+        for term in search_terms:
+            nat_results = nds.search_indicators(term)
+            if nat_results:
+                match = nat_results[0]
+                indicator_lower = match['name'].lower()
+                score = sum(1 for t in search_terms if t in indicator_lower) * 100
+                score += 75  # Slight bonus for national data (more specific)
                 if score > best_score:
                     best_score = score
                     best_match = match
@@ -336,7 +375,8 @@ class GeminiService:
     def _build_data_analysis_prompt(self, indicator_name: str, values: list,
                                      methodology: str, user_query: str,
                                      match_type: str = 'exact',
-                                     proxy_explanation: str = None) -> str:
+                                     proxy_explanation: str = None,
+                                     definition: str = None) -> str:
         """
         Construit un prompt d'analyse statistique avec les données réelles.
         Phase 2: Gemini analyse les données comme un économiste/statisticien.
@@ -366,6 +406,13 @@ STATISTIQUES CALCULÉES (vérifiées, tu peux les utiliser):
 - Variation totale: {variation_totale:+.2f}% entre {years[0]} et {years[-1]}
 - Nombre de points: {len(vals)}"""
         
+        definition_section = ""
+        if definition:
+            definition_section = f"""
+
+DÉFINITION DE L'INDICATEUR:
+{definition}"""
+
         methodology_section = ""
         if methodology:
             meth_text = methodology[:1500] if len(methodology) > 1500 else methodology
@@ -397,20 +444,22 @@ INDICATEUR FOURNI: {indicator_name}
 DONNÉES:
 {data_str}
 {stats_context}
+{definition_section}
 {methodology_section}
 {proxy_section}
 
 QUESTION DE L'UTILISATEUR: "{user_query}"
 
 RÈGLES STRICTES:
-1. RÉPONDS à la question posée. Si on te demande "quel est l'IDH ?", ne commence pas par "L'espérance de vie est...". Commence par répondre à ce que l'utilisateur a demandé.
+1. RÉPONDS à la question posée. Si on te demande "quel est l'IDH ?", ne commence pas par "L'espérance de vie est...". Commence par répondre à ce que l'utilisateur a demandé. 
 2. UTILISE UNIQUEMENT les données fournies. NE JAMAIS inventer de chiffres.
 3. Sois CONCIS: 3-5 paragraphes courts maximum.
-4. Donne la tendance GLOBALE avec les chiffres clés. Pas de détail année par année.
-5. Interprétations PRUDENTES: "cela pourrait s'expliquer par...", "possiblement lié à..."
-6. Utilise **gras** pour les chiffres clés et concepts importants.
-7. Termine par: "Les données détaillées sont présentées dans le graphique et le tableau ci-dessous."
-8. Ton ton doit être naturel, comme un expert qui parle à un collègue. PAS de langage robotique.
+4. Donne une définition claire et concise de l'indicateur ainsi que de sa méthode de collecte, et de sa source si possible en 1 ou 2 phrases max. 
+5. Donne la tendance GLOBALE avec les chiffres clés. Pas de détail année par année.
+6. Interprétations PRUDENTES: "cela pourrait s'expliquer par...", "possiblement lié à..."
+7. Utilise **gras** pour les chiffres clés et concepts importants.
+8. Termine par: "Les données détaillées sont présentées dans le graphique et le tableau ci-dessous."
+9. Ton ton doit être naturel, comme un expert qui parle à un citoyen, un utilisateur lambda qui n'est pas forcément bon statisticien. PAS de langage robotique.
 
 Réponds UNIQUEMENT en JSON:
 {{
@@ -445,33 +494,57 @@ Réponds UNIQUEMENT en JSON:
             search_terms=list(search_terms) if search_terms else None
         )
         
+        # Ajouter les indicateurs nationaux (TOFE, Douanes, Base Éco, Financements)
+        national_indicators_list = nds.get_compact_indicator_list()
+        
         phase1_prompt = f"""Identifie l'indicateur le plus pertinent pour la question ci-dessous.
-Voici la liste des indicateurs disponibles (Côte d'Ivoire, 2000-2024).
+Voici la liste des indicateurs disponibles (Côte d'Ivoire).
 Format: CODE|NOM ou CODE|NOM|DESCRIPTION (la description aide à comprendre ce que mesure l'indicateur).
 
+=== INDICATEURS BANQUE MONDIALE (2000-2024) ===
 {indicators_list}
+
+=== INDICATEURS NATIONAUX (TOFE, Douanes, Base Éco, Financements) ===
+Les codes commençant par NAT. sont des données nationales plus détaillées.
+{national_indicators_list}
 
 GUIDE RAPIDE:
 - Population → SP.POP.TOTL
-- PIB → NY.GDP.MKTP.CD
-- Croissance PIB → NY.GDP.MKTP.KD.ZG
+- PIB ($ courants) → NY.GDP.MKTP.CD
+- Croissance PIB (Banque Mondiale) → NY.GDP.MKTP.KD.ZG
+- Croissance PIB réel (DGE) → NAT.base_eco.croissance_pib_reel
 - Inflation → FP.CPI.TOTL.ZG
 - Chômage → SL.UEM.TOTL.ZS
 - Espérance de vie → SP.DYN.LE00.IN
 - Mortalité infantile → SP.DYN.IMRT.IN
 - Internet → IT.NET.USER.ZS
 - Électricité → EG.ELC.ACCS.ZS
-- Pression fiscale / Recettes fiscales (% PIB) → GC.TAX.TOTL.GD.ZS
-- Dépenses publiques (% PIB) → GC.XPN.TOTL.GD.ZS
-- Dette publique → GC.DOD.TOTL.GD.ZS
+- Pression fiscale (% PIB, source TOFE) → NAT.tofe.pression_fiscale
+- Recettes fiscales (Mds FCFA) → NAT.tofe.recettes_fiscales
+- Recettes et dons (TOFE) → NAT.tofe.recettes_et_dons
+- Dépenses totales (TOFE) → NAT.tofe.depenses_totales
+- Solde budgétaire (% PIB) → NAT.tofe.solde_budgetaire_pct_pib
+- Masse salariale → NAT.tofe.remuneration_salaries
+- Impôts directs → NAT.tofe.impots_directs
+- Dépenses publiques (% PIB, BM) → GC.XPN.TOTL.GD.ZS
+- Dette publique (% PIB, DGF) → NAT.financements.dette_pct_pib
+- Service de la dette → NAT.financements.service_dette_total
+- Balance commerciale (Douanes) → NAT.douanes.solde_commercial
+- Exportations FOB → NAT.douanes.exports_fob
+- Importations CAF → NAT.douanes.imports_caf
+- Taux de couverture → NAT.douanes.taux_couverture
+- Production cacao → NAT.base_eco.cacao_production
+- Taux de transformation cacao → NAT.base_eco.cacao_taux_transfo
+- Part du PIB primaire → NAT.base_eco.pib_primaire_pct
+- IDE reçus (Mds FCFA) → NAT.base_eco.ide_total_mds
 
 RÈGLES IMPORTANTES:
 1. Choisis l'indicateur le PLUS pertinent parmi la liste.
-2. UTILISE LA DESCRIPTION (3ème colonne) pour mieux comprendre ce que mesure chaque indicateur. Le nom seul peut être trompeur.
-3. Si l'indicateur EXACT demandé existe dans la liste, match_type = "exact".
-4. Si l'indicateur exact N'EXISTE PAS dans la liste (ex: IDH, GINI, etc.) mais qu'un indicateur PROCHE ou COMPOSANT existe, match_type = "proxy" et explique le lien dans proxy_explanation.
-5. success=false seulement si AUCUN rapport avec des statistiques.
-6. Exemple: "taux de pression fiscale" = recettes fiscales en % du PIB → cherche un indicateur qui mesure les recettes fiscales ou "tax revenue" dans la liste.
+2. UTILISE LA DESCRIPTION (3ème colonne) pour mieux comprendre ce que mesure chaque indicateur.
+3. PRÉFÈRE les indicateurs NAT. pour les questions sur le budget, le TOFE, les douanes, la dette (détail DGF), le cacao, la structure du PIB, car ils contiennent des données nationales plus détaillées et récentes.
+4. Si l'indicateur EXACT demandé existe dans la liste, match_type = "exact".
+5. Si l'indicateur exact N'EXISTE PAS mais qu'un indicateur PROCHE existe, match_type = "proxy" et explique le lien.
+6. success=false seulement si AUCUN rapport avec des statistiques.
 
 REQUÊTE: "{enriched_query}"
 
@@ -506,24 +579,34 @@ Réponds UNIQUEMENT en JSON:
                         'chart_type': 'none'
                     }
             
-            # Récupérer les données
-            indicator_data = data_service.get_indicator_data_for_query(
-                indicator_code, start_year, end_year
-            )
+            # Récupérer les données (national ou Banque Mondiale)
+            if indicator_code and indicator_code.startswith('NAT.'):
+                indicator_data = data_service.get_indicator_data_for_national(indicator_code)
+            else:
+                indicator_data = data_service.get_indicator_data_for_query(
+                    indicator_code, start_year, end_year
+                )
             
             # Fallback si le code ne correspond pas
             if not indicator_data or not indicator_data.get('values'):
                 fallback_match = self._try_fallback_search(user_query)
                 if fallback_match:
-                    indicator_data = data_service.get_indicator_data_for_query(
-                        fallback_match['code'], start_year, end_year
-                    )
+                    fb_code = fallback_match['code']
+                    if fb_code.startswith('NAT.'):
+                        indicator_data = data_service.get_indicator_data_for_national(fb_code)
+                    else:
+                        indicator_data = data_service.get_indicator_data_for_query(
+                            fb_code, start_year, end_year
+                        )
                     if indicator_data and indicator_data.get('values'):
-                        indicator_code = fallback_match['code']
+                        indicator_code = fb_code
                 
                 if not indicator_data or not indicator_data.get('values'):
                     if start_year or end_year:
-                        indicator_data = data_service.get_indicator_data_for_query(indicator_code)
+                        if indicator_code and indicator_code.startswith('NAT.'):
+                            indicator_data = data_service.get_indicator_data_for_national(indicator_code)
+                        else:
+                            indicator_data = data_service.get_indicator_data_for_query(indicator_code)
                     
                     if not indicator_data or not indicator_data.get('values'):
                         return {
@@ -552,13 +635,22 @@ Réponds UNIQUEMENT en JSON:
                         calculation_formula = f"(({last_value} - {first_value}) / {first_value}) × 100"
             
             # === PHASE 2: ANALYSE STATISTIQUE DES DONNÉES RÉELLES ===
+            # Get French definition for the indicator
+            definition_fr = ''
+            if indicator_code.startswith('NAT.'):
+                definition_fr = indicator_data.get('description', '') or indicator_data.get('methodology', '')
+            else:
+                cached_def = data_service._desc_cache.get(indicator_code, {})
+                definition_fr = cached_def.get('full_fr', '') or indicator_data.get('methodology', '')
+            
             analysis_prompt = self._build_data_analysis_prompt(
                 indicator_data['name'],
                 values,
                 indicator_data.get('methodology', ''),
                 user_query,
                 match_type=match_type,
-                proxy_explanation=proxy_explanation
+                proxy_explanation=proxy_explanation,
+                definition=definition_fr
             )
             
             try:
@@ -588,7 +680,9 @@ Réponds UNIQUEMENT en JSON:
                 'match_type': match_type,
                 'proxy_explanation': proxy_explanation,
                 'data': values,
+                'source': indicator_data.get('source', ''),
                 'source_link': indicator_data.get('source_link', ''),
+                'definition': definition_fr,
                 'methodology': indicator_data.get('methodology', ''),
                 'calculation_result': calculation_result,
                 'calculation_formula': calculation_formula,
@@ -618,9 +712,20 @@ Réponds UNIQUEMENT en JSON:
         fallback_match = self._try_fallback_search(user_query)
         if fallback_match:
             try:
-                indicator_data = data_service.get_indicator_data_for_query(fallback_match['code'])
+                fb_code = fallback_match['code']
+                if fb_code.startswith('NAT.'):
+                    indicator_data = data_service.get_indicator_data_for_national(fb_code)
+                else:
+                    indicator_data = data_service.get_indicator_data_for_query(fb_code)
                 if indicator_data and indicator_data.get('values'):
                     values = indicator_data['values']
+                    # Get French definition
+                    fb_def = ''
+                    if fb_code.startswith('NAT.'):
+                        fb_def = indicator_data.get('description', '')
+                    else:
+                        fb_cached = data_service._desc_cache.get(fb_code, {})
+                        fb_def = fb_cached.get('full_fr', '')
                     return {
                         'success': True,
                         'message': self._generate_response_message(
@@ -630,7 +735,9 @@ Réponds UNIQUEMENT en JSON:
                         'indicator_code': fallback_match['code'],
                         'indicator_name': indicator_data['name'],
                         'data': values,
+                        'source': indicator_data.get('source', ''),
                         'source_link': indicator_data.get('source_link', ''),
+                        'definition': fb_def,
                         'methodology': indicator_data.get('methodology', ''),
                         'calculation_result': None,
                         'calculation_formula': None,

@@ -3,6 +3,7 @@ Service pour charger et gérer les données Excel
 """
 import pandas as pd
 import os
+import json
 from typing import Dict, List, Optional, Tuple
 from functools import lru_cache
 
@@ -13,6 +14,7 @@ class DataService:
     _instance = None
     _data_df = None
     _excel_path = None
+    _desc_cache = None
     
     def __new__(cls):
         if cls._instance is None:
@@ -32,6 +34,18 @@ class DataService:
         print(f"Chargement des données depuis: {self._excel_path}")
         self._data_df = pd.read_excel(self._excel_path, sheet_name='Data')
         print(f"✓ Données chargées: {len(self._data_df)} indicateurs")
+        
+        # Load French description cache
+        cache_path = os.path.join(base_dir, 'descriptions_fr_cache.json')
+        if os.path.exists(cache_path):
+            try:
+                with open(cache_path, 'r', encoding='utf-8') as f:
+                    self._desc_cache = json.load(f)
+                print(f"✓ Descriptions FR chargées: {len(self._desc_cache)} traductions")
+            except Exception:
+                self._desc_cache = {}
+        else:
+            self._desc_cache = {}
     
     def get_all_indicators(self) -> List[Dict]:
         """Retourne la liste de tous les indicateurs avec leurs métadonnées"""
@@ -50,12 +64,26 @@ class DataService:
             
             source_link = row.get('Liens', '')
             methodology = row.get('Méthodologie', '')
+            methodo_str = str(methodology).strip() if pd.notna(methodology) else ''
+            definition_raw = row.get('Définition', '')
+            definition_str = str(definition_raw).strip() if pd.notna(definition_raw) else ''
+            
+            # French description: cache (translated) > raw Définition column > fallback
+            cached = self._desc_cache.get(series_code, {})
+            description = cached.get('short_fr', '')
+            if not description and definition_str:
+                # Use raw definition, truncate for card
+                desc = definition_str
+                if len(desc) > 150:
+                    desc = desc[:147] + '...'
+                description = desc
             
             indicators.append({
                 'code': series_code,
                 'name': indicator_name,
+                'description': description,
                 'source_link': str(source_link) if pd.notna(source_link) else '',
-                'methodology': str(methodology) if pd.notna(methodology) else '',
+                'methodology': methodo_str,
             })
         
         return indicators
@@ -86,12 +114,24 @@ class DataService:
         # Extraire les métadonnées directement depuis la feuille Data
         source_link = indicator_row.get('Liens', '')
         methodology = indicator_row.get('Méthodologie', '')
+        methodo_str = str(methodology).strip() if pd.notna(methodology) else ''
+        
+        definition_raw = indicator_row.get('Définition', '')
+        definition_str = str(definition_raw).strip() if pd.notna(definition_raw) else ''
+        
+        # Full French description: cache (translated) > raw Définition column
+        cached = self._desc_cache.get(str(code), {})
+        description = cached.get('full_fr', '')
+        if not description:
+            description = definition_str
         
         return {
             'code': str(code),
             'name': str(indicator_row['Indicateur']),
+            'description': description,
+            'definition': description,
             'source_link': str(source_link) if pd.notna(source_link) else '',
-            'methodology': str(methodology) if pd.notna(methodology) else '',
+            'methodology': methodo_str,
             'values': values
         }
     
@@ -289,6 +329,7 @@ class DataService:
         return {
             'code': code,
             'name': indicator['name'],
+            'source': 'Banque Mondiale (World Development Indicators)',
             'source_link': indicator['source_link'],
             'methodology': indicator['methodology'],
             'values': values
@@ -346,16 +387,22 @@ class DataService:
         }
         
         def _short_description(row):
-            """Extrait une description courte de la méthodologie pour aider le matching."""
-            meth = row.get('Méthodologie', '')
-            if pd.isna(meth) or not meth:
-                return ''
-            meth = str(meth).strip()
-            # Prendre la première phrase ou les 120 premiers caractères
-            first_sentence = meth.split('.')[0].strip()
-            if len(first_sentence) > 120:
-                first_sentence = first_sentence[:120].rsplit(' ', 1)[0]
-            return first_sentence
+            """Extrait une description courte depuis Définition (FR cache) ou brut."""
+            code = str(row.get('Series Code', ''))
+            # Try French translation cache first
+            cached = self._desc_cache.get(code, {})
+            short_fr = cached.get('short_fr', '')
+            if short_fr:
+                return short_fr
+            # Fallback: raw Définition column
+            defn = row.get('Définition', '')
+            if pd.notna(defn) and str(defn).strip():
+                defn = str(defn).strip()
+                first_sentence = defn.split('.')[0].strip()
+                if len(first_sentence) > 120:
+                    first_sentence = first_sentence[:120].rsplit(' ', 1)[0]
+                return first_sentence
+            return ''
         
         lines = []
         seen_codes = set()
@@ -383,10 +430,10 @@ class DataService:
                 if not code or code in seen_codes:
                     continue
                 name_lower = name.lower()
-                meth_lower = str(row.get('Méthodologie', '')).lower() if pd.notna(row.get('Méthodologie', '')) else ''
-                # Score: match in name (weight 2) + match in methodology (weight 1)
+                defn_lower = str(row.get('Définition', '')).lower() if pd.notna(row.get('Définition', '')) else ''
+                # Score: match in name (weight 2) + match in definition (weight 1)
                 score = sum(2 for t in search_terms if t.lower() in name_lower or t.lower() in code.lower())
-                score += sum(1 for t in search_terms if t.lower() in meth_lower)
+                score += sum(1 for t in search_terms if t.lower() in defn_lower)
                 if score > 0:
                     scored.append((score, code, name, row))
             scored.sort(key=lambda x: x[0], reverse=True)
@@ -399,6 +446,24 @@ class DataService:
                 seen_codes.add(code)
         
         return "\n".join(lines)
+
+    def get_indicator_data_for_national(self, code):
+        """
+        Récupère les données d'un indicateur national (code NAT.xxx.yyy).
+        Délègue au national_data_service.
+        """
+        from .national_data_service import national_data_service as nds
+        detail = nds.get_indicator_detail_by_code(code)
+        if not detail:
+            return None
+        return {
+            'code': code,
+            'name': detail['name'],
+            'source': detail.get('source', ''),
+            'source_link': detail.get('source_link', ''),
+            'methodology': detail.get('methodology', ''),
+            'values': detail['values'],
+        }
 
 
 # Instance globale singleton
