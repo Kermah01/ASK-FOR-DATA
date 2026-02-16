@@ -541,10 +541,15 @@ GUIDE RAPIDE:
 RÈGLES IMPORTANTES:
 1. Choisis l'indicateur le PLUS pertinent parmi la liste.
 2. UTILISE LA DESCRIPTION (3ème colonne) pour mieux comprendre ce que mesure chaque indicateur.
-3. PRÉFÈRE les indicateurs NAT. pour les questions sur le budget, le TOFE, les douanes, la dette (détail DGF), le cacao, la structure du PIB, car ils contiennent des données nationales plus détaillées et récentes.
+3. NE PRÉFÈRE PAS automatiquement les indicateurs NAT. ou Banque Mondiale. Analyse le contexte de la requête:
+   - Si l'utilisateur demande une ANNÉE PRÉCISE, choisis l'indicateur qui COUVRE cette année (vérifie [Npts, →YYYY]).
+   - Si l'utilisateur demande une PÉRIODE (ex: 2010-2023), choisis celui qui couvre le mieux cette période.
+   - Si la question porte SPÉCIFIQUEMENT sur le TOFE, les douanes, la dette DGF, le cacao (transformation), la structure sectorielle du PIB, alors les indicateurs NAT. sont plus adaptés car plus détaillés.
+   - Sinon, compare la COMPLÉTUDE (nombre de points) et la RÉCENCE (→année) entre les candidats et choisis le meilleur.
 4. Si l'indicateur EXACT demandé existe dans la liste, match_type = "exact".
 5. Si l'indicateur exact N'EXISTE PAS mais qu'un indicateur PROCHE existe, match_type = "proxy" et explique le lien.
 6. success=false seulement si AUCUN rapport avec des statistiques.
+7. À pertinence égale entre plusieurs candidats, PRÉFÈRE l'indicateur qui: (a) couvre les années demandées par l'utilisateur, (b) a la série temporelle la plus longue [Npts], (c) a les données les plus récentes (→YYYY). La couverture des années demandées est PRIORITAIRE sur la longueur de la série.
 
 REQUÊTE: "{enriched_query}"
 

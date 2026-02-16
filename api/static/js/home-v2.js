@@ -757,6 +757,43 @@ function updateChartTypeButtons(type) {
 }
 
 // =============================================
+// UNIT INFERENCE
+// =============================================
+function inferUnit(name) {
+    if (!name) return '';
+    const n = name.toLowerCase();
+    const paren = name.match(/\(([^)]+)\)\s*$/);
+    if (paren) {
+        const u = paren[1];
+        if (/current US\$/i.test(u)) return 'USD courants';
+        if (/constant.*US\$/i.test(u)) return 'USD constants';
+        if (/current LCU/i.test(u)) return 'Monnaie locale courante';
+        if (/constant LCU/i.test(u)) return 'Monnaie locale constante';
+        if (/%\s*(of|du|des)?\s*GNI/i.test(u)) return '% du RNB';
+        if (/%\s*(of|du|des)?\s*GDP/i.test(u) || /%\s*PIB/i.test(u)) return '% du PIB';
+        if (/%\s*(of|du|des)?\s*total/i.test(u)) return '% du total';
+        if (/metric ton/i.test(u)) return 'Tonnes métriques';
+        if (/kg/i.test(u)) return 'kg';
+        if (/GWh/i.test(u)) return 'GWh';
+        if (/km²|sq\.\s*km/i.test(u)) return 'km²';
+        return u;
+    }
+    if (/\(%\)/.test(name) || /\(en %\)/i.test(name)) return '%';
+    if (/% (du |des |of |d')/i.test(n)) return '%';
+    if (/taux|ratio|part |poids /i.test(n) && /(%|pib|pct|proportion)/i.test(n)) return '%';
+    if (/mds?\s*fcfa|milliards?\s*fcfa/i.test(n)) return 'Milliards FCFA';
+    if (/fcfa/i.test(n)) return 'FCFA';
+    if (/tonnes/i.test(n)) return 'Tonnes';
+    if (/milliers/i.test(n)) return 'Milliers';
+    if (/per 1[,.]?000 live births/i.test(n)) return 'pour 1 000 naissances vivantes';
+    if (/per 1[,.]?000 people/i.test(n)) return 'pour 1 000 habitants';
+    if (/per 100[,.]?000/i.test(n)) return 'pour 100 000';
+    if (/per capita/i.test(n)) return 'par habitant';
+    if (/years|ans|année/i.test(n) && /espérance|life expect/i.test(n)) return 'Années';
+    return '';
+}
+
+// =============================================
 // RENDER CHART
 // =============================================
 function renderChart(data, chartType = 'line') {
@@ -866,6 +903,12 @@ function renderChart(data, chartType = 'line') {
             scales: {
                 y: {
                     beginAtZero: chartType === 'bar',
+                    title: {
+                        display: true,
+                        text: inferUnit(data.indicator_name) || 'Valeur',
+                        color: '#6B7280',
+                        font: { family: 'Inter, sans-serif', size: 12, weight: '600' }
+                    },
                     grid: {
                         color: '#F1F5F9',
                         drawBorder: false
@@ -885,6 +928,12 @@ function renderChart(data, chartType = 'line') {
                     }
                 },
                 x: {
+                    title: {
+                        display: true,
+                        text: 'Année',
+                        color: '#6B7280',
+                        font: { family: 'Inter, sans-serif', size: 12, weight: '600' }
+                    },
                     grid: {
                         display: false
                     },
@@ -923,7 +972,24 @@ function displayRecommendations(indicators) {
 
 function searchRecommendation(query) {
     document.getElementById('query-input').value = query;
-    clearResults();
+
+    // Hide recommendations immediately so the user sees something changed
+    document.getElementById('recommendations-section').style.display = 'none';
+
+    // The loader lives inside .hero-v2 — make sure it's visible
+    const hero = document.querySelector('.hero-v2');
+    hero.style.display = 'flex';
+
+    // Hide other homepage sections and current results
+    document.querySelector('.stats-section').style.display = 'none';
+    document.querySelector('.features-section').style.display = 'none';
+    document.querySelector('.cta-section').style.display = 'none';
+    document.getElementById('results-section').style.display = 'none';
+
+    // Scroll to the search bar / loader area
+    hero.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // Trigger the search
     document.getElementById('search-form').dispatchEvent(new Event('submit'));
 }
 

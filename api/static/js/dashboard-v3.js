@@ -2762,15 +2762,23 @@ const ExplorerModule = {
                     return `<strong>${p.name}</strong><br/>${indicator.name}: <strong>${this.formatValue(p.value)}</strong> ${indicator.unit || ''}`;
                 }
             },
-            grid: { left: '3%', right: '4%', bottom: '3%', top: '10%', containLabel: true },
+            grid: { left: '3%', right: '4%', bottom: '8%', top: '10%', containLabel: true },
             xAxis: {
                 type: 'category',
                 data: years,
+                name: 'Année',
+                nameLocation: 'center',
+                nameGap: 30,
+                nameTextStyle: { color: '#6B7280', fontFamily: 'Inter', fontSize: 12, fontWeight: 'bold' },
                 axisLine: { lineStyle: { color: '#E5E7EB' } },
                 axisLabel: { color: '#6B7280' }
             },
             yAxis: {
                 type: 'value',
+                name: this.inferUnit(indicator.name) || 'Valeur',
+                nameLocation: 'center',
+                nameGap: 55,
+                nameTextStyle: { color: '#6B7280', fontFamily: 'Inter', fontSize: 12, fontWeight: 'bold' },
                 axisLine: { show: false },
                 splitLine: { lineStyle: { color: '#F3F4F6' } },
                 axisLabel: { color: '#6B7280', formatter: (val) => this.formatValue(val) }
@@ -2856,6 +2864,40 @@ const ExplorerModule = {
         }).join('');
     },
 
+    inferUnit(name) {
+        if (!name) return '';
+        const n = name.toLowerCase();
+        const paren = name.match(/\(([^)]+)\)\s*$/);
+        if (paren) {
+            const u = paren[1];
+            if (/current US\$/i.test(u)) return 'USD courants';
+            if (/constant.*US\$/i.test(u)) return 'USD constants';
+            if (/current LCU/i.test(u)) return 'Monnaie locale courante';
+            if (/constant LCU/i.test(u)) return 'Monnaie locale constante';
+            if (/%\s*(of|du|des)?\s*GNI/i.test(u)) return '% du RNB';
+            if (/%\s*(of|du|des)?\s*GDP/i.test(u) || /%\s*PIB/i.test(u)) return '% du PIB';
+            if (/%\s*(of|du|des)?\s*total/i.test(u)) return '% du total';
+            if (/metric ton/i.test(u)) return 'Tonnes métriques';
+            if (/kg/i.test(u)) return 'kg';
+            if (/GWh/i.test(u)) return 'GWh';
+            if (/km²|sq\.\s*km/i.test(u)) return 'km²';
+            return u;
+        }
+        if (/\(%\)/.test(name) || /\(en %\)/i.test(name)) return '%';
+        if (/% (du |des |of |d')/i.test(n)) return '%';
+        if (/taux|ratio|part |poids /i.test(n) && /(%|pib|pct|proportion)/i.test(n)) return '%';
+        if (/mds?\s*fcfa|milliards?\s*fcfa/i.test(n)) return 'Milliards FCFA';
+        if (/fcfa/i.test(n)) return 'FCFA';
+        if (/tonnes/i.test(n)) return 'Tonnes';
+        if (/milliers/i.test(n)) return 'Milliers';
+        if (/per 1[,.]?000 live births/i.test(n)) return 'pour 1 000 naissances vivantes';
+        if (/per 1[,.]?000 people/i.test(n)) return 'pour 1 000 habitants';
+        if (/per 100[,.]?000/i.test(n)) return 'pour 100 000';
+        if (/per capita/i.test(n)) return 'par habitant';
+        if (/years|ans|année/i.test(n) && /espérance|life expect/i.test(n)) return 'Années';
+        return '';
+    },
+
     formatValue(value) {
         if (value === null || value === undefined) return '-';
         
@@ -2871,6 +2913,90 @@ const ExplorerModule = {
         } else {
             return value.toFixed(2);
         }
+    },
+
+    downloadIndicatorPNG() {
+        if (!this.currentIndicator || !this.detailChart) return;
+
+        const ind = this.currentIndicator;
+        const indicatorName = ind.name || 'Indicateur';
+        const values = ind.values || [];
+        const years = values.map(v => v.year);
+        const periodStr = years.length > 1 ? `${years[0]} — ${years[years.length - 1]}` : (years[0] || '');
+
+        // Get chart as base64 from ECharts
+        const url = this.detailChart.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: '#fff' });
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            const padding = { top: 80, bottom: 70, left: 20, right: 20 };
+            const totalWidth = img.width + padding.left + padding.right;
+            const totalHeight = img.height + padding.top + padding.bottom;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = totalWidth;
+            canvas.height = totalHeight;
+            const ctx = canvas.getContext('2d');
+
+            // White background
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, totalWidth, totalHeight);
+
+            // Title
+            ctx.fillStyle = '#1F2937';
+            ctx.font = 'bold 16px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(indicatorName, totalWidth / 2, 30);
+
+            // Subtitle (code + period)
+            ctx.fillStyle = '#6B7280';
+            ctx.font = '12px Inter, sans-serif';
+            const subtitle = [ind.code, periodStr].filter(Boolean).join(' — ');
+            if (subtitle) ctx.fillText(subtitle, totalWidth / 2, 50);
+
+            // Axis labels
+            ctx.fillStyle = '#6B7280';
+            ctx.font = '11px Inter, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('Valeur', padding.left + 5, padding.top - 8);
+            ctx.textAlign = 'right';
+            ctx.fillText('Année', totalWidth - padding.right - 5, padding.top + img.height + 18);
+
+            // Draw the chart
+            ctx.drawImage(img, padding.left, padding.top);
+
+            // Source line
+            ctx.fillStyle = '#9CA3AF';
+            ctx.font = '10px Inter, sans-serif';
+            ctx.textAlign = 'left';
+            const sourceText = ind.source_link ? `Source : ${ind.source_link}` : (ind.source ? `Source : ${ind.source}` : 'Source : Banque Mondiale / ANStat');
+            ctx.fillText(sourceText, padding.left, totalHeight - 35);
+
+            // Watermark (same as home page)
+            ctx.save();
+            ctx.fillStyle = 'rgba(255, 107, 0, 0.07)';
+            ctx.font = 'bold 60px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.translate(totalWidth / 2, totalHeight / 2);
+            ctx.rotate(-Math.PI / 6);
+            ctx.fillText('Ask For Data', 0, 0);
+            ctx.restore();
+
+            // Footer branding
+            ctx.fillStyle = '#D1D5DB';
+            ctx.font = 'bold 10px Inter, sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText('Ask For Data — askfordata.ci', totalWidth - padding.right, totalHeight - 12);
+
+            const link = document.createElement('a');
+            const fileName = indicatorName.replace(/[^a-zA-Z0-9\u00C0-\u024F\s]/g, '').trim().replace(/\s+/g, '_');
+            link.download = `${fileName}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+
+            DashboardV3.showToast('Graphique PNG téléchargé', 'success');
+        };
+        img.src = url;
     },
 
     downloadIndicatorCSV() {
@@ -2893,22 +3019,53 @@ const ExplorerModule = {
     },
 
     downloadIndicatorExcel() {
-        // For simplicity, download as CSV with .xls extension (Excel can open it)
         if (!this.currentIndicator) return;
 
         const ind = this.currentIndicator;
-        let csv = 'Année\tValeur\tUnité\n';
-        
-        (ind.values || []).forEach(v => {
-            csv += `${v.year}\t${v.value}\t${ind.unit || ''}\n`;
+        const indicatorName = ind.name || 'Indicateur';
+        const indicatorCode = ind.code || '';
+        const values = ind.values || [];
+        const years = values.map(v => v.year);
+        const periodStr = years.length > 1 ? `${years[0]} - ${years[years.length - 1]}` : (years[0] || '');
+        const sourceText = ind.source_link || ind.source || 'Banque Mondiale / ANStat';
+
+        let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+        html += '<head><meta charset="utf-8"><style>';
+        html += 'body{font-family:Calibri,sans-serif;} ';
+        html += 'td,th{padding:6px 12px;border:1px solid #D1D5DB;} ';
+        html += 'th{background:#F3F4F6;font-weight:bold;color:#1F2937;} ';
+        html += '.header{font-size:14pt;font-weight:bold;color:#FF6B00;} ';
+        html += '.meta{color:#6B7280;font-size:9pt;} ';
+        html += '.watermark{color:#FFD4C4;font-size:18pt;font-weight:bold;text-align:center;} ';
+        html += '.footer{color:#9CA3AF;font-size:8pt;font-style:italic;} ';
+        html += '</style></head>';
+        html += '<body><table>';
+        html += `<tr><td class="header" colspan="2">${indicatorName}</td></tr>`;
+        html += `<tr><td class="meta">Code</td><td class="meta">${indicatorCode}</td></tr>`;
+        html += `<tr><td class="meta">Période</td><td class="meta">${periodStr}</td></tr>`;
+        if (ind.unit) html += `<tr><td class="meta">Unité</td><td class="meta">${ind.unit}</td></tr>`;
+        html += `<tr><td class="meta">Source</td><td class="meta">${sourceText}</td></tr>`;
+        html += `<tr><td class="meta">Observations</td><td class="meta">${values.length}</td></tr>`;
+        html += `<tr><td colspan="2"></td></tr>`;
+        html += `<tr><th>Année</th><th>Valeur</th></tr>`;
+
+        values.forEach(v => {
+            html += `<tr><td>${v.year}</td><td>${v.value}</td></tr>`;
         });
 
-        const blob = new Blob([csv], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+        html += `<tr><td colspan="2"></td></tr>`;
+        html += `<tr><td class="watermark" colspan="2">Ask For Data</td></tr>`;
+        html += `<tr><td class="footer" colspan="2">© Ask For Data (askfordata.ci) - Toute reproduction doit mentionner la source</td></tr>`;
+        html += '</table></body></html>';
+
+        const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
         const link = document.createElement('a');
+        const fileName = indicatorName.replace(/[^a-zA-Z0-9\u00C0-\u024F\s]/g, '').trim().replace(/\s+/g, '_');
+        link.download = `${fileName}.xls`;
         link.href = URL.createObjectURL(blob);
-        link.download = `${ind.code}_data.xls`;
         link.click();
-        
+        URL.revokeObjectURL(link.href);
+
         DashboardV3.showToast('Fichier Excel téléchargé', 'success');
     }
 };

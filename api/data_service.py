@@ -386,6 +386,16 @@ class DataService:
             'MS.MIL.XPND.GD.ZS',
         }
         
+        year_columns = [col for col in self._data_df.columns if isinstance(col, int)]
+        year_columns.sort()
+
+        def _data_coverage(row):
+            """Returns (nb_years, most_recent_year) for an indicator row."""
+            years_with_data = [y for y in year_columns if pd.notna(row.get(y))]
+            if not years_with_data:
+                return 0, 0
+            return len(years_with_data), max(years_with_data)
+
         def _short_description(row):
             """Extrait une description courte depuis Définition (FR cache) ou brut."""
             code = str(row.get('Series Code', ''))
@@ -403,22 +413,29 @@ class DataService:
                     first_sentence = first_sentence[:120].rsplit(' ', 1)[0]
                 return first_sentence
             return ''
+
+        def _build_entry(code, name, row):
+            """Build a compact entry line with data coverage info."""
+            desc = _short_description(row)
+            nb, latest = _data_coverage(row)
+            entry = f"{code}|{name}"
+            if desc:
+                entry += f"|{desc}"
+            if nb > 0:
+                entry += f" [{nb}pts, →{latest}]"
+            return entry
         
         lines = []
         seen_codes = set()
         
-        # 1. Always add essential indicators (with description)
+        # 1. Always add essential indicators (with description + coverage)
         for _, row in self._data_df.iterrows():
             code = row['Series Code']
             name = row['Indicateur']
             if pd.isna(code) or pd.isna(name):
                 continue
             if str(code) in essential_codes:
-                desc = _short_description(row)
-                entry = f"{code}|{name}"
-                if desc:
-                    entry += f"|{desc}"
-                lines.append(entry)
+                lines.append(_build_entry(str(code), str(name), row))
                 seen_codes.add(str(code))
         
         # 2. Add search-matching indicators (search name AND methodology)
@@ -438,11 +455,7 @@ class DataService:
                     scored.append((score, code, name, row))
             scored.sort(key=lambda x: x[0], reverse=True)
             for _, code, name, row in scored[:max_results - len(lines)]:
-                desc = _short_description(row)
-                entry = f"{code}|{name}"
-                if desc:
-                    entry += f"|{desc}"
-                lines.append(entry)
+                lines.append(_build_entry(code, name, row))
                 seen_codes.add(code)
         
         return "\n".join(lines)

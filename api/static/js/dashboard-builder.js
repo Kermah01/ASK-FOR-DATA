@@ -30,49 +30,49 @@ const DashboardBuilder = {
         {
             id: 'evolution', label: 'Évolution temporelle',
             types: [
-                { id: 'line',         icon: '📈', label: 'Courbe',              desc: 'Évolution dans le temps' },
-                { id: 'area',         icon: '🏔️', label: 'Aire',                desc: 'Courbe avec remplissage' },
-                { id: 'area_stacked', icon: '📊', label: 'Aires empilées',      desc: 'Composition dans le temps' },
-                { id: 'step',         icon: '📶', label: 'En escalier',         desc: 'Paliers successifs' },
+                { id: 'line',         icon: '<i class="fas fa-chart-line"></i>',       label: 'Courbe',              desc: 'Évolution dans le temps' },
+                { id: 'area',         icon: '<i class="fas fa-chart-area"></i>',       label: 'Aire',                desc: 'Courbe avec remplissage' },
+                { id: 'area_stacked', icon: '<i class="fas fa-layer-group"></i>',      label: 'Aires empilées',      desc: 'Composition dans le temps' },
+                { id: 'step',         icon: '<i class="fas fa-signal"></i>',           label: 'En escalier',         desc: 'Paliers successifs' },
             ]
         },
         {
             id: 'comparison', label: 'Comparaison',
             types: [
-                { id: 'bar',            icon: '📊', label: 'Histogramme',         desc: 'Barres verticales' },
-                { id: 'bar_horizontal', icon: '📋', label: 'Barres horiz.',       desc: 'Barres horizontales' },
-                { id: 'bar_grouped',    icon: '📊', label: 'Barres groupées',     desc: 'Séries côte à côte' },
-                { id: 'bar_stacked',    icon: '📚', label: 'Barres empilées',     desc: 'Empilées par catégorie' },
-                { id: 'waterfall',      icon: '🏗️', label: 'Cascade',             desc: 'Variations cumulées' },
-                { id: 'polar_bar',      icon: '🎯', label: 'Barres polaires',     desc: 'Barres en cercle' },
+                { id: 'bar',            icon: '<i class="fas fa-chart-bar"></i>',        label: 'Histogramme',         desc: 'Barres verticales' },
+                { id: 'bar_horizontal', icon: '<i class="fas fa-align-left"></i>',       label: 'Barres horiz.',       desc: 'Barres horizontales' },
+                { id: 'bar_grouped',    icon: '<i class="fas fa-columns"></i>',          label: 'Barres groupées',     desc: 'Séries côte à côte' },
+                { id: 'bar_stacked',    icon: '<i class="fas fa-th-large"></i>',         label: 'Barres empilées',     desc: 'Empilées par catégorie' },
+                { id: 'waterfall',      icon: '<i class="fas fa-sort-amount-down"></i>', label: 'Cascade',             desc: 'Variations cumulées' },
+                { id: 'polar_bar',      icon: '<i class="fas fa-bullseye"></i>',         label: 'Barres polaires',     desc: 'Barres en cercle' },
             ]
         },
         {
             id: 'proportion', label: 'Proportion & Répartition',
             types: [
-                { id: 'pie',      icon: '🥧', label: 'Camembert',     desc: 'Parts du total' },
-                { id: 'donut',    icon: '🍩', label: 'Anneau',        desc: 'Camembert creux' },
-                { id: 'treemap',  icon: '🟩', label: 'Treemap',       desc: 'Rectangles imbriqués' },
-                { id: 'sunburst', icon: '☀️', label: 'Sunburst',      desc: 'Hiérarchie radiale' },
-                { id: 'funnel',   icon: '🔽', label: 'Entonnoir',     desc: 'Étapes décroissantes' },
+                { id: 'pie',      icon: '<i class="fas fa-chart-pie"></i>',      label: 'Camembert',     desc: 'Parts du total' },
+                { id: 'donut',    icon: '<i class="far fa-circle"></i>',         label: 'Anneau',        desc: 'Camembert creux' },
+                { id: 'treemap',  icon: '<i class="fas fa-th"></i>',             label: 'Treemap',       desc: 'Rectangles imbriqués' },
+                { id: 'sunburst', icon: '<i class="fas fa-sun"></i>',            label: 'Sunburst',      desc: 'Hiérarchie radiale' },
+                { id: 'funnel',   icon: '<i class="fas fa-filter"></i>',         label: 'Entonnoir',     desc: 'Étapes décroissantes' },
             ]
         },
         {
             id: 'correlation', label: 'Corrélation & Distribution',
             types: [
-                { id: 'scatter',  icon: '⚬', label: 'Nuage de points',     desc: 'Relation entre 2 variables' },
-                { id: 'bubble',   icon: '🫧', label: 'Bulles',              desc: 'Points à 3 dimensions' },
-                { id: 'heatmap',  icon: '🌡️', label: 'Carte de chaleur',    desc: 'Matrice de valeurs' },
-                { id: 'boxplot',  icon: '📦', label: 'Boîte à moustaches',  desc: 'Distribution statistique' },
+                { id: 'scatter',  icon: '<i class="fas fa-braille"></i>',            label: 'Nuage de points',     desc: 'Relation entre 2 variables' },
+                { id: 'bubble',   icon: '<i class="fas fa-circle"></i>',             label: 'Bulles',              desc: 'Points à 3 dimensions' },
+                { id: 'heatmap',  icon: '<i class="fas fa-border-all"></i>',         label: 'Carte de chaleur',    desc: 'Matrice de valeurs' },
+                { id: 'boxplot',  icon: '<i class="fas fa-box"></i>',               label: 'Boîte à moustaches',  desc: 'Distribution statistique' },
             ]
         },
         {
             id: 'multiaxes', label: 'Multi-axes & Spécialisé',
             types: [
-                { id: 'radar',       icon: '🕸️', label: 'Radar',           desc: 'Profil multidimensionnel' },
-                { id: 'gauge',       icon: '🎛️', label: 'Jauge',           desc: 'Valeur vs objectif' },
-                { id: 'candlestick', icon: '🕯️', label: 'Chandelier',     desc: 'Min/Max/Ouv/Ferm' },
-                { id: 'sankey',      icon: '🔀', label: 'Sankey',          desc: 'Flux entre catégories' },
+                { id: 'radar',       icon: '<i class="fas fa-spider"></i>',          label: 'Radar',           desc: 'Profil multidimensionnel' },
+                { id: 'gauge',       icon: '<i class="fas fa-tachometer-alt"></i>',  label: 'Jauge',           desc: 'Valeur vs objectif' },
+                { id: 'candlestick', icon: '<i class="fas fa-grip-lines-vertical"></i>', label: 'Chandelier', desc: 'Min/Max/Ouv/Ferm' },
+                { id: 'sankey',      icon: '<i class="fas fa-random"></i>',          label: 'Sankey',          desc: 'Flux entre catégories' },
             ]
         }
     ],
@@ -343,6 +343,11 @@ const DashboardBuilder = {
         if (panel.rowSpan > 1) el.classList.add(`rows-${panel.rowSpan}`);
         el.dataset.panelId = panel.id;
         el.id = `builder-panel-${panel.id}`;
+        // Restore custom height from resize
+        if (panel._customHeight) {
+            el.style.height = panel._customHeight + 'px';
+            el.style.minHeight = panel._customHeight + 'px';
+        }
 
         // Drag attributes
         el.draggable = true;
@@ -376,6 +381,7 @@ const DashboardBuilder = {
                         ${[3,4,6,8,12].map(s => `<button class="panel-size-btn ${panel.colSpan === s ? 'active-size' : ''}" data-span="${s}" data-panel-id="${panel.id}" title="${s}/12">${s}</button>`).join('')}
                     </div>
                     <div class="panel-actions">
+                        <button class="panel-action-btn" title="Détails des indicateurs" data-action="details" data-panel-id="${panel.id}"><i class="fas fa-info-circle"></i></button>
                         <button class="panel-action-btn" title="Télécharger le graphique" data-action="download" data-panel-id="${panel.id}"><i class="fas fa-download"></i></button>
                         <button class="panel-action-btn" title="Changer le graphique" data-action="chart-type" data-panel-id="${panel.id}"><i class="fas fa-chart-pie"></i></button>
                         <button class="panel-action-btn" title="Personnaliser" data-action="customize" data-panel-id="${panel.id}"><i class="fas fa-palette"></i></button>
@@ -387,7 +393,14 @@ const DashboardBuilder = {
                     <div class="panel-chart" id="panel-chart-${panel.id}"></div>
                 </div>
                 <div class="panel-footer" id="panel-footer-${panel.id}"></div>
-                <div class="panel-resize-corner" data-panel-id="${panel.id}"></div>
+                <div class="panel-resize-edge edge-n" data-panel-id="${panel.id}" data-edge="n"></div>
+                <div class="panel-resize-edge edge-s" data-panel-id="${panel.id}" data-edge="s"></div>
+                <div class="panel-resize-edge edge-e" data-panel-id="${panel.id}" data-edge="e"></div>
+                <div class="panel-resize-edge edge-w" data-panel-id="${panel.id}" data-edge="w"></div>
+                <div class="panel-resize-edge edge-se" data-panel-id="${panel.id}" data-edge="se"></div>
+                <div class="panel-resize-edge edge-sw" data-panel-id="${panel.id}" data-edge="sw"></div>
+                <div class="panel-resize-edge edge-ne" data-panel-id="${panel.id}" data-edge="ne"></div>
+                <div class="panel-resize-edge edge-nw" data-panel-id="${panel.id}" data-edge="nw"></div>
             `;
         } else {
             // Empty panel — show "+"
@@ -408,7 +421,14 @@ const DashboardBuilder = {
                         <span>Ajouter un graphique</span>
                     </div>
                 </div>
-                <div class="panel-resize-corner" data-panel-id="${panel.id}"></div>
+                <div class="panel-resize-edge edge-n" data-panel-id="${panel.id}" data-edge="n"></div>
+                <div class="panel-resize-edge edge-s" data-panel-id="${panel.id}" data-edge="s"></div>
+                <div class="panel-resize-edge edge-e" data-panel-id="${panel.id}" data-edge="e"></div>
+                <div class="panel-resize-edge edge-w" data-panel-id="${panel.id}" data-edge="w"></div>
+                <div class="panel-resize-edge edge-se" data-panel-id="${panel.id}" data-edge="se"></div>
+                <div class="panel-resize-edge edge-sw" data-panel-id="${panel.id}" data-edge="sw"></div>
+                <div class="panel-resize-edge edge-ne" data-panel-id="${panel.id}" data-edge="ne"></div>
+                <div class="panel-resize-edge edge-nw" data-panel-id="${panel.id}" data-edge="nw"></div>
             `;
         }
 
@@ -440,6 +460,7 @@ const DashboardBuilder = {
                 const action = btn.dataset.action;
                 const pid = parseInt(btn.dataset.panelId);
                 if (action === 'delete') this.removePanel(pid);
+                else if (action === 'details') this.showDetailsModal(pid);
                 else if (action === 'chart-type') this.showChartTypeModal(pid);
                 else if (action === 'customize') this.showCustomizeModal(pid);
                 else if (action === 'indicators') this.showIndicatorModal(pid);
@@ -457,26 +478,58 @@ const DashboardBuilder = {
             });
         }
 
-        // Corner resize handle
-        el.querySelectorAll('.panel-resize-corner').forEach(handle => {
+        // Edge & corner resize handles (N, S, E, W, NE, NW, SE, SW)
+        // Width snaps to nearest grid column span on release to prevent gaps
+        el.querySelectorAll('.panel-resize-edge').forEach(handle => {
             handle.addEventListener('mousedown', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 const pid = parseInt(handle.dataset.panelId);
+                const edge = handle.dataset.edge;
                 const p = this._getPanel(pid);
                 if (!p) return;
                 const panelEl = document.getElementById(`builder-panel-${pid}`);
                 if (!panelEl) return;
 
                 const startX = e.clientX, startY = e.clientY;
-                const startW = panelEl.offsetWidth, startH = panelEl.offsetHeight;
+                const startH = panelEl.offsetHeight;
+                const resizesH = edge.includes('e') || edge.includes('w');
+                const resizesV = edge.includes('n') || edge.includes('s');
+                const cursors = { n:'ns-resize', s:'ns-resize', e:'ew-resize', w:'ew-resize',
+                    ne:'nesw-resize', sw:'nesw-resize', nw:'nwse-resize', se:'nwse-resize' };
+
+                // Compute grid column width for snapping
+                const grid = document.getElementById('builder-grid');
+                const gridW = grid ? grid.clientWidth : 800;
+                const gap = 16;
+                const colW = (gridW - gap * 11) / 12;
 
                 const onMove = (ev) => {
-                    const newW = Math.max(200, startW + (ev.clientX - startX));
-                    const newH = Math.max(200, startH + (ev.clientY - startY));
-                    panelEl.style.width = newW + 'px';
-                    panelEl.style.height = newH + 'px';
-                    panelEl.style.minHeight = newH + 'px';
+                    const dy = ev.clientY - startY;
+                    // Height: free resize
+                    if (resizesV) {
+                        let newH = startH;
+                        if (edge.includes('s')) newH = Math.max(200, startH + dy);
+                        if (edge.includes('n')) newH = Math.max(200, startH - dy);
+                        panelEl.style.height = newH + 'px';
+                        panelEl.style.minHeight = newH + 'px';
+                    }
+                    // Width: show visual preview via outline
+                    if (resizesH) {
+                        const dx = ev.clientX - startX;
+                        const currentSpan = p.colSpan || 4;
+                        const currentPxW = currentSpan * colW + (currentSpan - 1) * gap;
+                        let newPxW = currentPxW;
+                        if (edge.includes('e')) newPxW = currentPxW + dx;
+                        if (edge.includes('w')) newPxW = currentPxW - dx;
+                        // Snap to nearest column span
+                        const newSpan = Math.max(3, Math.min(12, Math.round((newPxW + gap) / (colW + gap))));
+                        if (newSpan !== (p._previewSpan || currentSpan)) {
+                            p._previewSpan = newSpan;
+                            // Update class live for instant visual feedback
+                            panelEl.className = panelEl.className.replace(/span-\d+/g, `span-${newSpan}`);
+                        }
+                    }
                     // Resize chart
                     const chartEl = document.getElementById(`panel-chart-${pid}`);
                     if (chartEl) {
@@ -489,12 +542,19 @@ const DashboardBuilder = {
                     document.removeEventListener('mouseup', onUp);
                     document.body.style.cursor = '';
                     document.body.style.userSelect = '';
-                    // Store custom height
+                    // Commit snapped width
+                    if (resizesH && p._previewSpan) {
+                        p.colSpan = p._previewSpan;
+                        delete p._previewSpan;
+                    }
+                    // Commit height
                     p._customHeight = panelEl.offsetHeight;
+                    panelEl.style.width = ''; // Clear any pixel width — let grid handle it
+                    this.renderGrid(); // Re-render to ensure clean grid flow
                     this.saveToStorage();
                     this._pushHistory();
                 };
-                document.body.style.cursor = 'nwse-resize';
+                document.body.style.cursor = cursors[edge] || 'nwse-resize';
                 document.body.style.userSelect = 'none';
                 document.addEventListener('mousemove', onMove);
                 document.addEventListener('mouseup', onUp);
@@ -838,6 +898,55 @@ const DashboardBuilder = {
         });
     },
 
+    // ── Details Modal ─────────────────────────────────────
+    showDetailsModal(panelId) {
+        const panel = this._getPanel(panelId);
+        if (!panel || !panel.indicators?.length) return;
+
+        const cards = panel.indicators.map(ind => {
+            const cached = panel.dataCache[ind.code];
+            if (!cached) return '';
+            const years = (cached.values || []).map(v => v.year);
+            const minY = years.length ? Math.min(...years) : '—';
+            const maxY = years.length ? Math.max(...years) : '—';
+            const nPts = years.length;
+            const unit = this._inferUnit(cached.name || ind.name);
+
+            return `
+            <div class="detail-card">
+                <div class="detail-card-header">
+                    <span class="detail-code">${this._escHtml(cached.code || ind.code)}</span>
+                    <span class="detail-badge">${nPts} obs. · ${minY}–${maxY}</span>
+                </div>
+                <h4 class="detail-name">${this._escHtml(cached.name || ind.name)}</h4>
+                ${unit ? `<div class="detail-row"><strong>Unité :</strong> ${this._escHtml(unit)}</div>` : ''}
+                ${cached.definition ? `<div class="detail-row"><strong>Définition :</strong> ${this._escHtml(cached.definition)}</div>` : ''}
+                ${cached.methodology ? `<div class="detail-row"><strong>Méthodologie :</strong> ${this._escHtml(cached.methodology)}</div>` : ''}
+                ${cached.source_link ? `<div class="detail-row"><strong>Source :</strong> <a href="${this._escHtml(cached.source_link)}" target="_blank" rel="noopener">${this._escHtml(cached.source_link)}</a></div>` : ''}
+            </div>`;
+        }).filter(Boolean).join('');
+
+        const overlay = document.createElement('div');
+        overlay.className = 'builder-modal-overlay';
+        overlay.innerHTML = `
+        <div class="builder-modal" style="max-width:640px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-info-circle"></i> Détails des indicateurs</h3>
+                <button class="modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" style="max-height:70vh;overflow-y:auto;">
+                ${cards || '<p style="color:#6B7280;">Aucune métadonnée disponible.</p>'}
+            </div>
+        </div>`;
+
+        document.body.appendChild(overlay);
+        requestAnimationFrame(() => overlay.classList.add('active'));
+
+        const close = () => { overlay.classList.remove('active'); setTimeout(() => overlay.remove(), 200); };
+        overlay.querySelector('.modal-close').addEventListener('click', close);
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+    },
+
     // ── Customize Modal ───────────────────────────────────
     showCustomizeModal(panelId) {
         const panel = this._getPanel(panelId);
@@ -1048,6 +1157,22 @@ const DashboardBuilder = {
         // Common text style
         const textStyle = { fontFamily, fontSize };
 
+        // Auto-infer axis labels if not manually set
+        const autoYLabel = (() => {
+            if (panel.axisYLabel) return panel.axisYLabel;
+            // Infer from first indicator with data
+            const names = data.map(d => d.name).filter(Boolean);
+            if (names.length === 0) return '';
+            // If all indicators share the same unit, use it
+            const units = names.map(n => this._inferUnit(n)).filter(Boolean);
+            if (units.length > 0) {
+                const unique = [...new Set(units)];
+                return unique.length === 1 ? unique[0] : unique[0];
+            }
+            return '';
+        })();
+        const autoXLabel = panel.axisXLabel || 'Année';
+
         // Title
         const title = {
             text: panel.title || panel.indicators.map(i => i.name).join(' / '),
@@ -1066,15 +1191,17 @@ const DashboardBuilder = {
         // Tooltip
         const tooltip = { trigger: 'axis', textStyle: { fontFamily } };
 
+        const chartOpts = { title, legend, tooltip, textStyle, colors, fontFamily, fontSize, autoXLabel, autoYLabel };
+
         switch (type) {
             case 'line': case 'area': case 'area_stacked': case 'step':
-                return this._cartesianOption(panel, data, type, { title, legend, tooltip, textStyle, colors, fontFamily, fontSize });
+                return this._cartesianOption(panel, data, type, chartOpts);
             case 'bar': case 'bar_horizontal': case 'bar_grouped': case 'bar_stacked':
-                return this._barOption(panel, data, type, { title, legend, tooltip, textStyle, colors, fontFamily, fontSize });
+                return this._barOption(panel, data, type, chartOpts);
             case 'pie': case 'donut':
-                return this._pieOption(panel, data, type, { title, legend, textStyle, colors, fontFamily, fontSize });
+                return this._pieOption(panel, data, type, chartOpts);
             case 'scatter': case 'bubble':
-                return this._scatterOption(panel, data, type, { title, legend, tooltip, textStyle, colors, fontFamily, fontSize });
+                return this._scatterOption(panel, data, type, chartOpts);
             case 'radar':
                 return this._radarOption(panel, data, { title, legend, textStyle, colors, fontFamily, fontSize });
             case 'gauge':
@@ -1098,7 +1225,7 @@ const DashboardBuilder = {
             case 'sankey':
                 return this._sankeyOption(panel, data, { title, textStyle, colors, fontFamily, fontSize });
             default:
-                return this._cartesianOption(panel, data, 'line', { title, legend, tooltip, textStyle, colors, fontFamily, fontSize });
+                return this._cartesianOption(panel, data, 'line', chartOpts);
         }
     },
 
@@ -1140,17 +1267,19 @@ const DashboardBuilder = {
             xAxis: {
                 type: 'category',
                 data: years,
-                name: panel.axisXLabel || '',
+                name: opts.autoXLabel || '',
                 nameLocation: 'center',
                 nameGap: 28,
+                nameTextStyle: { fontFamily: opts.fontFamily, fontSize: opts.fontSize - 1, color: '#6B7280', fontWeight: 600 },
                 axisLabel: { fontFamily: opts.fontFamily, fontSize: opts.fontSize - 1 },
                 splitLine: { show: panel.showGrid },
             },
             yAxis: {
                 type: 'value',
-                name: panel.axisYLabel || '',
+                name: opts.autoYLabel || '',
                 nameLocation: 'center',
                 nameGap: 50,
+                nameTextStyle: { fontFamily: opts.fontFamily, fontSize: opts.fontSize - 1, color: '#6B7280', fontWeight: 600 },
                 axisLabel: { fontFamily: opts.fontFamily, fontSize: opts.fontSize - 1 },
                 splitLine: { show: panel.showGrid },
             },
@@ -1178,12 +1307,18 @@ const DashboardBuilder = {
         const catAxis = {
             type: 'category',
             data: years,
-            name: panel.axisXLabel || '',
+            name: opts.autoXLabel || '',
+            nameLocation: 'center',
+            nameGap: 28,
+            nameTextStyle: { fontFamily: opts.fontFamily, fontSize: opts.fontSize - 1, color: '#6B7280', fontWeight: 600 },
             axisLabel: { fontFamily: opts.fontFamily, fontSize: opts.fontSize - 1 },
         };
         const valAxis = {
             type: 'value',
-            name: panel.axisYLabel || '',
+            name: opts.autoYLabel || '',
+            nameLocation: 'center',
+            nameGap: 50,
+            nameTextStyle: { fontFamily: opts.fontFamily, fontSize: opts.fontSize - 1, color: '#6B7280', fontWeight: 600 },
             axisLabel: { fontFamily: opts.fontFamily, fontSize: opts.fontSize - 1 },
             splitLine: { show: panel.showGrid },
         };
@@ -1968,5 +2103,44 @@ const DashboardBuilder = {
 
     _safeNum(v, fallback = 0) {
         return (v !== null && v !== undefined && isFinite(v)) ? v : fallback;
+    },
+
+    _inferUnit(name) {
+        if (!name) return '';
+        const n = name.toLowerCase();
+        // Parenthesized units
+        const paren = name.match(/\(([^)]+)\)\s*$/);
+        if (paren) {
+            const u = paren[1];
+            if (/current US\$/i.test(u)) return 'USD courants';
+            if (/constant.*US\$/i.test(u)) return 'USD constants';
+            if (/current LCU/i.test(u)) return 'Monnaie locale courante';
+            if (/constant LCU/i.test(u)) return 'Monnaie locale constante';
+            if (/%\s*(of|du|des)?\s*GNI/i.test(u)) return '% du RNB';
+            if (/%\s*(of|du|des)?\s*GDP/i.test(u) || /%\s*PIB/i.test(u)) return '% du PIB';
+            if (/%\s*(of|du|des)?\s*total/i.test(u)) return '% du total';
+            if (/metric ton/i.test(u)) return 'Tonnes métriques';
+            if (/kg/i.test(u)) return 'kg';
+            if (/GWh/i.test(u)) return 'GWh';
+            if (/km²|sq\.\s*km/i.test(u)) return 'km²';
+            return u;
+        }
+        // Percentage patterns
+        if (/\(%\)/.test(name) || /\(en %\)/i.test(name)) return '%';
+        if (/% (du |des |of |d')/i.test(n)) return '%';
+        if (/taux|ratio|part |poids /i.test(n) && /(%|pib|pct|proportion)/i.test(n)) return '%';
+        // National data patterns
+        if (/mds?\s*fcfa|milliards?\s*fcfa/i.test(n)) return 'Milliards FCFA';
+        if (/fcfa/i.test(n)) return 'FCFA';
+        if (/tonnes/i.test(n)) return 'Tonnes';
+        if (/milliers/i.test(n)) return 'Milliers';
+        // Per-N patterns
+        if (/per 1[,.]?000 live births/i.test(n)) return 'pour 1 000 naissances vivantes';
+        if (/per 1[,.]?000 people/i.test(n)) return 'pour 1 000 habitants';
+        if (/per 100[,.]?000/i.test(n)) return 'pour 100 000';
+        if (/per capita/i.test(n)) return 'par habitant';
+        // Common indicators
+        if (/years|ans|année/i.test(n) && /espérance|life expect/i.test(n)) return 'Années';
+        return '';
     },
 };
