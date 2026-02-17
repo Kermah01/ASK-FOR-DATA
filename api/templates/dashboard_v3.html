@@ -12,8 +12,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- CSS -->
-    <link rel="stylesheet" href="{% static 'css/dashboard-v3.css' %}?v=1.0">
-    <link rel="stylesheet" href="{% static 'css/dashboard-builder.css' %}?v=1.0">
+    <link rel="stylesheet" href="{% static 'css/dashboard-v3.css' %}?v=2.0">
+    <link rel="stylesheet" href="{% static 'css/dashboard-builder.css' %}?v=2.0">
 </head>
 <body class="dashboard-body">
 
@@ -24,7 +24,7 @@
             <div class="nav-brand-group">
                 <button id="sidebar-toggle" class="mobile-toggle"><i class="fas fa-bars"></i></button>
                 <a href="{% url 'home' %}" class="brand" style="display: flex; align-items: center;">
-                    <img src="{% static 'img/logo.png' %}" alt="Ask For Data" style="height: 80px; width: auto;">
+                    <img src="{% static 'img/logo.png' %}" alt="Ask For Data" class="brand-logo" style="height: 60px; width: auto;">
                 </a>
             </div>
             <div class="nav-links-main">
@@ -165,18 +165,18 @@
 
                             <div class="personality-group">
                                 <div class="personality-card small">
-                                    <div class="photo-frame" style="width:80px; height:80px;">
+                                    <div class="photo-frame">
                                         <img src="{% static 'img/patrick_achi.jpg' %}" alt="Patrick ACHI" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
                                     </div>
-                                    <div class="p-name" style="font-size:0.9rem;">Patrick ACHI</div>
-                                    <div class="p-role" style="font-size:0.7rem;">Président de l'Assemblée Nationale</div>
+                                    <div class="p-name">Patrick ACHI</div>
+                                    <div class="p-role">Président de l'Assemblée Nationale</div>
                                 </div>
                                 <div class="personality-card small">
-                                    <div class="photo-frame" style="width:80px; height:80px;">
+                                    <div class="photo-frame">
                                         <img src="{% static 'img/kandia_camara.jpg' %}" alt="Kandia CAMARA" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
                                     </div>
-                                    <div class="p-name" style="font-size:0.9rem;">Kandia CAMARA</div>
-                                    <div class="p-role" style="font-size:0.7rem;">Présidente du Sénat</div>
+                                    <div class="p-name">Kandia CAMARA</div>
+                                    <div class="p-role">Présidente du Sénat</div>
                                 </div>
                             </div>
                         </div>

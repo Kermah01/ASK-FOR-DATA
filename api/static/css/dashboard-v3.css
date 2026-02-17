@@ -371,7 +371,7 @@ body.dashboard-body {
 /* Preview Grid for other sections */
 .preview-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
     gap: 1.5rem;
 }
 
@@ -409,7 +409,7 @@ body.dashboard-body {
 /* --- IMPROVED COUNTRY INFOGRAPHIC --- */
 .country-info-section.infographic-layout {
     background: linear-gradient(135deg, #ffffff 0%, #fafafa 50%, #fff8f3 100%);
-    padding: 3rem;
+    padding: clamp(1rem, 3vw, 3rem);
     position: relative;
     overflow: hidden;
     border-radius: 20px;
@@ -458,7 +458,7 @@ body.dashboard-body {
 }
 
 .country-header-text h2 {
-    font-size: 2.8rem;
+    font-size: clamp(1.4rem, 4vw, 2.8rem);
     font-weight: 900;
     color: var(--text-dark);
     margin: 0;
@@ -493,9 +493,9 @@ body.dashboard-body {
 .personalities-row {
     display: flex;
     justify-content: center;
-    align-items: flex-end; /* Align bottom to handle different heights */
-    gap: 3rem;
-    margin-bottom: 3rem;
+    align-items: flex-end;
+    gap: clamp(1rem, 2vw, 3rem);
+    margin-bottom: 2rem;
     flex-wrap: wrap;
 }
 
@@ -586,14 +586,16 @@ body.dashboard-body {
 
 .personality-group {
     display: flex;
-    gap: 2rem;
+    gap: clamp(1rem, 2vw, 2rem);
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 /* Infographic Stats Grid */
 .infographic-stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
+    gap: 1rem;
 }
 
 .stat-box {
@@ -643,7 +645,7 @@ body.dashboard-body {
 
 /* --- NEW PREVIEW CARD DESIGN (DASHBOARD IN DASHBOARD) --- */
 .preview-grid {
-    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); /* Wider cards */
+    grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
 }
 
 .preview-card-v2 {
@@ -711,11 +713,11 @@ body.dashboard-body {
 
 .mini-charts-container {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
     gap: 1rem;
     flex: 1;
-    min-height: 240px; /* Force height for charts */
+    min-height: 200px;
 }
 
 .mini-chart-wrapper {
@@ -745,7 +747,7 @@ body.dashboard-body {
 /* 5. Detailed Section Grids (Updated for more charts) */
 .chart-grid-2x2 {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr));
     gap: 1.5rem;
     margin-top: 1.5rem;
 }
@@ -758,7 +760,8 @@ body.dashboard-body {
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     display: flex;
     flex-direction: column;
-    height: 400px; /* Fixed height for charts */
+    min-height: 360px;
+    height: auto;
 }
 
 .chart-title {
@@ -815,7 +818,7 @@ body.dashboard-body {
 .chart-container {
     flex: 1;
     width: 100%;
-    height: calc(100% - 60px);
+    min-height: 280px;
     position: relative;
     overflow: hidden;
 }
@@ -832,6 +835,30 @@ body.dashboard-body {
 .sub-navbar {
     overflow-x: auto; /* Handle overflow on small screens */
     white-space: nowrap;
+}
+
+/* Mobile toggle button (dashboard-specific) */
+.mobile-toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    width: 38px;
+    height: 38px;
+    font-size: 1.1rem;
+    color: var(--text-dark);
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+.mobile-toggle:hover { background: var(--bg-light); color: var(--ci-orange); }
+
+.nav-brand-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
 }
 
 /* Utility */
@@ -993,12 +1020,6 @@ body.dashboard-body {
     font-weight: 700;
     color: #4B5563;
     font-size: 0.9rem;
-}
-
-.nav-brand-group {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
 }
 
 .sidebar-icon {
@@ -1951,47 +1972,218 @@ body.dashboard-body {
     to { transform: rotate(360deg); }
 }
 
-/* Responsive */
+/* =============================================
+   RESPONSIVE – TABLET (≤1024px)
+   ============================================= */
+@media (max-width: 1024px) {
+    :root {
+        --sidebar-width: 220px;
+        --header-height: 56px;
+        --sub-header-height: 44px;
+    }
+    .main-navbar { padding: 0 1rem; }
+    .brand img { height: 50px !important; }
+    .sub-navbar { padding: 0 1rem; gap: 1rem; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .sub-tab { font-size: 0.82rem; white-space: nowrap; }
+    .dash-content { padding: 1.25rem; }
+
+    /* KPI */
+    .kpi-row { grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+    .kpi-card-v3 { padding: 1.25rem; }
+    .kpi-card-v3 .value { font-size: 1.4rem; }
+    .overview-title { font-size: 1.4rem; }
+
+    /* Grids */
+    .preview-grid { grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); }
+    .chart-grid-2x2 { grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); }
+    .chart-card { min-height: 340px; }
+    .chart-container { min-height: 260px; }
+
+    /* Infographic */
+    .infographic-stats-grid { grid-template-columns: repeat(3, 1fr); }
+    .personality-card.main .photo-frame { width: 130px; height: 130px; }
+    .personality-card.small .photo-frame { width: 90px; height: 90px; }
+    .personality-card.main .p-name { font-size: 1.15rem; }
+    .p-name { font-size: 0.9rem; }
+    .p-role { font-size: 0.7rem; padding: 0.25rem 0.75rem; }
+
+    /* Map */
+    .map-grid-layout { grid-template-columns: 1fr; }
+    .map-full-container { height: 400px; }
+
+    /* Toolbar */
+    .section-toolbar { gap: 1rem; padding: 0.75rem 1rem; }
+
+    /* Explorer */
+    .explorer-themes-grid { grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr)); }
+}
+
+/* =============================================
+   RESPONSIVE – MOBILE (≤768px)
+   ============================================= */
 @media (max-width: 768px) {
-    .explorer-themes-grid {
-        grid-template-columns: 1fr;
+    :root {
+        --sidebar-width: 0px;
+        --header-height: 50px;
+        --sub-header-height: 40px;
     }
-    
-    .indicators-list {
-        grid-template-columns: 1fr;
+
+    /* Body – allow scroll */
+    body.dashboard-body { overflow: auto; }
+    .dashboard-layout { height: auto; min-height: 100vh; }
+
+    /* Navbar */
+    .main-navbar { padding: 0 0.75rem; height: 50px; }
+    .brand { font-size: 1.15rem; }
+    .brand img { height: 36px !important; }
+    .nav-links-main { display: none; }
+    .mobile-toggle { display: flex !important; }
+    .user-profile-spacer { display: none; }
+
+    /* Sub navbar – horizontal scroll tabs */
+    .sub-navbar {
+        padding: 0 0.75rem;
+        gap: 0.5rem;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        height: var(--sub-header-height);
     }
-    
-    .theme-card {
-        padding: 1rem;
+    .sub-navbar::-webkit-scrollbar { display: none; }
+    .sub-tab { font-size: 0.78rem; white-space: nowrap; padding: 0 0.5rem; }
+
+    /* Sidebar – off-canvas */
+    .dash-sidebar {
+        position: fixed;
+        left: -280px;
+        top: 0;
+        width: 280px;
+        height: 100vh;
+        z-index: 200;
+        transition: left 0.3s ease;
+        box-shadow: none;
     }
-    
-    .theme-icon {
-        width: 50px;
-        height: 50px;
-        font-size: 1.25rem;
+    .dash-sidebar.mobile-open {
+        left: 0;
+        box-shadow: 4px 0 24px rgba(0,0,0,.12);
     }
-    
-    .indicator-detail-header {
-        flex-direction: column;
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.3);
+        z-index: 199;
     }
-    
-    .indicator-actions {
-        width: 100%;
-    }
-    
-    .indicator-actions .btn-action {
-        flex: 1;
-        justify-content: center;
-    }
-    
-    .chart-type-toggle {
-        width: 100%;
-    }
-    
-    .chart-type-btn {
-        flex: 1;
-        justify-content: center;
-    }
+    .sidebar-overlay.active { display: block; }
+
+    /* Content */
+    .dashboard-container { flex-direction: column; overflow: visible; }
+    .dash-content { padding: 1rem 0.75rem; overflow: visible; }
+
+    /* KPI */
+    .kpi-row { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; }
+    .kpi-card-v3 { padding: 1rem; border-radius: 12px; }
+    .kpi-card-v3 .value { font-size: 1.2rem; }
+    .kpi-card-v3 .label { font-size: 0.68rem; }
+    .kpi-card-v3 .trend { font-size: 0.7rem; padding: 0.2rem 0.5rem; }
+    .overview-title { font-size: 1.15rem; }
+
+    /* Infographic */
+    .country-info-section.infographic-layout { border-radius: 12px; margin-bottom: 1.5rem; }
+    .country-info-section.infographic-layout::before,
+    .country-info-section.infographic-layout::after { display: none; }
+    .flag-header-centered { margin-bottom: 1.5rem; }
+    .country-header-text .motto { font-size: 0.9rem; }
+    .personalities-row { gap: 1rem; margin-bottom: 1.5rem; }
+    .personality-card.main .photo-frame { width: 100px; height: 100px; border-width: 3px; }
+    .personality-card.small .photo-frame { width: 70px; height: 70px; border-width: 2px; }
+    .personality-card.main .p-name { font-size: 0.95rem; }
+    .p-name { font-size: 0.8rem; }
+    .p-role { font-size: 0.65rem; padding: 0.2rem 0.5rem; }
+    .personality-group { gap: 0.75rem; }
+    .infographic-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+    .stat-box { padding: 1rem; border-radius: 10px; }
+    .stat-value { font-size: 1.05rem; }
+    .stat-label { font-size: 0.7rem; }
+
+    /* Preview cards */
+    .preview-grid { grid-template-columns: 1fr; gap: 1rem; }
+    .preview-card-v2 { padding: 1rem; border-radius: 12px; }
+    .preview-header-v2 { margin-bottom: 0.75rem; }
+    .preview-header-v2 h4 { font-size: 0.95rem; }
+    .mini-charts-container { min-height: 180px; gap: 0.5rem; }
+    .mini-chart-wrapper { padding: 0.35rem; }
+    .mini-chart-box { min-height: 70px; }
+    .mini-chart-title { font-size: 0.65rem; }
+    .preview-section-title { font-size: 1.05rem; }
+
+    /* Chart grids */
+    .chart-grid-2x2 { grid-template-columns: 1fr; gap: 1rem; }
+    .chart-card { min-height: 300px; padding: 1rem; border-radius: 10px; }
+    .chart-container { min-height: 220px; }
+    .chart-title { font-size: 0.9rem; }
+    .chart-subtitle { font-size: 0.7rem; }
+    .chart-source { font-size: 0.65rem; flex-direction: column; align-items: flex-start; gap: 0.25rem; }
+
+    /* Toolbar */
+    .section-toolbar { flex-direction: column; gap: 0.75rem; padding: 0.75rem; }
+    .filter-group { width: 100%; }
+    .filter-select { width: 100%; }
+    .btn-action { margin-left: 0; width: 100%; justify-content: center; }
+
+    /* Map */
+    .map-grid-layout { grid-template-columns: 1fr; }
+    .map-full-container { height: 300px; }
+
+    /* Footer */
+    .dash-footer { flex-direction: column; gap: 0.75rem; text-align: center; }
+    .footer-links { justify-content: center; flex-wrap: wrap; gap: 1rem; }
+
+    /* Explorer */
+    .explorer-themes-grid { grid-template-columns: 1fr; }
+    .indicators-list { grid-template-columns: 1fr; }
+    .theme-card { padding: 1rem; }
+    .theme-icon { width: 44px; height: 44px; font-size: 1.1rem; }
+    .indicator-detail-header { flex-direction: column; gap: 0.75rem; }
+    .indicator-actions { width: 100%; }
+    .indicator-actions .btn-action { flex: 1; justify-content: center; font-size: 0.8rem; }
+    .chart-type-toggle { width: 100%; }
+    .chart-type-btn { flex: 1; justify-content: center; font-size: 0.8rem; }
+    .indicator-detail-content { padding: 1rem; }
+
+    /* Toast */
+    .toast-container { left: 0.5rem; right: 0.5rem; bottom: 0.5rem; }
+    .toast { min-width: auto; }
+}
+
+/* =============================================
+   RESPONSIVE – SMALL PHONE (≤480px)
+   ============================================= */
+@media (max-width: 480px) {
+    .kpi-row { grid-template-columns: 1fr; }
+    .kpi-card-v3 .value { font-size: 1.1rem; }
+    .sub-tab { font-size: 0.7rem; }
+    .main-navbar { height: 44px; }
+    .brand { font-size: 1rem; }
+    .brand img { height: 28px !important; }
+
+    /* Infographic */
+    .infographic-stats-grid { grid-template-columns: 1fr; }
+    .personality-card.main .photo-frame { width: 80px; height: 80px; }
+    .personality-card.small .photo-frame { width: 55px; height: 55px; }
+    .personality-card.main .p-name { font-size: 0.85rem; }
+    .p-name { font-size: 0.75rem; }
+
+    /* Charts */
+    .chart-card { min-height: 260px; }
+    .chart-container { min-height: 180px; }
+    .chart-title { font-size: 0.85rem; }
+    .mini-chart-box { min-height: 60px; }
+    .mini-charts-container { min-height: 150px; }
+
+    /* Section toolbar */
+    .filter-group label { font-size: 0.8rem; }
+    .filter-select { font-size: 0.8rem; padding: 0.4rem 1.5rem 0.4rem 0.5rem; }
 }
 
 /* Print Styles */
