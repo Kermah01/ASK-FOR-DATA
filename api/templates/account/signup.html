@@ -19,11 +19,11 @@
             <i class="fas fa-exclamation-circle"></i>
             {% for field in form %}
                 {% for error in field.errors %}
-                    {{ error }}
+                    <strong>{{ field.label }} :</strong> {{ error }}<br>
                 {% endfor %}
             {% endfor %}
             {% for error in form.non_field_errors %}
-                {{ error }}
+                {{ error }}<br>
             {% endfor %}
         </div>
         {% endif %}
@@ -31,12 +31,16 @@
         <form method="POST" action="{% url 'account_signup' %}">
             {% csrf_token %}
 
+            {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+
             <div style="margin-bottom: 1.25rem;">
                 <label for="id_email" style="display: block; font-weight: 600; margin-bottom: 0.4rem; font-size: 0.9rem; color: var(--text-dark);">
                     <i class="fas fa-envelope"></i> Email
                 </label>
-                <input type="email" name="email" id="id_email" placeholder="votre@gmail.com" required autofocus
-                    style="width: 100%; padding: 0.75rem 1rem; border: 2px solid var(--border-light); border-radius: 8px; font-size: 1rem; background: var(--bg-surface); color: var(--text-dark); box-sizing: border-box;">
+                <input type="email" name="email" id="id_email" placeholder="votre@gmail.com"
+                    value="{{ form.email.value|default:'' }}" required autofocus
+                    style="width: 100%; padding: 0.75rem 1rem; border: 2px solid {% if form.email.errors %}#e74c3c{% else %}var(--border-light){% endif %}; border-radius: 8px; font-size: 1rem; background: var(--bg-surface); color: var(--text-dark); box-sizing: border-box;">
+                {% if form.email.errors %}<div style="color: #e74c3c; font-size: 0.8rem; margin-top: 0.3rem;">{{ form.email.errors.0 }}</div>{% endif %}
             </div>
 
             <div style="margin-bottom: 1.25rem;">
@@ -44,7 +48,8 @@
                     <i class="fas fa-lock"></i> Mot de passe
                 </label>
                 <input type="password" name="password1" id="id_password1" placeholder="Min. 8 caractères" required
-                    style="width: 100%; padding: 0.75rem 1rem; border: 2px solid var(--border-light); border-radius: 8px; font-size: 1rem; background: var(--bg-surface); color: var(--text-dark); box-sizing: border-box;">
+                    style="width: 100%; padding: 0.75rem 1rem; border: 2px solid {% if form.password1.errors %}#e74c3c{% else %}var(--border-light){% endif %}; border-radius: 8px; font-size: 1rem; background: var(--bg-surface); color: var(--text-dark); box-sizing: border-box;">
+                {% if form.password1.errors %}<div style="color: #e74c3c; font-size: 0.8rem; margin-top: 0.3rem;">{{ form.password1.errors.0 }}</div>{% endif %}
             </div>
 
             <div style="margin-bottom: 1.5rem;">
@@ -52,8 +57,21 @@
                     <i class="fas fa-lock"></i> Confirmer le mot de passe
                 </label>
                 <input type="password" name="password2" id="id_password2" placeholder="Répétez le mot de passe" required
-                    style="width: 100%; padding: 0.75rem 1rem; border: 2px solid var(--border-light); border-radius: 8px; font-size: 1rem; background: var(--bg-surface); color: var(--text-dark); box-sizing: border-box;">
+                    style="width: 100%; padding: 0.75rem 1rem; border: 2px solid {% if form.password2.errors %}#e74c3c{% else %}var(--border-light){% endif %}; border-radius: 8px; font-size: 1rem; background: var(--bg-surface); color: var(--text-dark); box-sizing: border-box;">
+                {% if form.password2.errors %}<div style="color: #e74c3c; font-size: 0.8rem; margin-top: 0.3rem;">{{ form.password2.errors.0 }}</div>{% endif %}
             </div>
+
+            {% for field in form.visible_fields %}
+                {% if field.name != 'email' and field.name != 'password1' and field.name != 'password2' %}
+                <div style="margin-bottom: 1.25rem;">
+                    <label for="{{ field.id_for_label }}" style="display: block; font-weight: 600; margin-bottom: 0.4rem; font-size: 0.9rem; color: var(--text-dark);">
+                        {{ field.label }}
+                    </label>
+                    {{ field }}
+                    {% if field.errors %}<div style="color: #e74c3c; font-size: 0.8rem; margin-top: 0.3rem;">{{ field.errors.0 }}</div>{% endif %}
+                </div>
+                {% endif %}
+            {% endfor %}
 
             {% if redirect_field_value %}
             <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">

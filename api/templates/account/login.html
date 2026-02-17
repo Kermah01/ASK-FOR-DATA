@@ -19,17 +19,19 @@
             <i class="fas fa-exclamation-circle"></i>
             {% for field in form %}
                 {% for error in field.errors %}
-                    {{ error }}
+                    <strong>{{ field.label }} :</strong> {{ error }}<br>
                 {% endfor %}
             {% endfor %}
             {% for error in form.non_field_errors %}
-                {{ error }}
+                {{ error }}<br>
             {% endfor %}
         </div>
         {% endif %}
 
         <form method="POST" action="{% url 'account_login' %}">
             {% csrf_token %}
+
+            {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
 
             <div style="margin-bottom: 1.25rem;">
                 <label for="id_login" style="display: block; font-weight: 600; margin-bottom: 0.4rem; font-size: 0.9rem; color: var(--text-dark);">
