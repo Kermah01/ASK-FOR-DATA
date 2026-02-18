@@ -10,62 +10,38 @@
     --border-color: #E5E7EB;
     
     --sidebar-width: 280px;
-    --header-height: 70px; /* Main navbar height */
-    --sub-header-height: 50px; /* Sub navbar height */
+    --sub-header-height: 50px;
 }
 
-/* Reset specific for dashboard */
+/* Dashboard body: fixed viewport, no scroll on body */
 body.dashboard-body {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif; /* Global Platform Font */
-    overflow: hidden; /* Prevent body scroll, handle inside dashboard */
-}
-
-.dashboard-layout {
-    display: flex;
-    flex-direction: column;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    overflow: hidden;
     height: 100vh;
-    width: 100vw;
-    background: var(--bg-light);
 }
 
-/* 1. Main Navbar (Replicated/Styled) */
-.main-navbar {
-    height: var(--header-height);
-    background: white;
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
+/* Hide the shared footer on dashboard (full viewport app) */
+body.dashboard-body > footer {
+    display: none;
+}
+
+/* Sidebar toggle button (hidden on desktop, shown on mobile in sub-navbar) */
+.sidebar-toggle-btn {
+    display: none;
     align-items: center;
-    padding: 0 2rem;
-    justify-content: space-between;
-    z-index: 50;
-}
-
-.brand {
-    font-size: 1.5rem;
-    font-weight: 800;
+    justify-content: center;
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    width: 34px;
+    height: 34px;
+    font-size: 1rem;
     color: var(--text-dark);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
 }
-
-.brand span { color: var(--ci-orange); }
-
-.nav-links-main {
-    display: flex;
-    gap: 2rem;
-}
-
-.nav-link-main {
-    text-decoration: none;
-    color: var(--text-gray);
-    font-weight: 500;
-    transition: color 0.2s;
-}
-
-.nav-link-main:hover, .nav-link-main.active {
-    color: var(--ci-orange);
-}
+.sidebar-toggle-btn:hover { background: #fff7ed; color: #f97316; border-color: #fed7aa; }
 
 /* 2. Sub Navbar */
 .sub-navbar {
@@ -75,8 +51,9 @@ body.dashboard-body {
     display: flex;
     align-items: center;
     padding: 0 2rem;
-    gap: 2rem;
+    gap: 1rem;
     z-index: 40;
+    flex-shrink: 0;
     box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
 
@@ -837,29 +814,6 @@ body.dashboard-body {
     white-space: nowrap;
 }
 
-/* Mobile toggle button (dashboard-specific) */
-.mobile-toggle {
-    display: none;
-    align-items: center;
-    justify-content: center;
-    background: none;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    width: 38px;
-    height: 38px;
-    font-size: 1.1rem;
-    color: var(--text-dark);
-    cursor: pointer;
-    transition: all 0.2s;
-    flex-shrink: 0;
-}
-.mobile-toggle:hover { background: var(--bg-light); color: var(--ci-orange); }
-
-.nav-brand-group {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
 
 /* Utility */
 .text-ci-orange { color: var(--ci-orange); }
@@ -1981,8 +1935,6 @@ body.dashboard-body {
         --header-height: 56px;
         --sub-header-height: 44px;
     }
-    .main-navbar { padding: 0 1rem; }
-    .brand img { height: 50px !important; }
     .sub-navbar { padding: 0 1rem; gap: 1rem; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .sub-tab { font-size: 0.82rem; white-space: nowrap; }
     .dash-content { padding: 1.25rem; }
@@ -2029,16 +1981,10 @@ body.dashboard-body {
     }
 
     /* Body – allow scroll */
-    body.dashboard-body { overflow: auto; }
-    .dashboard-layout { height: auto; min-height: 100vh; }
+    body.dashboard-body { overflow: auto; height: auto; min-height: 100vh; }
 
-    /* Navbar */
-    .main-navbar { padding: 0 0.75rem; height: 50px; }
-    .brand { font-size: 1.15rem; }
-    .brand img { height: 36px !important; }
-    .nav-links-main { display: none; }
-    .mobile-toggle { display: flex !important; }
-    .user-profile-spacer { display: none; }
+    /* Sidebar toggle visible on mobile */
+    .sidebar-toggle-btn { display: flex !important; }
 
     /* Sub navbar – horizontal scroll tabs */
     .sub-navbar {
@@ -2135,9 +2081,6 @@ body.dashboard-body {
     .map-grid-layout { grid-template-columns: 1fr; }
     .map-full-container { height: 300px; }
 
-    /* Footer */
-    .dash-footer { flex-direction: column; gap: 0.75rem; text-align: center; }
-    .footer-links { justify-content: center; flex-wrap: wrap; gap: 1rem; }
 
     /* Explorer */
     .explorer-themes-grid { grid-template-columns: 1fr; }
@@ -2163,9 +2106,6 @@ body.dashboard-body {
     .kpi-row { grid-template-columns: 1fr; }
     .kpi-card-v3 .value { font-size: 1.1rem; }
     .sub-tab { font-size: 0.7rem; }
-    .main-navbar { height: 44px; }
-    .brand { font-size: 1rem; }
-    .brand img { height: 28px !important; }
 
     /* Infographic */
     .infographic-stats-grid { grid-template-columns: 1fr; }
@@ -2188,7 +2128,7 @@ body.dashboard-body {
 
 /* Print Styles */
 @media print {
-    .main-navbar, .sub-navbar, .dash-sidebar, .sidebar-overlay, .section-toolbar, .btn-action, .toast-container, .mobile-toggle {
+    header, .ci-tricolor, .sub-navbar, .dash-sidebar, .sidebar-overlay, .section-toolbar, .btn-action, .toast-container, .sidebar-toggle-btn {
         display: none !important;
     }
 
@@ -2197,11 +2137,6 @@ body.dashboard-body {
         background: white;
     }
 
-    .dashboard-layout {
-        height: auto;
-        width: 100%;
-        display: block;
-    }
 
     .dash-content {
         padding: 0;

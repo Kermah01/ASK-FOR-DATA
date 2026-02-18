@@ -15,4 +15,10 @@ urlpatterns = [
     path('save-api-key', views.save_api_key, name='save_api_key'),
     path('delete-api-key', views.delete_api_key, name='delete_api_key'),
     path('user-status', views.user_status, name='user_status'),
+    # Chat API
+    path('chat/send', views.chat_send, name='chat_send'),
+    path('chat/conversations', views.chat_conversations, name='chat_conversations'),
+    path('chat/conversations/<int:conversation_id>/messages', views.chat_messages, name='chat_messages'),
+    path('chat/conversations/<int:conversation_id>/delete', views.chat_delete, name='chat_delete'),
+    path('chat/conversations/<int:conversation_id>/rename', views.chat_rename, name='chat_rename'),
 ]

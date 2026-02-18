@@ -22,7 +22,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;700&display=swap" rel="stylesheet">
 
     <!-- Styles -->
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=2.0">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=4.0">
     {% block extra_css %}{% endblock %}
 
     <!-- Icons -->
@@ -34,33 +34,83 @@
     {% block extra_head %}{% endblock %}
 </head>
 
-<body>
+<body class="{% block body_class %}{% endblock %}">
     {% block layout_override %}
+    <!-- Ivorian Tricolor Accent -->
+    <div class="ci-tricolor"></div>
+
     <header>
         <div class="container">
             <nav>
-                <a href="{% url 'home' %}" class="logo" style="display: flex; align-items: center; gap: 0.5rem;">
-                    <img src="{% static 'img/logo.png' %}" alt="Ask For Data" style="height: 80px; width: auto;">
+                <a href="{% url 'home' %}" class="logo">
+                    <img src="{% static 'img/logo.png' %}" alt="Ask For Data" style="height: 80px; width: auto; margin-left: -150px;">
                 </a>
-                <button class="nav-toggle" aria-label="Menu"><i class="fas fa-bars"></i></button>
-                <div class="nav-links">
+
+                <div class="nav-center">
                     <a href="{% url 'home' %}"
-                        class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">Accueil</a>
-                    <a href="{% url 'dashboard' %}"
-                        class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Analytics</a>
-                    <a href="{% url 'chat_page' %}"
-                        class="nav-link {% if request.resolver_match.url_name == 'chat_page' %}active{% endif %}">Discuter avec les données</a>
-                    <a href="{% url 'about' %}"
-                        class="nav-link {% if request.resolver_match.url_name == 'about' %}active{% endif %}">À propos</a>
-                    {% if user.is_authenticated %}
-                    <a href="{% url 'setup_api_key' %}" class="nav-link" style="margin-left: 1rem;" title="Mon compte">
-                        <i class="fas fa-key"></i> API
+                        class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+                        <i class="fas fa-home"></i><span>Accueil</span>
                     </a>
-                    <a href="{% url 'account_logout' %}" class="nav-link" style="font-size:0.85rem;">
-                        <i class="fas fa-sign-out-alt"></i> {{ user.email|truncatechars:20 }}
+                    <a href="{% url 'dashboard' %}"
+                        class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                        <i class="fas fa-chart-bar"></i><span>Analytics</span>
+                    </a>
+                    <a href="{% url 'chat_page' %}"
+                        class="nav-link {% if request.resolver_match.url_name == 'chat_page' %}active{% endif %}">
+                        <i class="fas fa-comments"></i><span>Ask AI</span>
+                    </a>
+                    <a href="{% url 'about' %}"
+                        class="nav-link {% if request.resolver_match.url_name == 'about' %}active{% endif %}">
+                        <i class="fas fa-info-circle"></i><span>À propos</span>
+                    </a>
+                </div>
+
+                <div class="nav-actions">
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'setup_api_key' %}" class="nav-action-btn" title="Clé API">
+                        <i class="fas fa-key"></i>
+                    </a>
+                    <a href="{% url 'account_logout' %}" class="nav-user-btn" title="Déconnexion">
+                        <i class="fas fa-user-circle"></i>
+                        <span>{{ user.email|truncatechars:15 }}</span>
                     </a>
                     {% else %}
-                    <a href="{% url 'account_login' %}" class="nav-link" style="margin-left: 1rem;">
+                    <a href="{% url 'account_login' %}" class="nav-login-btn">
+                        <i class="fas fa-sign-in-alt"></i> Connexion
+                    </a>
+                    {% endif %}
+                </div>
+
+                <button class="nav-toggle" aria-label="Menu"><i class="fas fa-bars"></i></button>
+
+                <!-- Mobile Menu -->
+                <div class="nav-mobile-menu">
+                    <a href="{% url 'home' %}"
+                        class="nav-mobile-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+                        <i class="fas fa-home"></i> Accueil
+                    </a>
+                    <a href="{% url 'dashboard' %}"
+                        class="nav-mobile-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                        <i class="fas fa-chart-bar"></i> Analytics
+                    </a>
+                    <a href="{% url 'chat_page' %}"
+                        class="nav-mobile-link {% if request.resolver_match.url_name == 'chat_page' %}active{% endif %}">
+                        <i class="fas fa-comments"></i> Ask AI
+                    </a>
+                    <a href="{% url 'about' %}"
+                        class="nav-mobile-link {% if request.resolver_match.url_name == 'about' %}active{% endif %}">
+                        <i class="fas fa-info-circle"></i> À propos
+                    </a>
+                    <div class="nav-mobile-divider"></div>
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'setup_api_key' %}" class="nav-mobile-link">
+                        <i class="fas fa-key"></i> Clé API
+                    </a>
+                    <a href="{% url 'account_logout' %}" class="nav-mobile-link">
+                        <i class="fas fa-sign-out-alt"></i> Déconnexion
+                    </a>
+                    {% else %}
+                    <a href="{% url 'account_login' %}" class="nav-mobile-link">
                         <i class="fas fa-sign-in-alt"></i> Connexion
                     </a>
                     {% endif %}
@@ -69,7 +119,7 @@
         </div>
     </header>
 
-    <main>
+    <main class="{% block main_class %}{% endblock %}">
         {% block content %}
         {% endblock %}
     </main>
@@ -79,23 +129,25 @@
             <div class="footer-content">
                 <!-- About Section -->
                 <div class="footer-section">
-                    <img src="{% static 'img/logo.png' %}" alt="Ask For Data" style="height: 60px; width: auto; margin-bottom: 0.75rem;">
+                    <img src="{% static 'img/logo.png' %}" alt="Ask For Data" style="height: 50px; width: auto; margin-bottom: 0.75rem; filter: brightness(0) invert(1); opacity: 0.9;">
                     <p class="text-muted">
-                        La plateforme qui révolutionne l'accès aux statistiques en Côte d'Ivoire grâce à l'intelligence
-                        artificielle.
+                        Accédez aux statistiques de la Côte d'Ivoire grâce à l'intelligence artificielle. Données fiables, analyses instantanées.
                     </p>
-                    <div class="social-links mt-2">
-                        <!-- Social links can be added here -->
+                    <div class="footer-socials">
+                        <a href="#" class="footer-social-icon" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                        <a href="#" class="footer-social-icon" title="Twitter"><i class="fab fa-x-twitter"></i></a>
+                        <a href="mailto:contact@askfordata.ci" class="footer-social-icon" title="Email"><i class="fas fa-envelope"></i></a>
                     </div>
                 </div>
 
-                <!-- Quick Links -->
+                <!-- Navigation -->
                 <div class="footer-section">
-                    <h4>Navigation</h4>
+                    <h4>Plateforme</h4>
                     <ul>
                         <li><a href="{% url 'home' %}">Accueil</a></li>
                         <li><a href="{% url 'dashboard' %}">Analytics</a></li>
-                        <li><a href="{% url 'chat_page' %}">Discuter avec les données</a></li>
+                        <li><a href="{% url 'chat_page' %}">Ask AI</a></li>
+                        <li><a href="{% url 'about' %}">A propos</a></li>
                     </ul>
                 </div>
 
@@ -105,7 +157,7 @@
                     <ul>
                         <li><a href="/api/indicators" target="_blank">API Indicateurs</a></li>
                         <li><a href="https://data.worldbank.org" target="_blank">Banque Mondiale</a></li>
-                        <li><a href="https://www.anstat.gouv.ci" target="_blank">ANStat Côte d'Ivoire</a></li>
+                        <li><a href="https://www.anstat.gouv.ci" target="_blank">ANStat CI</a></li>
                     </ul>
                 </div>
 
@@ -115,22 +167,23 @@
                     <ul>
                         <li><a href="mailto:contact@askfordata.ci">contact@askfordata.ci</a></li>
                         <li><a href="#">Mentions légales</a></li>
+                        <li><a href="#">Politique de confidentialité</a></li>
                     </ul>
                 </div>
             </div>
+        </div>
 
-            <div class="footer-bottom">
-                <p>&copy; 2025 Ask For Data Côte d'Ivoire. Tous droits réservés.</p>
-                <p class="text-muted" style="margin-top: 0.5rem; font-size: 0.85rem;">
-                    Propulsé par l'IA Google Gemini • Données : Banque mondiale, ANStat CI
-                </p>
+        <div class="footer-bottom">
+            <div class="container">
+                <p>&copy; 2025 Ask For Data &mdash; Côte d'Ivoire. Tous droits réservés.</p>
+                <p>Propulsé par Google Gemini &bull; Données : Banque mondiale, ANStat CI</p>
             </div>
         </div>
     </footer>
     {% endblock %}
 
     <!-- Global Scripts -->
-    <script src="{% static 'js/main.js' %}?v=2.0"></script>
+    <script src="{% static 'js/main.js' %}?v=3.0"></script>
     {% block scripts %}
     {% endblock %}
 </body>

@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}IVOIRE 360 - L'Observatoire Avancé{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="{% static 'css/dashboard-wow.css' %}?v=1.0">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-universe">
+    
+    <!-- Floating Background Elements -->
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    <div class="grid-overlay"></div>
+
+    <!-- HEADER FLOTTANT -->
+    <header class="hud-header">
+        <div class="glass-panel header-content">
+            <div class="logo-area" style="display: flex; align-items: center; gap: 1rem;">
+                <a href="{% url 'home' %}" style="text-decoration: none;">
+                    <img src="{% static 'img/logo.png' %}" alt="Ask For Data" style="height: 55px; width: auto;">
+                </a>
+                <div>
+                    <h1 class="neon-text">CÔTE D'IVOIRE <span class="highlight">360°</span></h1>
+                    <p class="subtitle">Observatoire National Avancé</p>
+                </div>
+            </div>
+            
+            <div class="kpi-ticker">
+                <div class="ticker-item">
+                    <span class="label">PIB (Mrd $)</span>
+                    <span class="value counter" data-target="70.1" id="ticker-gdp">0</span>
+                </div>
+                <div class="ticker-sep"></div>
+                <div class="ticker-item">
+                    <span class="label">POPULATION</span>
+                    <span class="value counter" data-target="29.4" id="ticker-pop">0</span>
+                </div>
+                <div class="ticker-sep"></div>
+                <div class="ticker-item">
+                    <span class="label">CROISSANCE</span>
+                    <span class="value text-success" id="ticker-growth">+6.5%</span>
+                </div>
+            </div>
+
+            <div class="controls-area">
+                <a href="{% url 'home' %}" class="btn-hud small"><i class="fas fa-power-off"></i></a>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN BENTO GRID -->
+    <main class="hud-grid">
+        
+        <!-- COL 1 : MACRO & FINANCES -->
+        <div class="grid-col col-left">
+            <!-- Widget 1: Macro -->
+            <div class="hud-card glass-panel tilt-card" data-tilt>
+                <div class="card-header">
+                    <h3><i class="fas fa-chart-line"></i> Macro-Économie</h3>
+                    <select class="hud-select" id="sel-macro-1" onchange="Dashboard360.updateWidget('macro-1', this.value)">
+                        <option value="NY.GDP.MKTP.KD.ZG">Croissance PIB (%)</option>
+                        <option value="NY.GDP.MKTP.CD">PIB Nominal ($)</option>
+                        <option value="FP.CPI.TOTL.ZG">Inflation (%)</option>
+                        <option value="NE.GDI.TOTL.ZS">Investissement (% PIB)</option>
+                    </select>
+                </div>
+                <div class="card-body">
+                    <div id="chart-macro-1" class="chart-container"></div>
+                </div>
+            </div>
+
+            <!-- Widget 2: Finances -->
+            <div class="hud-card glass-panel tilt-card" data-tilt>
+                <div class="card-header">
+                    <h3><i class="fas fa-coins"></i> Finances Publiques</h3>
+                    <select class="hud-select" id="sel-fin-1" onchange="Dashboard360.updateWidget('fin-1', this.value)">
+                        <option value="DT.DOD.DECT.GN.ZS">Dette Extérieure (% RNB)</option>
+                        <option value="GC.DOD.TOTL.GD.ZS">Dette Centrale (% PIB)</option>
+                        <option value="BX.KLT.DINV.WD.GD.ZS">IDE Entrants (% PIB)</option>
+                    </select>
+                </div>
+                <div class="card-body">
+                    <div id="chart-fin-1" class="chart-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- COL 2 : CENTRAL MAP (THE CORE) -->
+        <div class="grid-col col-center">
+            <div class="hud-card glass-panel map-card">
+                <div class="map-overlay-stats">
+                    <div class="stat-bubble" style="top: 20%; left: 20%;">
+                        <span class="l">Cacao</span>
+                        <span class="v">#1</span>
+                    </div>
+                    <div class="stat-bubble" style="bottom: 30%; right: 20%;">
+                        <span class="l">Élec.</span>
+                        <span class="v">Hub</span>
+                    </div>
+                </div>
+                <div id="ci-3d-map" class="map-container"></div>
+                
+                <div class="map-controls">
+                    <button class="btn-hud active" onclick="Dashboard360.setMapMode('admin')">Admin</button>
+                    <button class="btn-hud" onclick="Dashboard360.setMapMode('pop')">Démographie</button>
+                    <button class="btn-hud" onclick="Dashboard360.setMapMode('res')">Ressources</button>
+                </div>
+            </div>
+            
+            <!-- Widget Bottom Center: Comparateur Rapide -->
+            <div class="hud-card glass-panel" style="height: 250px; margin-top: 1rem;">
+                <div class="card-header">
+                    <h3><i class="fas fa-balance-scale"></i> Comparateur Dynamique</h3>
+                    <div class="flex-gap">
+                        <select class="hud-select small" id="sel-comp-1" onchange="Dashboard360.updateComparison()">
+                            <option value="NY.GDP.PCAP.CD">PIB/Habitant</option>
+                            <option value="SP.DYN.LE00.IN">Espérance de Vie</option>
+                        </select>
+                        <span class="vs">VS</span>
+                        <select class="hud-select small" id="sel-comp-target" onchange="Dashboard360.updateComparison()">
+                            <option value="WLD">Moyenne Monde</option>
+                            <option value="SSF">Afrique Sub-Saharienne</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="chart-comp" class="chart-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- COL 3 : SOCIETY & SECTORS -->
+        <div class="grid-col col-right">
+            <!-- Widget 3: Social -->
+            <div class="hud-card glass-panel tilt-card" data-tilt>
+                <div class="card-header">
+                    <h3><i class="fas fa-users"></i> Société & Bien-être</h3>
+                    <select class="hud-select" id="sel-soc-1" onchange="Dashboard360.updateWidget('soc-1', this.value)">
+                        <option value="SP.DYN.LE00.IN">Espérance de Vie</option>
+                        <option value="SE.PRM.ENRR">Scolarisation Primaire</option>
+                        <option value="EG.ELC.ACCS.ZS">Accès Électricité</option>
+                        <option value="SP.URB.TOTL.IN.ZS">Urbanisation</option>
+                    </select>
+                </div>
+                <div class="card-body">
+                    <div id="chart-soc-1" class="chart-container"></div>
+                </div>
+            </div>
+
+            <!-- Widget 4: Secteurs (Radar) -->
+            <div class="hud-card glass-panel tilt-card" data-tilt>
+                <div class="card-header">
+                    <h3><i class="fas fa-industry"></i> Performance Sectorielle</h3>
+                </div>
+                <div class="card-body">
+                    <div id="chart-radar" class="chart-container"></div>
+                </div>
+            </div>
+             
+             <!-- Widget 5: Environnement -->
+            <div class="hud-card glass-panel tilt-card" style="flex-grow: 0; height: 200px;" data-tilt>
+                <div class="card-header">
+                     <h3><i class="fas fa-tree"></i> Environnement</h3>
+                     <select class="hud-select" id="sel-env-1" onchange="Dashboard360.updateWidget('env-1', this.value)">
+                        <option value="AG.LND.FRST.ZS">Couvert Forestier</option>
+                        <option value="EN.ATM.CO2E.PC">Emissions CO2</option>
+                    </select>
+                </div>
+                <div class="card-body">
+                    <div id="chart-env-1" class="chart-container"></div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER STATUS -->
+    <footer class="hud-footer">
+        <div class="status-light online"></div>
+        <span>SYSTEM ONLINE</span>
+        <span class="sep">|</span>
+        <span>DATA SOURCE: WORLD BANK 2024</span>
+        <span class="sep">|</span>
+        <span id="last-update">UPDATED: LIVE</span>
+    </footer>
+
+</div>
+
+<!-- Libraries -->
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js"></script>
+<script src="{% static 'js/dashboard-wow.js' %}?v=1.0"></script>
+<script>
+    // Init Tilt Effect
+    VanillaTilt.init(document.querySelectorAll(".tilt-card"), {
+        max: 5,
+        speed: 400,
+        glare: true,
+        "max-glare": 0.2,
+        scale: 1.02
+    });
+</script>
+{% endblock %}

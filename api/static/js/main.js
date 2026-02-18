@@ -7,21 +7,21 @@
 
     // Mobile nav toggle
     const navToggle = document.querySelector('.nav-toggle');
-    const navLinks = document.querySelector('.nav-links');
-    if (navToggle && navLinks) {
+    const mobileMenu = document.querySelector('.nav-mobile-menu');
+    if (navToggle && mobileMenu) {
         const icon = navToggle.querySelector('i');
 
         navToggle.addEventListener('click', (e) => {
             e.stopPropagation();
-            const open = navLinks.classList.toggle('active');
+            const open = mobileMenu.classList.toggle('active');
             if (icon) icon.className = open ? 'fas fa-times' : 'fas fa-bars';
             navToggle.setAttribute('aria-expanded', open);
         });
 
         // Close menu when a link is clicked
-        navLinks.querySelectorAll('.nav-link').forEach(link => {
+        mobileMenu.querySelectorAll('.nav-mobile-link').forEach(link => {
             link.addEventListener('click', () => {
-                navLinks.classList.remove('active');
+                mobileMenu.classList.remove('active');
                 if (icon) icon.className = 'fas fa-bars';
                 navToggle.setAttribute('aria-expanded', 'false');
             });
@@ -29,8 +29,8 @@
 
         // Close menu on outside click
         document.addEventListener('click', (e) => {
-            if (navLinks.classList.contains('active') && !navLinks.contains(e.target) && !navToggle.contains(e.target)) {
-                navLinks.classList.remove('active');
+            if (mobileMenu.classList.contains('active') && !mobileMenu.contains(e.target) && !navToggle.contains(e.target)) {
+                mobileMenu.classList.remove('active');
                 if (icon) icon.className = 'fas fa-bars';
                 navToggle.setAttribute('aria-expanded', 'false');
             }

@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Ask For Data AI{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/chat-v2.css' %}?v=2.0">
+{% endblock %}
+
+{% block content %}
+<!-- CSRF Token for JS -->
+{% csrf_token %}
+
+<!-- Sidebar Overlay (mobile) -->
+<div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+<div class="chat-layout">
+    <!-- ─── Sidebar ─────────────────────────── -->
+    <aside id="chat-sidebar" class="chat-sidebar">
+        <div class="sidebar-header">
+            <button id="new-chat-btn" class="new-chat-btn">
+                <i class="fas fa-plus"></i> Nouvelle conversation
+            </button>
+        </div>
+
+        <div id="convo-list" class="sidebar-conversations">
+            <!-- Populated by JS -->
+        </div>
+
+        <div class="sidebar-footer">
+            {% if not has_own_key %}
+            <a href="{% url 'setup_api_key' %}" class="sidebar-footer-item">
+                <i class="fas fa-key"></i> Passer en illimité
+            </a>
+            {% endif %}
+        </div>
+    </aside>
+
+    <!-- ─── Main Chat Area ──────────────────── -->
+    <div class="chat-main">
+        <!-- Top Bar -->
+        <div class="chat-topbar">
+            <div class="topbar-left">
+                <button id="sidebar-toggle" class="mobile-sidebar-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="topbar-model">
+                    <span class="model-dot"></span>
+                    <span>Ask For Data AI</span>
+                </div>
+            </div>
+            <div class="topbar-right">
+                <div id="quota-badge" class="quota-badge{% if has_own_key %} unlimited{% endif %}">
+                    {% if has_own_key %}
+                        <i class="fas fa-infinity"></i> <span class="badge-text">Clé API personnelle</span>
+                    {% else %}
+                        <i class="fas fa-bolt"></i> <span class="badge-text">{{ queries_today }}/5 utilisées</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages Container -->
+        <div id="chat-messages-container" class="chat-messages-container">
+            <div id="messages-wrapper" class="messages-wrapper">
+
+                <!-- Welcome Screen -->
+                <div id="chat-welcome" class="chat-welcome">
+                    <div class="welcome-logo">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h1 class="welcome-title">Ask For Data AI</h1>
+                    <p class="welcome-subtitle">
+                        Votre assistant intelligent spécialisé en statistiques et économie. 
+                        Posez vos questions sur les données ivoiriennes, demandez des analyses, 
+                        ou explorez des concepts statistiques.
+                    </p>
+
+                    <div class="welcome-suggestions">
+                        <div class="suggestion-card" data-query="Quelle est l'évolution du PIB de la Côte d'Ivoire ces 10 dernières années ?">
+                            <span class="suggestion-icon"><i class="fas fa-chart-line"></i></span>
+                            Évolution du PIB sur 10 ans
+                        </div>
+                        <div class="suggestion-card" data-query="Explique-moi ce qu'est le coefficient de Gini et comment l'interpréter">
+                            <span class="suggestion-icon"><i class="fas fa-graduation-cap"></i></span>
+                            Qu'est-ce que le coefficient de Gini ?
+                        </div>
+                        <div class="suggestion-card" data-query="Compare l'inflation et la croissance économique en Côte d'Ivoire">
+                            <span class="suggestion-icon"><i class="fas fa-balance-scale"></i></span>
+                            Inflation vs Croissance
+                        </div>
+                        <div class="suggestion-card" data-query="Quels sont les principaux indicateurs de santé disponibles et leurs tendances ?">
+                            <span class="suggestion-icon"><i class="fas fa-heartbeat"></i></span>
+                            Indicateurs de santé
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="chat-input-area">
+            <div class="chat-input-wrapper">
+                <form id="chat-form" class="chat-input-box">
+                    <textarea id="chat-input" rows="1"
+                        placeholder="Posez votre question à Ask For Data AI..."
+                        autocomplete="off"></textarea>
+                    <button type="submit" id="send-btn" class="send-btn" title="Envoyer">
+                        <i class="fas fa-arrow-up"></i>
+                    </button>
+                </form>
+                <div class="input-footer">
+                    Ask For Data AI peut faire des erreurs. Vérifiez les informations importantes.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="{% static 'js/chat-v2.js' %}?v=2.0"></script>
+{% endblock %}

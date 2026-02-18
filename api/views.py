@@ -17,7 +17,7 @@ logger = logging.getLogger('api')
 from .data_service import data_service
 from .national_data_service import national_data_service as nds
 from .gemini_service import gemini_service, get_service_for_key
-from .models import UserProfile, QueryCache
+from .models import UserProfile, QueryCache, Conversation, Message
 
 
 # Auto-create UserProfile on user creation
@@ -49,7 +49,7 @@ def sector_detail_page(request, sector_name):
 @login_required
 def chat_page(request):
     profile = _get_or_create_profile(request.user)
-    return render(request, 'chat.html', {
+    return render(request, 'chat_v2.html', {
         'has_own_key': profile.has_own_key,
         'queries_today': profile.queries_today,
     })
@@ -696,3 +696,191 @@ def user_status(request):
         'remaining': remaining,
         'limit': limit,
     })
+
+
+# ─── Chat API ────────────────────────────────────────────────────────
+
+@csrf_exempt
+@api_view(['POST'])
+def chat_send(request):
+    """
+    Send a message in a conversation. Creates conversation if needed.
+    
+    POST /api/chat/send
+    Body: {"message": "...", "conversation_id": null|int}
+    """
+    if not request.user.is_authenticated:
+        return Response({'success': False, 'message': 'Non authentifié.'}, status=401)
+
+    message_text = request.data.get('message', '').strip()
+    conversation_id = request.data.get('conversation_id')
+
+    if not message_text:
+        return Response({'success': False, 'message': 'Message vide.'}, status=400)
+
+    profile = _get_or_create_profile(request.user)
+
+    # Quota check
+    quota = profile.check_and_increment_quota()
+    if not quota['allowed']:
+        return Response({
+            'success': False,
+            'message': 'Limite de requêtes atteinte. Ajoutez votre clé API Gemini pour des requêtes illimitées.',
+            'needs_key': True,
+            'remaining': 0,
+        }, status=429)
+
+    # Get or create conversation
+    if conversation_id:
+        try:
+            conversation = Conversation.objects.get(id=conversation_id, user=request.user)
+        except Conversation.DoesNotExist:
+            return Response({'success': False, 'message': 'Conversation introuvable.'}, status=404)
+    else:
+        conversation = Conversation.objects.create(user=request.user)
+
+    # Save user message
+    Message.objects.create(conversation=conversation, role='user', content=message_text)
+
+    # Get conversation history
+    history = list(
+        conversation.messages.order_by('created_at').values('role', 'content')
+    )
+    # Exclude the message we just added (it'll be passed as new_message)
+    history = [{'role': m['role'], 'content': m['content']} for m in history[:-1]]
+
+    # Determine which Gemini service to use
+    if profile.has_own_key:
+        user_api_key = profile.get_api_key()
+        from django.conf import settings as conf_settings
+        if user_api_key != conf_settings.GEMINI_API_KEY:
+            service = get_service_for_key(user_api_key)
+        else:
+            service = gemini_service
+    else:
+        service = gemini_service
+
+    if service is None:
+        return Response({
+            'success': False,
+            'message': 'Le service d\'IA n\'est pas configuré.'
+        }, status=500)
+
+    # Call Gemini chat
+    result = service.chat_message(history, message_text)
+
+    # Save assistant message
+    data_contexts = result.get('data_contexts', [])
+    ai_message = Message.objects.create(
+        conversation=conversation,
+        role='assistant',
+        content=result['content'],
+        data_context=data_contexts if data_contexts else None,
+    )
+
+    # Auto-title on first message
+    if result.get('title_suggestion') and conversation.title == 'Nouvelle conversation':
+        conversation.title = result['title_suggestion']
+    conversation.save()  # Update updated_at
+
+    return Response({
+        'success': True,
+        'conversation_id': conversation.id,
+        'message': {
+            'id': ai_message.id,
+            'role': 'assistant',
+            'content': result['content'],
+            'data_contexts': data_contexts,
+        },
+        'conversation_title': conversation.title,
+        'remaining': quota['remaining'],
+    })
+
+
+@api_view(['GET'])
+def chat_conversations(request):
+    """
+    List user's conversations.
+    
+    GET /api/chat/conversations
+    """
+    if not request.user.is_authenticated:
+        return Response({'success': False}, status=401)
+
+    convos = Conversation.objects.filter(user=request.user).values(
+        'id', 'title', 'created_at', 'updated_at'
+    )[:50]
+
+    return Response({
+        'success': True,
+        'conversations': list(convos),
+    })
+
+
+@api_view(['GET'])
+def chat_messages(request, conversation_id):
+    """
+    Get messages for a conversation.
+    
+    GET /api/chat/conversations/<id>/messages
+    """
+    if not request.user.is_authenticated:
+        return Response({'success': False}, status=401)
+
+    try:
+        conversation = Conversation.objects.get(id=conversation_id, user=request.user)
+    except Conversation.DoesNotExist:
+        return Response({'success': False, 'message': 'Conversation introuvable.'}, status=404)
+
+    messages = conversation.messages.order_by('created_at').values(
+        'id', 'role', 'content', 'data_context', 'created_at'
+    )
+
+    return Response({
+        'success': True,
+        'conversation_id': conversation.id,
+        'title': conversation.title,
+        'messages': list(messages),
+    })
+
+
+@csrf_exempt
+@api_view(['DELETE'])
+def chat_delete(request, conversation_id):
+    """
+    Delete a conversation.
+    
+    DELETE /api/chat/conversations/<id>
+    """
+    if not request.user.is_authenticated:
+        return Response({'success': False}, status=401)
+
+    try:
+        conversation = Conversation.objects.get(id=conversation_id, user=request.user)
+        conversation.delete()
+        return Response({'success': True})
+    except Conversation.DoesNotExist:
+        return Response({'success': False}, status=404)
+
+
+@csrf_exempt
+@api_view(['POST'])
+def chat_rename(request, conversation_id):
+    """
+    Rename a conversation.
+    
+    POST /api/chat/conversations/<id>/rename
+    Body: {"title": "..."}
+    """
+    if not request.user.is_authenticated:
+        return Response({'success': False}, status=401)
+
+    try:
+        conversation = Conversation.objects.get(id=conversation_id, user=request.user)
+        new_title = request.data.get('title', '').strip()
+        if new_title:
+            conversation.title = new_title[:200]
+            conversation.save(update_fields=['title'])
+        return Response({'success': True, 'title': conversation.title})
+    except Conversation.DoesNotExist:
+        return Response({'success': False}, status=404)

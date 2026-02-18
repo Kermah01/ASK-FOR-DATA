@@ -75,6 +75,36 @@ class UserProfile(models.Model):
         }
 
 
+class Conversation(models.Model):
+    """Conversation persistante pour le chat IA"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='conversations')
+    title = models.CharField(max_length=200, default='Nouvelle conversation')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f"{self.user.email}: {self.title[:50]}"
+
+
+class Message(models.Model):
+    """Message dans une conversation"""
+    ROLE_CHOICES = [('user', 'User'), ('assistant', 'Assistant')]
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='messages')
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES)
+    content = models.TextField()
+    data_context = models.JSONField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"[{self.role}] {self.content[:60]}..."
+
+
 class QueryCache(models.Model):
     """Cache des réponses Gemini pour éviter les appels redondants"""
     query_hash = models.CharField(max_length=64, unique=True, db_index=True)

@@ -202,6 +202,90 @@ QUERY_SYNONYMS = {
     'transport': 'transport infrastructure roads',
 }
 
+# Direct mapping: common queries → best indicator code
+# Prioritizes longest series with most recent data
+DIRECT_INDICATOR_MAP = {
+    # PIB / GDP
+    'pib': 'NY.GDP.MKTP.CD',
+    'produit intérieur brut': 'NY.GDP.MKTP.CD',
+    'gdp': 'NY.GDP.MKTP.CD',
+    'évolution du pib': 'NY.GDP.MKTP.CD',
+    'pib courant': 'NY.GDP.MKTP.CD',
+    'pib constant': 'NY.GDP.MKTP.KN',
+    'croissance du pib': 'NY.GDP.MKTP.KD.ZG',
+    'croissance économique': 'NY.GDP.MKTP.KD.ZG',
+    'taux de croissance': 'NY.GDP.MKTP.KD.ZG',
+    'pib par habitant': 'NY.GDP.PCAP.CD',
+    'pib par tête': 'NY.GDP.PCAP.CD',
+    'revenu par habitant': 'NY.GDP.PCAP.CD',
+    
+    # Population
+    'population': 'SP.POP.TOTL',
+    'nombre d\'habitants': 'SP.POP.TOTL',
+    'habitants': 'SP.POP.TOTL',
+    'démographie': 'SP.POP.TOTL',
+    'croissance démographique': 'SP.POP.GROW',
+    'population urbaine': 'SP.URB.TOTL.IN.ZS',
+    'urbanisation': 'SP.URB.TOTL.IN.ZS',
+    'espérance de vie': 'SP.DYN.LE00.IN',
+    'durée de vie': 'SP.DYN.LE00.IN',
+    'natalité': 'SP.DYN.CBRT.IN',
+    'mortalité': 'SP.DYN.CDRT.IN',
+    'fertilité': 'SP.DYN.TFRT.IN',
+    'fécondité': 'SP.DYN.TFRT.IN',
+    'mortalité infantile': 'SP.DYN.IMRT.IN',
+    'mortalité maternelle': 'SH.STA.MMRT',
+    
+    # Inflation & prix
+    'inflation': 'FP.CPI.TOTL.ZG',
+    'indice des prix': 'FP.CPI.TOTL.ZG',
+    'coût de la vie': 'FP.CPI.TOTL.ZG',
+    
+    # Emploi
+    'chômage': 'SL.UEM.TOTL.ZS',
+    'taux de chômage': 'SL.UEM.TOTL.ZS',
+    
+    # Commerce
+    'exportations': 'NE.EXP.GNFS.CD',
+    'importations': 'NE.IMP.GNFS.CD',
+    'balance commerciale': 'NE.RSB.GNFS.CD',
+    
+    # Éducation
+    'scolarisation primaire': 'SE.PRM.ENRR',
+    'scolarisation secondaire': 'SE.SEC.ENRR',
+    'alphabétisation': 'SE.ADT.LITR.ZS',
+    
+    # Énergie / Techno
+    'électricité': 'EG.ELC.ACCS.ZS',
+    'accès à l\'électricité': 'EG.ELC.ACCS.ZS',
+    'internet': 'IT.NET.USER.ZS',
+    'téléphone mobile': 'IT.CEL.SETS.P2',
+    
+    # Investissement
+    'investissement étranger': 'BX.KLT.DINV.CD.WD',
+    'ide': 'BX.KLT.DINV.CD.WD',
+    
+    # Environnement
+    'émissions co2': 'EN.ATM.CO2E.PC',
+    'co2': 'EN.ATM.CO2E.PC',
+    'forêt': 'AG.LND.FRST.ZS',
+    
+    # Santé
+    'dépenses de santé': 'SH.XPD.CHEX.GD.ZS',
+    'dépenses courantes en santé': 'SH.XPD.CHEX.GD.ZS',
+    'dépenses santé': 'SH.XPD.CHEX.GD.ZS',
+    'dépenses en santé': 'SH.XPD.CHEX.GD.ZS',
+    'santé en % du pib': 'SH.XPD.CHEX.GD.ZS',
+    'médecins': 'SH.MED.PHYS.ZS',
+    'personnel médical': 'SH.MED.PHYS.ZS',
+    
+    # Dette & Finances publiques (national data)
+    'pression fiscale': 'GC.TAX.TOTL.GD.ZS',
+    'dette publique': 'GC.DOD.TOTL.GD.ZS',
+    'dépenses publiques': 'GC.XPN.TOTL.GD.ZS',
+    'recettes fiscales': 'GC.TAX.TOTL.GD.ZS',
+}
+
 
 class GeminiService:
     """Service pour interpréter les requêtes utilisateur via Gemini"""
@@ -331,33 +415,47 @@ class GeminiService:
         if not search_terms:
             return None
         
-        # Étape 3: Chercher dans les indicateurs avec les termes enrichis
-        best_match = None
-        best_score = 0
+        # Étape 3: Chercher dans les indicateurs — collect ALL candidates
+        candidates = []
+        seen_codes = set()
         
         # Search in World Bank indicators
         for term in search_terms:
             results = data_service.search_indicators(term)
-            if results:
-                match = results[0]
-                indicator_lower = match['name'].lower()
-                score = sum(1 for t in search_terms if t in indicator_lower) * 100
-                score += 50
-                if score > best_score:
-                    best_score = score
-                    best_match = match
+            for match in results[:5]:  # Top 5 per term
+                if match['code'] not in seen_codes:
+                    seen_codes.add(match['code'])
+                    candidates.append(match)
         
         # Search in national indicators
         for term in search_terms:
             nat_results = nds.search_indicators(term)
-            if nat_results:
-                match = nat_results[0]
-                indicator_lower = match['name'].lower()
-                score = sum(1 for t in search_terms if t in indicator_lower) * 100
-                score += 75  # Slight bonus for national data (more specific)
-                if score > best_score:
-                    best_score = score
-                    best_match = match
+            for match in nat_results[:5]:
+                if match['code'] not in seen_codes:
+                    seen_codes.add(match['code'])
+                    candidates.append(match)
+        
+        if not candidates:
+            return None
+        
+        # Score all candidates based on keyword relevance
+        best_match = None
+        best_score = 0
+        
+        for match in candidates:
+            indicator_lower = match['name'].lower()
+            # Count how many search terms appear in the indicator name
+            term_matches = sum(1 for t in search_terms if t in indicator_lower)
+            score = term_matches * 100
+            
+            # Bonus: if the indicator name is short and most terms match, it's likely the right one
+            name_words = len(indicator_lower.split())
+            if name_words <= 6 and term_matches >= 2:
+                score += 150
+            
+            if score > best_score:
+                best_score = score
+                best_match = match
         
         return best_match
     
@@ -795,6 +893,297 @@ Réponds UNIQUEMENT en JSON:
             message += f" Calcul demandé : {calculation_result:.2f} (formule : {calculation_formula})."
         
         return message
+
+
+    def chat_message(self, messages_history: List[Dict], new_message: str) -> Dict:
+        """
+        Multi-turn conversational chat with statistics expertise.
+        
+        Args:
+            messages_history: List of {'role': 'user'|'assistant', 'content': str}
+            new_message: The new user message
+            
+        Returns:
+            {'content': str, 'data_contexts': list, 'title_suggestion': str|None}
+        """
+        # Detect if data lookup is needed — returns a LIST of data contexts
+        data_contexts = self._detect_and_fetch_data(new_message)
+        
+        data_section = ""
+        if data_contexts:
+            parts = []
+            for i, dc in enumerate(data_contexts, 1):
+                data_str = "\n".join([f"  {v['year']}: {v['value']}" for v in dc['values']])
+                vals = [v['value'] for v in dc['values']]
+                years = [v['year'] for v in dc['values']]
+                stats = ""
+                if len(vals) >= 2:
+                    variation = ((vals[-1] - vals[0]) / vals[0]) * 100 if vals[0] != 0 else 0
+                    stats = f"\nStats: min={min(vals):.4g} ({years[vals.index(min(vals))]}), max={max(vals):.4g} ({years[vals.index(max(vals))]}), moy={sum(vals)/len(vals):.4g}, variation={variation:+.2f}%"
+                
+                source_label = dc.get('source_label', 'Banque Mondiale / Sources nationales')
+                source_link = dc.get('source_link', '')
+                source_display = source_label
+                if source_link:
+                    source_display += f" ({source_link})"
+                
+                parts.append(f"""[INDICATEUR {i}]
+Nom: {dc['name']}
+Données:
+{data_str}{stats}
+Source: {source_display}""")
+            
+            indicators_block = "\n\n".join(parts)
+            data_section = f"""
+
+--- DONNÉES RÉELLES ({len(data_contexts)} indicateur(s) trouvé(s) — utilise-les TOUS dans ta réponse) ---
+{indicators_block}
+--- FIN DONNÉES ---
+IMPORTANT: Cite la SOURCE de chaque indicateur (ex: "Banque Mondiale", "ANStat", "TOFE"). Ne cite JAMAIS les codes techniques."""
+
+        # Build conversation for Gemini
+        system_prompt = f"""Tu es **Ask For Data AI**, un assistant conversationnel expert en statistiques et économie, spécialisé sur la Côte d'Ivoire mais avec des connaissances généralistes en statistiques, économétrie, économie et sciences sociales.
+
+## Ton identité
+- Tu es un véritable partenaire intellectuel, pas un simple outil de requête.
+- Tu discutes naturellement, comme un professeur d'université passionné et accessible.
+- Tu peux faire de l'humour, poser des questions de suivi, proposer des angles d'analyse.
+- Tu gardes le contexte de toute la conversation pour des échanges riches.
+
+## Tes capacités
+1. **Données Côte d'Ivoire** : Tu as accès à +1500 indicateurs (Banque Mondiale, TOFE, Douanes, Base Éco, Financements). Quand des données sont disponibles, elles te sont fournies automatiquement.
+2. **Concepts statistiques** : Tu expliques n'importe quel concept (moyenne, médiane, écart-type, régression, corrélation, tests d'hypothèses, séries temporelles, indices, indicateurs composites, IDH, Gini, etc.)
+3. **Analyses économiques** : Tu interprètes les tendances, fais des comparaisons, identifies les facteurs explicatifs.
+4. **Méthodologie** : Tu peux conseiller sur la méthodologie de collecte, d'analyse et de présentation des données.
+5. **Conversation générale** : Tu peux aussi discuter de sujets connexes (politique économique, développement, éducation, santé publique, etc.)
+
+## Règles
+- Quand des DONNÉES RÉELLES te sont fournies, utilise-les OBLIGATOIREMENT. Ne les ignore pas. Cite les chiffres.
+- N'invente JAMAIS de chiffres. Si tu n'as pas les données, dis-le clairement.
+- Pour les sources, cite UNIQUEMENT le nom de l'organisme (ex: "Banque Mondiale", "ANStat", "TOFE", "Direction Générale des Douanes"). Ne cite JAMAIS les codes techniques des indicateurs (ex: NY.GDP.MKTP.CD) dans ta réponse.
+- Utilise du **Markdown** : gras, listes, titres (##), tableaux si pertinent.
+- Sois concis mais complet. Adapte la longueur à la complexité de la question.
+- En français par défaut, sauf si l'utilisateur parle en anglais.
+- Si l'utilisateur pose une question vague, guide-le avec des suggestions.
+{data_section}"""
+
+        # Build message list for Gemini
+        prompt_parts = [system_prompt + "\n\n"]
+        
+        # Add conversation history (last 20 messages max)
+        recent_history = messages_history[-20:]
+        for msg in recent_history:
+            role_label = "UTILISATEUR" if msg['role'] == 'user' else "ASK FOR DATA AI"
+            prompt_parts.append(f"{role_label}: {msg['content']}\n\n")
+        
+        # Add the new message
+        prompt_parts.append(f"UTILISATEUR: {new_message}\n\nASK FOR DATA AI:")
+        
+        full_prompt = "".join(prompt_parts)
+        
+        try:
+            response_text = self._call_gemini(full_prompt)
+            # Clean up any leading/trailing whitespace
+            response_text = response_text.strip()
+        except Exception as e:
+            error_str = str(e).lower()
+            if '429' in error_str or 'quota' in error_str:
+                response_text = ("⚠️ Le service d'IA est temporairement surchargé (quota API dépassé). "
+                                "Veuillez réessayer dans quelques minutes.")
+            else:
+                logger.error(f"Chat error: {e}")
+                response_text = ("Désolé, une erreur est survenue lors du traitement de votre message. "
+                                "Veuillez réessayer.")
+        
+        # Generate title suggestion for new conversations
+        title_suggestion = None
+        if len(messages_history) == 0:
+            title_suggestion = new_message[:80].strip()
+            if len(new_message) > 80:
+                title_suggestion = title_suggestion.rsplit(' ', 1)[0] + '...'
+        
+        return {
+            'content': response_text,
+            'data_contexts': data_contexts,
+            'title_suggestion': title_suggestion,
+        }
+    
+    def _chat_identify_indicators(self, message: str) -> List[str]:
+        """
+        Use Gemini Phase 1 to identify the correct indicator codes from a user message.
+        Lightweight call (~1-2K tokens). Same approach as homepage interpret_query Phase 1.
+        Returns list of indicator codes.
+        """
+        msg_lower = message.lower()
+        
+        # Extract search terms for pre-filtering the indicator list (keeps prompt small)
+        search_terms = set()
+        for key, value in QUERY_SYNONYMS.items():
+            if key in msg_lower:
+                for word in value.split():
+                    if len(word) > 2:
+                        search_terms.add(word)
+        for word in re.findall(r'[a-zàâäéèêëïîôùûüÿç]+', msg_lower):
+            if len(word) > 3:
+                search_terms.add(word)
+        
+        indicators_list = data_service.get_compact_indicator_list(
+            search_terms=list(search_terms) if search_terms else None
+        )
+        national_indicators_list = nds.get_compact_indicator_list()
+        
+        prompt = f"""Identifie le(s) indicateur(s) statistique(s) pertinent(s) pour cette question.
+
+=== INDICATEURS BANQUE MONDIALE ===
+{indicators_list}
+
+=== INDICATEURS NATIONAUX ===
+{national_indicators_list}
+
+RÈGLES:
+1. Retourne 1 à 3 codes maximum, les plus pertinents pour la question.
+2. Utilise la description (3ème colonne) pour comprendre ce que mesure chaque indicateur.
+3. Si l'indicateur EXACT existe dans la liste, choisis-le.
+4. Si aucun indicateur n'est pertinent, retourne une liste vide.
+5. NE retourne PAS d'indicateurs génériques (comme le PIB total) sauf si explicitement demandé.
+6. Préfère l'indicateur qui a la série la plus longue [Npts] et les données les plus récentes [→YYYY].
+
+QUESTION: "{message}"
+
+Réponds UNIQUEMENT en JSON:
+{{"codes": ["CODE1"]}}"""
+        
+        try:
+            response_text = self._call_gemini(prompt)
+            response_text = self._clean_json_response(response_text)
+            result = json.loads(response_text)
+            codes = result.get('codes', [])
+            valid_codes = [c for c in codes if isinstance(c, str) and c]
+            logger.info(f"Chat Gemini Phase 1: {valid_codes}")
+            return valid_codes
+        except Exception as e:
+            logger.error(f"Chat indicator identification error: {e}")
+            return []
+
+    def _detect_and_fetch_data(self, message: str) -> List[Dict]:
+        """
+        Detects if the user message requires data from the database.
+        Uses a 3-tier approach:
+          1. Direct map (fast, for simple queries)
+          2. Gemini Phase 1 (accurate, for complex queries)
+          3. Keyword fallback (if Gemini fails)
+        Returns a LIST of data contexts (supports multiple indicators per message).
+        """
+        msg_lower = message.lower()
+        
+        # Skip data lookup for clearly conceptual/conversational messages
+        skip_keywords = [
+            "qu'est-ce que", "qu'est ce que", "c'est quoi", "définition",
+            "explique", "comment calculer", "comment calcule", "différence entre",
+            "méthode", "méthodologie", "formule", "signifie", "signification",
+            "bonjour", "salut", "merci", "au revoir", "ok", "d'accord",
+            "oui", "non", "pourquoi", "comment interpréter",
+        ]
+        
+        is_conceptual = any(kw in msg_lower for kw in skip_keywords)
+        has_data_words = any(kw in msg_lower for kw in [
+            'côte d\'ivoire', 'ivoirien', 'données', 'chiffre', 'valeur',
+            'combien', 'évolution', 'tendance', 'taux', 'montant',
+            'en 20', 'depuis', 'entre 20', 'progression', 'statistique',
+            'dépenses', 'recettes', 'production', 'indice', 'ratio',
+            'pourcentage', '%', 'croissance', 'part du', 'nombre de',
+            'accès', 'mortalité', 'espérance', 'scolarisation', 'dette',
+            'exportation', 'importation', 'commerce', 'investissement',
+        ])
+        has_synonym_match = any(key in msg_lower for key in QUERY_SYNONYMS.keys())
+        has_direct_match = any(key in msg_lower for key in DIRECT_INDICATOR_MAP.keys())
+        
+        if is_conceptual and not has_data_words and not has_synonym_match and not has_direct_match:
+            return []
+        if not has_data_words and not has_synonym_match and not has_direct_match:
+            return []
+        
+        codes_to_fetch = []
+        seen_codes = set()
+        
+        # Step 1: Direct map matches (fast, no API call)
+        matched_keys = [key for key in DIRECT_INDICATOR_MAP if key in msg_lower]
+        matched_keys.sort(key=len, reverse=True)
+        
+        query_words = len(msg_lower.split())
+        longest_match_len = max((len(k) for k in matched_keys), default=0)
+        
+        # For SIMPLE queries (short, or longest match covers most of the query),
+        # trust the direct map. For COMPLEX queries, prefer Gemini Phase 1.
+        is_simple = query_words <= 3 or (longest_match_len / max(len(msg_lower), 1)) > 0.5
+        
+        if is_simple and matched_keys:
+            for key in matched_keys:
+                code = DIRECT_INDICATOR_MAP[key]
+                if code not in seen_codes:
+                    seen_codes.add(code)
+                    codes_to_fetch.append(code)
+                    logger.info(f"Chat direct map: '{key}' → {code}")
+        
+        # Step 2: Gemini Phase 1 for complex queries or when direct map fails
+        if not codes_to_fetch or not is_simple:
+            gemini_codes = self._chat_identify_indicators(message)
+            for code in gemini_codes:
+                if code not in seen_codes:
+                    seen_codes.add(code)
+                    codes_to_fetch.append(code)
+        
+        # Step 3: Keyword fallback if still nothing
+        if not codes_to_fetch:
+            match = self._try_fallback_search(message)
+            if match and match['code'] not in seen_codes:
+                seen_codes.add(match['code'])
+                codes_to_fetch.append(match['code'])
+                logger.info(f"Chat fallback search: → {match['code']} ({match['name']})")
+        
+        if not codes_to_fetch:
+            return []
+        
+        # Cap at 5 indicators to keep prompt manageable
+        codes_to_fetch = codes_to_fetch[:5]
+        
+        # Step 4: Fetch data for each code
+        results = []
+        for code in codes_to_fetch:
+            try:
+                if code.startswith('NAT.'):
+                    indicator_data = data_service.get_indicator_data_for_national(code)
+                else:
+                    indicator_data = data_service.get_indicator_data_for_query(code)
+                
+                if indicator_data and indicator_data.get('values'):
+                    source_label = self._get_source_label(code, indicator_data)
+                    results.append({
+                        'code': code,
+                        'name': indicator_data['name'],
+                        'values': indicator_data['values'],
+                        'source_link': indicator_data.get('source_link', ''),
+                        'source_label': source_label,
+                    })
+            except Exception as e:
+                logger.error(f"Data fetch error for {code}: {e}")
+        
+        return results
+
+    def _get_source_label(self, code: str, indicator_data: dict) -> str:
+        """Returns a human-readable source label based on indicator code and data."""
+        if code.startswith('NAT.tofe'):
+            return "Ministère des Finances et du Budget (TOFE)"
+        elif code.startswith('NAT.douanes'):
+            return "Direction Générale des Douanes"
+        elif code.startswith('NAT.financements') or code.startswith('NAT.dette'):
+            return "Direction Générale des Financements (DGF)"
+        elif code.startswith('NAT.base_eco'):
+            return "Direction Générale de l'Économie (DGE) / ANStat"
+        elif code.startswith('NAT.'):
+            return "Sources nationales (ANStat / DGE)"
+        else:
+            return "Banque Mondiale (World Development Indicators)"
 
 
 # Instance globale (sera initialisée dans settings.py)
