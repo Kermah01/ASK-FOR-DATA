@@ -1588,7 +1588,8 @@ footer {
     .nav-toggle { display: block; }
     nav { position: relative; }
     header { position: sticky; }
-    .logo img { height: 40px !important; }
+    .logo img { height: 40px !important; max-width: 100%; object-fit: contain; }
+    .logo { overflow: hidden; max-width: 50%; }
 
     .nav-mobile-menu {
         display: none;

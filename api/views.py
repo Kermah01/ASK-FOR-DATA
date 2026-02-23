@@ -16,6 +16,7 @@ from django.contrib.auth.models import User
 logger = logging.getLogger('api')
 from .data_service import data_service
 from .national_data_service import national_data_service as nds
+from .anstat_sdmx_service import anstat_sdmx_service as anstat
 from .gemini_service import gemini_service, get_service_for_key
 from .models import UserProfile, QueryCache, Conversation, Message
 
@@ -498,10 +499,83 @@ def dashboard_data(request):
         if s_imp.get('values'):
             national_data[key_imp] = {'years': s_imp['years'], 'values': s_imp['values'], 'name': s_imp['name']}
 
+    # --- ANStat SDMX data ---
+    def ans(key):
+        """Retourne une série ANStat {years, values, name}."""
+        s = anstat.get_series(key)
+        return {'years': s.get('years', []), 'values': s.get('values', []), 'name': s.get('name', key)}
+
+    anstat_data = {
+        # Production industrielle
+        'ipi_total': ans('production.AIP_IX'),
+        'ipi_food': ans('production.AIP_ISIC4_C10_IX'),
+        'ipi_mining': ans('production.AIP_ISIC4_B07_IX'),
+        'ipi_refinery': ans('production.AIP_ISIC4_C19_IX'),
+        # Prix à la production
+        'ippi_total': ans('ipp.PPPI_IX'),
+        # Prix à la consommation
+        'ipc_global': ans('ipc.PCPI_IX'),
+        'ipc_food': ans('ipc.PCPI_CP_01_IX'),
+        'ipc_transport': ans('ipc.PCPI_CP_07_IX'),
+        # Monétaire
+        'base_monetaire': ans('banque_centrale.FASMB_XDC'),
+        'masse_monetaire_m2': ans('institutions_depot.FDSB_XDC'),
+        'credit_economie': ans('institutions_depot.FDSAO_XDC'),
+        'actifs_ext_nets_bc': ans('banque_centrale.FASF_XDC'),
+        'creances_etat_bc': ans('banque_centrale.FASG_XDC'),
+        # Taux d'intérêt
+        'taux_directeur': ans('taux_interet.FPOLM_MIN_PA'),
+        'taux_pret_marginal': ans('taux_interet.FPOLM_MAR_PA'),
+        'taux_debiteur': ans('taux_interet.FILR_PA'),
+        'taux_crediteur': ans('taux_interet.FIDR_PA'),
+        # Taux de change
+        'taux_change_usd_avg': ans('taux_change.ENDA_XDC_USD_RATE'),
+        'taux_change_usd_end': ans('taux_change.ENDE_XDC_USD_RATE'),
+        # Réserves
+        'reserves_officielles': ans('reserves.MAU_RAFA_XDC'),
+        # Balance des paiements
+        'compte_courant_bdp': ans('balance_paiements.BCA_BP6_XDC'),
+        'balance_biens_bdp': ans('balance_paiements.BG_BP6_XDC'),
+        'exports_biens_bdp': ans('balance_paiements.BXG_BP6_XDC'),
+        'imports_biens_bdp': ans('balance_paiements.BMG_BP6_XDC'),
+        'ide_nets_bdp': ans('balance_paiements.BFDA_BP6_XDC'),
+        # Dette extérieure
+        'dette_ext_brute': ans('dette_ext.D_BP6_XDC'),
+        'dette_ext_admin': ans('dette_ext.DG_BP6_XDC'),
+        # Population ANStat
+        'pop_anstat_total': ans('population.P3'),
+        'pop_anstat_homme': ans('population.P1'),
+        'pop_anstat_femme': ans('population.P2'),
+        # Social
+        'scolarisation_primaire': ans('social.I3'),
+        'scolarisation_secondaire': ans('social.I2'),
+        'esperance_vie_anstat': ans('social.I9'),
+        'mortalite_infantile_anstat': ans('social.I16'),
+        'taux_croissance_demo': ans('social.I7'),
+        'fecondite_anstat': ans('social.I12'),
+        'taux_natalite': ans('social.I14'),
+        'taux_mortalite': ans('social.I15'),
+        # Emploi
+        'immatriculations_cnps': ans('emploi.LENE_VS_PE_NUM'),
+        'immatriculations_cgreae': ans('emploi.LENE_PS_PE_NUM'),
+        # TOFE SDMX (séries mensuelles agrégées à l'année, plus longues que TOFE Excel)
+        'tofe_sdmx_recettes': ans('tofe_sdmx.CIV_CGO_R_XDC'),
+        'tofe_sdmx_recettes_fiscales': ans('tofe_sdmx.CIV_CGO_RF_XDC'),
+        'tofe_sdmx_depenses': ans('tofe_sdmx.CIV_CGO_DL_XDC'),
+        'tofe_sdmx_solde': ans('tofe_sdmx.CIV_CGO_SB_XDC'),
+        'tofe_sdmx_solde_pib': ans('tofe_sdmx.CIV_CGO_SB_GDP'),
+        'tofe_sdmx_investissement': ans('tofe_sdmx.CIV_CGO_DI_XDC'),
+        'tofe_sdmx_personnel': ans('tofe_sdmx.CIV_CGO_DCP_XDC'),
+        'tofe_sdmx_interets': ans('tofe_sdmx.CIV_CGO_IDP_XDC'),
+        'tofe_sdmx_dgi': ans('tofe_sdmx.CIV_CGO_RFI_XDC'),
+        'tofe_sdmx_dgd': ans('tofe_sdmx.CIV_CGO_RFC_XDC'),
+    }
+
     return Response({
         'kpis': kpis,
         'series': series_data,
         'national': national_data,
+        'anstat': anstat_data,
     })
 
 

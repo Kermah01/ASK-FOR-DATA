@@ -1,5 +1,5 @@
 """
-Service de chargement des données nationales (TOFE, Douanes, Financements, Base Éco).
+Service de chargement des données nationales (TOFE, Douanes, Financements, Base Éco, ANStat SDMX).
 Ces fichiers ont une structure différente de data.xlsx (Banque Mondiale).
 Singleton pattern identique à data_service.py.
 """
@@ -7,6 +7,7 @@ import os
 import logging
 import pandas as pd
 from pathlib import Path
+from .anstat_sdmx_service import anstat_sdmx_service, ANSTAT_INDICATOR_META, ANSTAT_SOURCE
 
 logger = logging.getLogger('api')
 
@@ -116,10 +117,14 @@ class NationalDataService:
         self._load_base_eco()
         self._load_financements()
 
+        # ANStat SDMX data (loaded by its own singleton)
+        self.anstat = anstat_sdmx_service
+
         logger.info(f"✓ Données nationales chargées: TOFE={len(self.tofe)} séries, "
                      f"Douanes={len(self.douanes)} séries, "
                      f"Base éco={len(self.base_eco)} séries, "
-                     f"Financements={len(self.financements)} séries")
+                     f"Financements={len(self.financements)} séries, "
+                     f"ANStat SDMX={self.anstat.get_series_count()} séries")
 
     # ──────────────────────────────────────────────
     # TOFE
@@ -842,6 +847,21 @@ class NationalDataService:
                     'description': f'Valeur des importations du produit: {self.douanes[imp_key]["name"]}',
                 })
 
+        # ── ANStat SDMX indicators ──
+        for full_key, meta in ANSTAT_INDICATOR_META.items():
+            series = self.anstat.get_series(full_key)
+            if not series or not series.get('values'):
+                continue
+            indicators.append({
+                'code': f'NAT.anstat.{full_key}',
+                'name': meta['name'],
+                'unit': meta.get('unit', ''),
+                'source': ANSTAT_SOURCE.get('source', ''),
+                'source_link': ANSTAT_SOURCE.get('source_link', ''),
+                'methodology': ANSTAT_SOURCE.get('methodology', ''),
+                'description': meta.get('description', ''),
+            })
+
         return indicators
 
     def get_indicator_detail_by_code(self, code):
@@ -853,6 +873,27 @@ class NationalDataService:
             return None
 
         full_key = code[4:]  # Remove 'NAT.' prefix
+
+        # ── ANStat SDMX path: NAT.anstat.theme.CODE ──
+        if full_key.startswith('anstat.'):
+            anstat_key = full_key[7:]  # Remove 'anstat.' prefix → theme.CODE
+            meta = ANSTAT_INDICATOR_META.get(anstat_key, {})
+            series = self.anstat.get_series(anstat_key)
+            if not series or not series.get('values'):
+                return None
+            values = [{'year': y, 'value': v} for y, v in zip(series['years'], series['values'])]
+            return {
+                'code': code,
+                'name': meta.get('name', series.get('name', anstat_key)),
+                'unit': meta.get('unit', ''),
+                'source': ANSTAT_SOURCE.get('source', ''),
+                'source_link': ANSTAT_SOURCE.get('source_link', ''),
+                'methodology': ANSTAT_SOURCE.get('methodology', ''),
+                'definition': meta.get('description', ''),
+                'values': values,
+            }
+
+        # ── Original national data path: NAT.source.key ──
         parts = full_key.split('.', 1)
         if len(parts) != 2:
             return None
@@ -906,6 +947,16 @@ class NationalDataService:
             code = f'NAT.{full_key}'
             desc = meta.get('description', '')[:120]
             lines.append(f"{code}|{meta['name']}|{desc}")
+
+        # ANStat SDMX indicators
+        for full_key, meta in ANSTAT_INDICATOR_META.items():
+            series = self.anstat.get_series(full_key)
+            if not series or not series.get('values'):
+                continue
+            code = f'NAT.anstat.{full_key}'
+            desc = meta.get('description', '')[:120]
+            lines.append(f"{code}|{meta['name']}|{desc}")
+
         return "\n".join(lines)
 
     def search_indicators(self, query):
@@ -956,8 +1007,34 @@ class NationalDataService:
                             'name': name,
                             'score': 200,
                         })
+        # ── ANStat SDMX search ──
+        for full_key, meta in ANSTAT_INDICATOR_META.items():
+            series = self.anstat.get_series(full_key)
+            if not series or not series.get('values'):
+                continue
+            name_lower = meta['name'].lower()
+            desc_lower = meta.get('description', '').lower()
+            score = 0
+            if query_lower in name_lower:
+                score = 300
+            elif query_lower in desc_lower:
+                score = 150
+            else:
+                words = [w for w in query_lower.split() if len(w) > 2]
+                for w in words:
+                    if w in name_lower:
+                        score += 50
+                    elif w in desc_lower:
+                        score += 20
+            if score > 0:
+                results.append({
+                    'code': f'NAT.anstat.{full_key}',
+                    'name': meta['name'],
+                    'score': score,
+                })
+
         results.sort(key=lambda x: x['score'], reverse=True)
-        return [{'code': r['code'], 'name': r['name']} for r in results[:30]]
+        return [{'code': r['code'], 'name': r['name']} for r in results[:50]]
 
     def get_solde_budgetaire_pct_pib(self):
         """Retourne le solde budgétaire en % du PIB depuis le TOFE."""

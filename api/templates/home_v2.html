@@ -4,7 +4,7 @@
 {% block title %}Ask For Data | Plateforme Intelligente de Données Ivoiriennes{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/home-v2.css' %}?v=2.0">
+<link rel="stylesheet" href="{% static 'css/home-v2.css' %}?v=2.2">
 {% endblock %}
 
 {% block content %}
@@ -412,6 +412,7 @@
                     </div>
                 </div>
                 <div class="card-body">
+                    <div id="chart-title" style="text-align:center; font-weight:700; font-size:1.05rem; color:#1F2937; padding:0.5rem 0.75rem 0.25rem; font-family:Inter,sans-serif;"></div>
                     <canvas id="result-chart"></canvas>
                 </div>
             </div>
@@ -431,12 +432,25 @@
                     </div>
                 </div>
                 <div class="card-body">
+                    <div class="table-toolbar">
+                        <div class="table-search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="table-search" placeholder="Filtrer par année..." autocomplete="off">
+                        </div>
+                        <div class="table-info">
+                            <span id="table-row-count"></span>
+                            <button type="button" class="table-sort-btn" id="table-sort-btn" title="Inverser l'ordre">
+                                <i class="fas fa-sort-amount-down"></i>
+                            </button>
+                        </div>
+                    </div>
                     <div class="table-wrapper">
                         <table id="result-table">
                             <thead>
                                 <tr>
-                                    <th>Année</th>
-                                    <th>Valeur</th>
+                                    <th class="sortable" data-col="year">Année <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-col="value">Valeur <i class="fas fa-sort"></i></th>
+                                    <th>Variation</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
@@ -482,5 +496,5 @@
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="{% static 'js/home-v2.js' %}"></script>
+<script src="{% static 'js/home-v2.js' %}?v=2.2"></script>
 {% endblock %}

@@ -403,11 +403,31 @@ function displayResults(data) {
     
     // Update AI message (convert markdown to HTML)
     const messageEl = document.getElementById('result-message');
-    if (data.message) {
-        messageEl.innerHTML = markdownToHtml(data.message);
-    } else {
-        messageEl.textContent = '';
+    const hasData = data.data && data.data.length > 0;
+    const isProxy = data.match_type === 'proxy';
+    let msgHtml = '';
+    // Show a prominent banner when the exact indicator is not available
+    if (!hasData) {
+        msgHtml += `<div style="background: linear-gradient(135deg, #FEE2E2, #FEF3C7); border-left: 5px solid #EF4444; padding: 1rem 1.25rem; border-radius: 10px; margin-bottom: 1.25rem; display:flex; align-items:center; gap:0.75rem;">
+            <i class="fas fa-exclamation-circle" style="font-size:1.5rem; color:#EF4444; flex-shrink:0;"></i>
+            <div>
+                <strong style="color:#991B1B; font-size:1.05rem;">Donn\u00e9es non disponibles</strong><br>
+                <span style="color:#92400E; font-size:0.9rem;">Cet indicateur ne dispose pas encore de donn\u00e9es dans notre base. L'analyse ci-dessous est fournie \u00e0 titre informatif.</span>
+            </div>
+        </div>`;
+    } else if (isProxy) {
+        msgHtml += `<div style="background: linear-gradient(135deg, #FEF3C7, #FFF7ED); border-left: 5px solid #F59E0B; padding: 1rem 1.25rem; border-radius: 10px; margin-bottom: 1.25rem; display:flex; align-items:center; gap:0.75rem;">
+            <i class="fas fa-info-circle" style="font-size:1.5rem; color:#F59E0B; flex-shrink:0;"></i>
+            <div>
+                <strong style="color:#92400E; font-size:1.05rem;">Indicateur exact non disponible</strong><br>
+                <span style="color:#78350F; font-size:0.9rem;">L'indicateur demand\u00e9 n'existe pas directement dans notre base. Les donn\u00e9es ci-dessous proviennent d'un <strong>indicateur approch\u00e9 (proxy)</strong> identifi\u00e9 par l'IA.</span>
+            </div>
+        </div>`;
     }
+    if (data.message) {
+        msgHtml += markdownToHtml(data.message);
+    }
+    messageEl.innerHTML = msgHtml;
     
     // Update metadata
     let metaHtml = `<p><strong>Code indicateur :</strong> ${data.indicator_code || 'N/A'}</p>`;
@@ -441,25 +461,15 @@ function displayResults(data) {
         sourceCard.style.display = 'none';
     }
     
-    // Update table
-    const tbody = document.querySelector('#result-table tbody');
-    tbody.innerHTML = '';
-    
-    if (data.data && data.data.length > 0) {
-        data.data.forEach(row => {
-            const tr = document.createElement('tr');
-            const formattedValue = typeof row.value === 'number' 
-                ? row.value.toLocaleString('fr-FR', { maximumFractionDigits: 2 }) 
-                : row.value;
-            tr.innerHTML = `
-                <td><strong>${row.year}</strong></td>
-                <td>${formattedValue}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-    } else {
-        tbody.innerHTML = '<tr><td colspan="2" style="text-align: center; color: var(--text-muted);">Aucune donnée disponible</td></tr>';
+    // Set chart title
+    const chartTitleEl = document.getElementById('chart-title');
+    if (chartTitleEl) {
+        const unit = inferUnit(data.indicator_name) || '';
+        chartTitleEl.textContent = (data.indicator_name || 'Indicateur') + (unit ? ` (${unit})` : '');
     }
+
+    // Update table with variation column
+    buildEnhancedTable(data);
     
     // Store data for chart type switching
     currentChartData = data;
@@ -794,6 +804,131 @@ function inferUnit(name) {
 }
 
 // =============================================
+// ENHANCED TABLE
+// =============================================
+let tableData = [];       // raw rows [{year, value}]
+let tableSortAsc = true;  // true = oldest first
+let tableFilterText = '';
+
+function buildEnhancedTable(data) {
+    const tbody = document.querySelector('#result-table tbody');
+    const rowCountEl = document.getElementById('table-row-count');
+    const searchInput = document.getElementById('table-search');
+    tbody.innerHTML = '';
+    tableData = [];
+    tableSortAsc = true;
+    tableFilterText = '';
+    if (searchInput) searchInput.value = '';
+
+    if (!data.data || data.data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Aucune donnée disponible</td></tr>';
+        if (rowCountEl) rowCountEl.textContent = '';
+        return;
+    }
+
+    // Copy and sort ascending by year
+    tableData = [...data.data].sort((a, b) => a.year - b.year);
+    const unit = inferUnit(data.indicator_name) || '';
+
+    renderTableRows(tableData, unit);
+    initTableFeatures(unit);
+}
+
+function renderTableRows(rows, unit) {
+    const tbody = document.querySelector('#result-table tbody');
+    const rowCountEl = document.getElementById('table-row-count');
+    tbody.innerHTML = '';
+
+    if (rows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Aucun résultat</td></tr>';
+        if (rowCountEl) rowCountEl.textContent = '0 ligne';
+        return;
+    }
+
+    rows.forEach((row, i) => {
+        const tr = document.createElement('tr');
+        const formattedValue = typeof row.value === 'number'
+            ? row.value.toLocaleString('fr-FR', { maximumFractionDigits: 2 })
+            : row.value;
+
+        // Compute variation vs previous row in sorted order
+        let variationHtml = '<span style="color:#9CA3AF;">—</span>';
+        if (i > 0 && typeof row.value === 'number' && typeof rows[i - 1].value === 'number' && rows[i - 1].value !== 0) {
+            const prev = rows[i - 1].value;
+            const change = ((row.value - prev) / Math.abs(prev)) * 100;
+            const sign = change >= 0 ? '+' : '';
+            const color = change > 0 ? '#16A34A' : change < 0 ? '#DC2626' : '#9CA3AF';
+            const icon = change > 0 ? 'fa-arrow-up' : change < 0 ? 'fa-arrow-down' : 'fa-minus';
+            variationHtml = `<span style="color:${color}; font-weight:600; font-size:0.85rem;">
+                <i class="fas ${icon}" style="font-size:0.7rem; margin-right:2px;"></i>${sign}${change.toFixed(2)}%
+            </span>`;
+        }
+
+        tr.innerHTML = `
+            <td><strong>${row.year}</strong></td>
+            <td>${formattedValue}${unit ? ' <span style="color:#9CA3AF; font-size:0.8rem;">' + unit + '</span>' : ''}</td>
+            <td>${variationHtml}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    if (rowCountEl) rowCountEl.textContent = rows.length + ' ligne' + (rows.length > 1 ? 's' : '');
+}
+
+function initTableFeatures(unit) {
+    const searchInput = document.getElementById('table-search');
+    const sortBtn = document.getElementById('table-sort-btn');
+
+    // Remove old listeners by cloning
+    if (searchInput) {
+        const newSearch = searchInput.cloneNode(true);
+        searchInput.parentNode.replaceChild(newSearch, searchInput);
+        newSearch.addEventListener('input', function () {
+            tableFilterText = this.value.trim();
+            applyTableFilters(unit);
+        });
+    }
+
+    if (sortBtn) {
+        const newSort = sortBtn.cloneNode(true);
+        sortBtn.parentNode.replaceChild(newSort, sortBtn);
+        newSort.addEventListener('click', function () {
+            tableSortAsc = !tableSortAsc;
+            const icon = this.querySelector('i');
+            if (icon) icon.className = tableSortAsc ? 'fas fa-sort-amount-down' : 'fas fa-sort-amount-up';
+            applyTableFilters(unit);
+        });
+    }
+
+    // Sortable column headers
+    document.querySelectorAll('#result-table th.sortable').forEach(th => {
+        const newTh = th.cloneNode(true);
+        th.parentNode.replaceChild(newTh, th);
+        newTh.style.cursor = 'pointer';
+        newTh.addEventListener('click', function () {
+            const col = this.dataset.col;
+            // Toggle direction
+            tableSortAsc = !tableSortAsc;
+            tableData.sort((a, b) => {
+                const va = col === 'year' ? a.year : a.value;
+                const vb = col === 'year' ? b.year : b.value;
+                return tableSortAsc ? va - vb : vb - va;
+            });
+            applyTableFilters(unit);
+        });
+    });
+}
+
+function applyTableFilters(unit) {
+    let filtered = tableData;
+    if (tableFilterText) {
+        filtered = tableData.filter(r => String(r.year).includes(tableFilterText));
+    }
+    const sorted = tableSortAsc ? [...filtered] : [...filtered].reverse();
+    renderTableRows(sorted, unit);
+}
+
+// =============================================
 // RENDER CHART
 // =============================================
 function renderChart(data, chartType = 'line') {
@@ -823,12 +958,12 @@ function renderChart(data, chartType = 'line') {
     let datasetConfig;
     
     if (chartType === 'bar') {
-        // Bar chart config
+        // Bar chart config - green for positive, orange for negative
         datasetConfig = {
             label: data.indicator_name || 'Valeur',
             data: values,
-            backgroundColor: values.map((_, i) => i % 2 === 0 ? primaryColor : secondaryColor),
-            borderColor: values.map((_, i) => i % 2 === 0 ? primaryColor : secondaryColor),
+            backgroundColor: values.map(v => v >= 0 ? secondaryColor : primaryColor),
+            borderColor: values.map(v => v >= 0 ? secondaryColor : primaryColor),
             borderWidth: 0,
             borderRadius: 6,
             maxBarThickness: 60
@@ -895,7 +1030,8 @@ function renderChart(data, chartType = 'line') {
                     },
                     callbacks: {
                         label: function(context) {
-                            return context.parsed.y.toLocaleString('fr-FR');
+                            const unit = inferUnit(data.indicator_name) || '';
+                            return context.parsed.y.toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + (unit ? ' ' + unit : '');
                         }
                     }
                 }
@@ -1058,7 +1194,7 @@ function showError(message) {
     
     // Hide chart and clear table
     document.getElementById('result-chart').style.display = 'none';
-    document.querySelector('#result-table tbody').innerHTML = '<tr><td colspan="2" style="text-align: center; color: var(--text-muted);">-</td></tr>';
+    document.querySelector('#result-table tbody').innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">-</td></tr>';
     document.getElementById('result-source').innerHTML = '<p style="color: var(--text-muted);">Aucune donnée disponible</p>';
     
     // Hide recommendations

@@ -77,11 +77,11 @@ const DashboardV3 = {
         this.createMiniChart('mini-macro-3', this.sv('fdi_pct', 5) || [1.1, 1.4, 1.9, 2.3, 2.2], 'line', this.colors.purple);
         this.createMiniChart('mini-macro-4', this.sv('exports_pct', 4) || [21, 22, 24, 28], 'bar', this.colors.green);
 
-        // Finance - real data from TOFE/financements
-        this.createMiniChart('mini-fin-1', this.nv('solde_budgetaire_pct_pib') || [-2.9, -2.2, -5.4, -4.9, -6.7], 'bar', this.colors.red);
-        this.createMiniChart('mini-fin-2', this.nv('recettes_et_dons', 5) || [4764, 5158, 5289, 6140, 6684], 'line', this.colors.green);
-        this.createMiniChart('mini-fin-3', this.nv('depenses_totales', 5) || [5708, 5944, 7255, 8102, 9666], 'line', this.colors.slate);
-        this.createMiniChart('mini-fin-4', this.nv('dette_pct_pib_fin') || [46.3, 50.2, 56.6, 58.1], 'bar', this.colors.orange);
+        // Finance - ANStat TOFE SDMX (10 ans) ou Excel TOFE
+        this.createMiniChart('mini-fin-1', this.av('tofe_sdmx_solde_pib', 5) || this.nv('solde_budgetaire_pct_pib') || [-2.9, -2.2, -5.4, -4.9, -6.7], 'bar', this.colors.red);
+        this.createMiniChart('mini-fin-2', this.av('tofe_sdmx_recettes', 5) || this.nv('recettes_et_dons', 5) || [4764, 5158, 5289, 6140, 6684], 'line', this.colors.green);
+        this.createMiniChart('mini-fin-3', this.av('tofe_sdmx_depenses', 5) || this.nv('depenses_totales', 5) || [5708, 5944, 7255, 8102, 9666], 'line', this.colors.slate);
+        this.createMiniChart('mini-fin-4', this.av('taux_directeur', 4) || this.nv('dette_pct_pib_fin') || [46.3, 50.2, 56.6, 58.1], 'bar', this.colors.orange);
 
         // Demo - real data
         this.createMiniChart('mini-demo-1', this.sv('fertility', 5) || [5.0, 4.9, 4.5, 4.4, 4.3], 'bar', this.colors.blue);
@@ -95,26 +95,26 @@ const DashboardV3 = {
         this.createMiniChart('mini-prim-3', this.nv('pib_primaire_pct', 5) || [17.9, 15.7, 16.9, 16.2, 16.6], 'line', this.colors.blue);
         this.createMiniChart('mini-prim-4', this.sv('arable_land_pct', 4) || [12.5, 13.0, 13.4, 13.5], 'bar', this.colors.slate);
 
-        // Secondary - real data where available
-        this.createMiniChart('mini-sec-1', this.sv('electricity_consumption', 4) || [250, 280, 310, 324], 'line', this.colors.orange);
-        this.createMiniChart('mini-sec-2', this.sv('electricity_access', 4) || [69, 71, 72, 72], 'bar', this.colors.blue);
-        this.createMiniChart('mini-sec-3', [8, 10, 15, 12], 'line', this.colors.slate);
-        this.createMiniChart('mini-sec-4', [20, 25, 30, 45], 'bar', this.colors.purple);
+        // Secondary - real data from ANStat IPI/IPPI
+        this.createMiniChart('mini-sec-1', this.av('ipi_total', 5) || this.sv('electricity_consumption', 4) || [250, 280, 310, 324], 'line', this.colors.orange);
+        this.createMiniChart('mini-sec-2', this.av('ippi_total', 5) || this.sv('electricity_access', 4) || [69, 71, 72, 72], 'bar', this.colors.blue);
+        this.createMiniChart('mini-sec-3', this.av('ipi_mining', 4) || [8, 10, 15, 12], 'line', this.colors.slate);
+        this.createMiniChart('mini-sec-4', this.av('ipi_refinery', 4) || [20, 25, 30, 45], 'bar', this.colors.purple);
 
-        // Tertiary - real data where available
+        // Tertiary - real data + ANStat credit/taux
         this.createMiniChart('mini-tert-1', this.sv('internet_users', 4) || [36, 36, 38, 41], 'line', this.colors.blue);
         this.createMiniChart('mini-tert-2', this.sv('mobile_subscriptions', 4) || [140, 155, 162, 172], 'bar', this.colors.green);
-        this.createMiniChart('mini-tert-3', [20, 25, 30, 45], 'line', this.colors.orange);
-        this.createMiniChart('mini-tert-4', [0.5, 0.8, 1.2, 1.8], 'bar', this.colors.purple);
+        this.createMiniChart('mini-tert-3', this.av('credit_economie', 4) || [20, 25, 30, 45], 'line', this.colors.orange);
+        this.createMiniChart('mini-tert-4', this.av('taux_change_usd_avg', 4) || [0.5, 0.8, 1.2, 1.8], 'bar', this.colors.purple);
 
-        // Education - real data
-        this.createMiniChart('mini-edu-1', this.sv('primary_enroll', 4) || [93, 93, 95, 102], 'line', this.colors.blue);
-        this.createMiniChart('mini-edu-2', this.sv('secondary_enroll', 4) || [54, 57, 55, 66], 'bar', this.colors.green);
+        // Education - ANStat scolarisation ou World Bank
+        this.createMiniChart('mini-edu-1', this.av('scolarisation_primaire', 4) || this.sv('primary_enroll', 4) || [93, 93, 95, 102], 'line', this.colors.blue);
+        this.createMiniChart('mini-edu-2', this.av('scolarisation_secondaire', 4) || this.sv('secondary_enroll', 4) || [54, 57, 55, 66], 'bar', this.colors.green);
         this.createMiniChart('mini-edu-3', this.sv('tertiary_enroll', 4) || [9, 10, 11, 11], 'line', this.colors.orange);
         this.createMiniChart('mini-edu-4', this.sv('literacy', 4) || [44, 50, 90, 50], 'bar', this.colors.slate);
 
-        // Sante - real data
-        this.createMiniChart('mini-sante-1', this.sv('life_expectancy', 4) || [60.1, 60.3, 61.6, 61.9], 'line', this.colors.green);
+        // Sante - ANStat espérance/mortalité ou World Bank
+        this.createMiniChart('mini-sante-1', this.av('esperance_vie_anstat', 4) || this.sv('life_expectancy', 4) || [60.1, 60.3, 61.6, 61.9], 'line', this.colors.green);
         this.createMiniChart('mini-sante-2', this.sv('infant_mortality', 4) || [50.9, 49.2, 47.9, 46.6], 'line', this.colors.red);
         this.createMiniChart('mini-sante-3', this.sv('health_expenditure', 4) || [3.2, 3.6, 3.8, 3.6], 'bar', this.colors.blue);
         this.createMiniChart('mini-sante-4', this.sv('physicians', 4) || [0.12, 0.14, 0.16, 0.18], 'bar', this.colors.orange);
@@ -317,6 +317,30 @@ const DashboardV3 = {
     // Helper: get last N years from national data
     ny(key, n) {
         const s = this.nd(key);
+        if (!s) return null;
+        const result = n ? s.years.slice(-n).map(String) : s.years.map(String);
+        return result.length > 0 ? result : null;
+    },
+
+    // Helper: get ANStat data series {years, values, name} or null
+    ad(key) {
+        if (!this.dbData || !this.dbData.anstat || !this.dbData.anstat[key]) return null;
+        const s = this.dbData.anstat[key];
+        if (!s.values || s.values.length === 0) return null;
+        return s;
+    },
+
+    // Helper: get last N values from ANStat data
+    av(key, n) {
+        const s = this.ad(key);
+        if (!s) return null;
+        const result = n ? s.values.slice(-n) : s.values;
+        return result.length > 0 ? result : null;
+    },
+
+    // Helper: get last N years from ANStat data
+    ay(key, n) {
+        const s = this.ad(key);
         if (!s) return null;
         const result = n ? s.years.slice(-n).map(String) : s.years.map(String);
         return result.length > 0 ? result : null;
@@ -1015,12 +1039,12 @@ const DashboardV3 = {
             }]
         });
 
-        // 7. TOFE - Recettes vs Dépenses (données réelles)
-        const recettes = this.nd('recettes_et_dons');
-        const depenses = this.nd('depenses_totales');
-        const tofeYears = recettes ? recettes.years.map(String) : ['2018', '2019', '2020', '2021', '2022', '2023'];
+        // 7. TOFE - Recettes vs Dépenses (ANStat SDMX si dispo, sinon Excel TOFE)
+        const tofeRec = this.ad('tofe_sdmx_recettes') || this.nd('recettes_et_dons');
+        const tofeDep = this.ad('tofe_sdmx_depenses') || this.nd('depenses_totales');
+        const tofeYears = tofeRec ? tofeRec.years.map(String) : ['2018', '2019', '2020', '2021', '2022', '2023'];
         this.createChart('chart-macro-reserv', {
-            tooltip: { trigger: 'axis', valueFormatter: (v) => v.toFixed(0) + ' Mds FCFA' },
+            tooltip: { trigger: 'axis', valueFormatter: (v) => Math.round(v).toLocaleString() + ' Mds FCFA' },
             legend: { bottom: 0, textStyle: { fontSize: 10 } },
             xAxis: { 
                 type: 'category', 
@@ -1041,15 +1065,15 @@ const DashboardV3 = {
             },
             series: [
                 { 
-                    name: 'Recettes & Dons',
-                    data: recettes ? recettes.values.map(v => Math.round(v)) : [4764, 5158, 5289, 6140, 6684, 7771], 
+                    name: 'Recettes',
+                    data: tofeRec ? tofeRec.values.map(v => Math.round(v)) : [4764, 5158, 5289, 6140, 6684, 7771], 
                     type: 'bar', 
                     barWidth: '35%',
                     itemStyle: { borderRadius: [4,4,0,0], color: this.colors.green },
                 },
                 { 
                     name: 'Dépenses',
-                    data: depenses ? depenses.values.map(v => Math.round(v)) : [5708, 5944, 7255, 8102, 9666, 10279], 
+                    data: tofeDep ? tofeDep.values.map(v => Math.round(v)) : [5708, 5944, 7255, 8102, 9666, 10279], 
                     type: 'bar', 
                     barWidth: '35%',
                     itemStyle: { borderRadius: [4,4,0,0], color: this.colors.red },
@@ -1057,8 +1081,9 @@ const DashboardV3 = {
             ]
         });
 
-        // 8. Solde budgétaire (% PIB) - données réelles calculées
-        const soldePib = this.nd('solde_budgetaire_pct_pib');
+        // 8. Solde budgétaire (% PIB) - ANStat SDMX si dispo, sinon Excel
+        const soldePibAnstat = this.ad('tofe_sdmx_solde_pib');
+        const soldePib = soldePibAnstat || this.nd('solde_budgetaire_pct_pib');
         this.createChart('chart-macro-credit', {
             tooltip: { trigger: 'axis', valueFormatter: (v) => v.toFixed(1) + '% du PIB' },
             xAxis: { 
@@ -1152,8 +1177,8 @@ const DashboardV3 = {
     },
 
     renderFinanceCharts() {
-        // 1. Solde Budgétaire Global (données réelles TOFE)
-        const soldePib = this.nd('solde_budgetaire_pct_pib');
+        // 1. Solde Budgétaire Global (ANStat SDMX si dispo, sinon Excel TOFE)
+        const soldePib = this.ad('tofe_sdmx_solde_pib') || this.nd('solde_budgetaire_pct_pib');
         this.createChart('chart-fin-balance', {
             tooltip: { trigger: 'axis', valueFormatter: (value) => value.toFixed(1) + '% du PIB' },
             xAxis: { 
@@ -1185,9 +1210,9 @@ const DashboardV3 = {
             }]
         });
 
-        // 2. Recettes vs Dépenses (données réelles TOFE)
-        const recettes = this.nd('recettes_et_dons');
-        const depenses = this.nd('depenses_totales');
+        // 2. Recettes vs Dépenses (ANStat SDMX si dispo, sinon Excel TOFE)
+        const recettes = this.ad('tofe_sdmx_recettes') || this.nd('recettes_et_dons');
+        const depenses = this.ad('tofe_sdmx_depenses') || this.nd('depenses_totales');
         const tofeYears = recettes ? recettes.years.map(String) : ['2018', '2019', '2020', '2021', '2022', '2023'];
         this.createChart('chart-fin-rev-exp', {
             legend: { top: 0, itemWidth: 12, itemHeight: 12 },
@@ -1269,9 +1294,9 @@ const DashboardV3 = {
             }]
         });
 
-        // 5. Masse Salariale (données réelles TOFE - rémunération / recettes)
-        const remun = this.nd('remuneration_salaries');
-        const rec = this.nd('recettes_et_dons');
+        // 5. Masse Salariale (ANStat SDMX si dispo, sinon Excel TOFE)
+        const remun = this.ad('tofe_sdmx_personnel') || this.nd('remuneration_salaries');
+        const rec = this.ad('tofe_sdmx_recettes') || this.nd('recettes_et_dons');
         let masseSalYears = ['2018', '2019', '2020', '2021', '2022', '2023'];
         let masseSalData = [34.0, 33.0, 34.6, 30.3, 30.0, 28.9];
         if (remun && rec && remun.values.length === rec.values.length) {
@@ -1310,8 +1335,8 @@ const DashboardV3 = {
             }]
         });
 
-        // 6. Dépenses d'Investissement (données réelles TOFE)
-        const invest = this.nd('depenses_investissement');
+        // 6. Dépenses d'Investissement (ANStat SDMX si dispo, sinon Excel TOFE)
+        const invest = this.ad('tofe_sdmx_investissement') || this.nd('depenses_investissement');
         this.createChart('chart-fin-investment-budget', {
             tooltip: { trigger: 'axis', valueFormatter: (v) => Math.round(v).toLocaleString() + ' Mds FCFA' },
             xAxis: { 
@@ -1337,10 +1362,10 @@ const DashboardV3 = {
             }]
         });
 
-        // 7. Structure des Dépenses TOFE (données réelles)
+        // 7. Structure des Dépenses TOFE (données réelles ANStat/Excel)
         const remunVal = remun ? remun.values[remun.values.length - 1] : 2246;
         const investVal = invest ? invest.values[invest.values.length - 1] : 3258;
-        const interets = this.nd('interets_dette');
+        const interets = this.ad('tofe_sdmx_interets') || this.nd('interets_dette');
         const interetsVal = interets ? interets.values[interets.values.length - 1] : 1239;
         const fonct = this.nd('depenses_fonctionnement');
         const fonctVal = fonct ? fonct.values[fonct.values.length - 1] : 1635;
@@ -1509,26 +1534,33 @@ const DashboardV3 = {
             }]
         });
 
-        // Population totale (données réelles, convertie en millions)
-        const popLatest = pop ? pop.values[pop.values.length - 1] : 31934230;
+        // Population totale (ANStat si dispo, sinon World Bank)
+        const popAnstat = this.ad('pop_anstat_total');
+        const popSrc = popAnstat || pop;
+        const popLatest = popSrc ? popSrc.values[popSrc.values.length - 1] : 31934230;
         this.createChart('chart-demo-proj', {
-            tooltip: { trigger: 'axis' },
-            xAxis: { data: pop ? pop.years.slice(-6).map(String) : ['2019','2020','2021','2022','2023','2024'] },
+            tooltip: { trigger: 'axis', valueFormatter: (v) => v + ' M' },
+            xAxis: { data: popSrc ? popSrc.years.slice(-8).map(String) : ['2019','2020','2021','2022','2023','2024'] },
             yAxis: { name: 'Millions' },
             series: [{ 
                 type: 'line', 
-                data: pop ? pop.values.slice(-6).map(v => Math.round(v / 1e6 * 10) / 10) : [28.2, 28.9, 29.6, 30.4, 31.2, 31.9], 
+                data: popSrc ? popSrc.values.slice(-8).map(v => v > 1e5 ? Math.round(v / 1e6 * 10) / 10 : Math.round(v / 1e3 * 10) / 10) : [28.2, 28.9, 29.6, 30.4, 31.2, 31.9], 
                 smooth: true, 
                 lineStyle: { width: 3, color: this.colors.green },
+                itemStyle: { color: this.colors.green },
+                symbolSize: 8,
                 label: { show: true, formatter: '{c}M', position: 'top', fontSize: 10 }
             }]
         });
 
-        // Taux de fécondité (données réelles)
+        // Taux de fécondité (ANStat social si dispo, sinon World Bank)
+        const fertAnstat = this.ad('fecondite_anstat');
+        const fertSrc = fertAnstat || fert;
         this.createChart('chart-demo-fertility', {
-            xAxis: { data: fert ? fert.years.slice(-5).map(String) : ['2019','2020','2021','2022','2023'] },
-            yAxis: { min: 3 },
-            series: [{ type: 'line', data: fert ? fert.values.slice(-5).map(v => Math.round(v * 100) / 100) : [4.52, 4.46, 4.41, 4.35, 4.28], itemStyle: {color: this.colors.purple}, smooth: true }]
+            tooltip: { trigger: 'axis' },
+            xAxis: { data: fertSrc ? fertSrc.years.slice(-6).map(String) : ['2019','2020','2021','2022','2023'] },
+            yAxis: { min: 3, name: 'Enfants/femme' },
+            series: [{ type: 'line', data: fertSrc ? fertSrc.values.slice(-6).map(v => Math.round(v * 100) / 100) : [4.52, 4.46, 4.41, 4.35, 4.28], itemStyle: {color: this.colors.purple}, smooth: true, symbolSize: 8, lineStyle: { width: 3 }, label: { show: true, formatter: '{c}', position: 'top', fontSize: 9 } }]
         });
         // Espérance de vie H/F (estimation basée sur la valeur globale)
         const lifeLatest = lifeExp ? lifeExp.values[lifeExp.values.length - 1] : 61.9;
@@ -1537,10 +1569,26 @@ const DashboardV3 = {
             yAxis: { min: 50 },
             series: [{ type: 'bar', data: [Math.round((lifeLatest - 1.5) * 10) / 10, Math.round((lifeLatest + 1.5) * 10) / 10], itemStyle: {color: (p) => p.dataIndex === 0 ? this.colors.blue : this.colors.orange} }]
         });
-        this.createChart('chart-demo-migration', {
-            xAxis: { data: ['2020', '2021', '2022'] },
-            series: [{ type: 'bar', data: [-10000, -8000, -5000], itemStyle: {color: this.colors.red} }]
-        });
+        // Taux de natalité vs mortalité (ANStat social)
+        const natalite = this.ad('taux_natalite');
+        const mortalite = this.ad('taux_mortalite');
+        if (natalite && mortalite) {
+            this.createChart('chart-demo-migration', {
+                tooltip: { trigger: 'axis', valueFormatter: (v) => v.toFixed(1) + ' ‰' },
+                legend: { top: 0, textStyle: { fontSize: 10 } },
+                xAxis: { data: natalite.years.slice(-6).map(String) },
+                yAxis: { name: 'Pour mille (‰)' },
+                series: [
+                    { name: 'Natalité', type: 'line', data: natalite.values.slice(-6).map(v => Math.round(v * 10) / 10), smooth: true, itemStyle: { color: this.colors.green }, lineStyle: { width: 2 } },
+                    { name: 'Mortalité', type: 'line', data: mortalite.values.slice(-6).map(v => Math.round(v * 10) / 10), smooth: true, itemStyle: { color: this.colors.red }, lineStyle: { width: 2 } }
+                ]
+            });
+        } else {
+            this.createChart('chart-demo-migration', {
+                xAxis: { data: ['2020', '2021', '2022'] },
+                series: [{ type: 'bar', data: [-10000, -8000, -5000], itemStyle: {color: this.colors.red} }]
+            });
+        }
         this.createChart('chart-demo-households', {
             tooltip: { trigger: 'item' },
             series: [{ type: 'pie', radius: '60%', data: [{value: 60, name: 'Nucléaire'}, {value: 30, name: 'Élargie'}, {value: 10, name: 'Monoparentale'}] }]
@@ -1637,15 +1685,19 @@ const DashboardV3 = {
     },
 
     renderSecondaryCharts() {
+        const ipi = this.ad('ipi_total');
         this.createChart('chart-sec-ipi', {
-            xAxis: { data: ['Q1', 'Q2', 'Q3', 'Q4'] },
-            yAxis: { scale: true },
-            series: [{ type: 'line', data: [102, 105, 108, 110], name: 'Indice', smooth: true, areaStyle: { opacity: 0.1 } }]
+            tooltip: { trigger: 'axis', valueFormatter: (v) => v.toFixed(1) },
+            xAxis: { data: ipi ? ipi.years.map(String) : ['Q1', 'Q2', 'Q3', 'Q4'] },
+            yAxis: { scale: true, name: 'Indice', nameLocation: 'middle', nameGap: 40 },
+            series: [{ type: 'line', data: ipi ? ipi.values.map(v => Math.round(v * 10) / 10) : [102, 105, 108, 110], name: 'IPI Total', smooth: true, areaStyle: { opacity: 0.1 }, lineStyle: { width: 3, color: this.colors.orange }, itemStyle: { color: this.colors.orange }, symbolSize: 8 }]
         });
+        const ipiMining = this.ad('ipi_mining');
         this.createChart('chart-sec-mining', {
-            tooltip: { trigger: 'axis' },
-            xAxis: { data: ['2020', '2021', '2022', '2023'] },
-            series: [{ type: 'bar', data: [38, 42, 48, 50], itemStyle: {color: '#FFD700'}, name: 'Or (Tonnes)' }]
+            tooltip: { trigger: 'axis', valueFormatter: (v) => v.toFixed(1) },
+            xAxis: { data: ipiMining ? ipiMining.years.map(String) : ['2020', '2021', '2022', '2023'] },
+            yAxis: { scale: true, name: 'Indice' },
+            series: [{ type: 'bar', data: ipiMining ? ipiMining.values.map(v => Math.round(v * 10) / 10) : [38, 42, 48, 50], itemStyle: {color: '#FFD700'}, name: 'IPI Mines', label: { show: true, position: 'top', fontSize: 9 } }]
         });
         this.createChart('chart-sec-energy', {
             tooltip: { trigger: 'item' },
@@ -1665,9 +1717,12 @@ const DashboardV3 = {
         });
 
         // New Secondary Sector Charts
+        const ipiRefinery = this.ad('ipi_refinery');
         this.createChart('chart-sec-oil', {
-            xAxis: { data: ['2020', '2021', '2022', '2023'] },
-            series: [{ type: 'bar', data: [25000, 28000, 30000, 45000], itemStyle: {color: this.colors.slate} }]
+            tooltip: { trigger: 'axis', valueFormatter: (v) => v.toFixed(1) },
+            xAxis: { data: ipiRefinery ? ipiRefinery.years.map(String) : ['2020', '2021', '2022', '2023'] },
+            yAxis: { scale: true, name: 'Indice' },
+            series: [{ type: 'bar', data: ipiRefinery ? ipiRefinery.values.map(v => Math.round(v * 10) / 10) : [25000, 28000, 30000, 45000], itemStyle: {color: this.colors.slate}, name: 'IPI Raffinage' }]
         });
         this.createChart('chart-sec-cement', {
             xAxis: { data: ['2020', '2021', '2022'] },
@@ -1680,13 +1735,18 @@ const DashboardV3 = {
         this.createChart('chart-sec-agro-trans', {
             series: [{ type: 'gauge', detail: {formatter: '{value}%'}, data: [{value: 35, name: 'Transformation Cacao'}] }]
         });
+        const ippi = this.ad('ippi_total');
         this.createChart('chart-sec-ippi', {
-            xAxis: { data: ['Q1', 'Q2', 'Q3'] },
-            series: [{ type: 'line', data: [105, 108, 110], name: 'Indice Prix', itemStyle: {color: this.colors.purple} }]
+            tooltip: { trigger: 'axis', valueFormatter: (v) => v.toFixed(1) },
+            xAxis: { data: ippi ? ippi.years.map(String) : ['Q1', 'Q2', 'Q3'] },
+            yAxis: { scale: true, name: 'Indice', nameLocation: 'middle', nameGap: 40 },
+            series: [{ type: 'line', data: ippi ? ippi.values.map(v => Math.round(v * 10) / 10) : [105, 108, 110], name: 'IPPI Total', itemStyle: {color: this.colors.purple}, smooth: true, lineStyle: { width: 3 }, symbolSize: 8 }]
         });
+        const cnps = this.ad('immatriculations_cnps');
         this.createChart('chart-sec-ind-jobs', {
-            xAxis: { data: ['2021', '2022'] },
-            series: [{ type: 'bar', data: [350000, 380000], itemStyle: {color: this.colors.blue} }]
+            tooltip: { trigger: 'axis', valueFormatter: (v) => Math.round(v).toLocaleString() },
+            xAxis: { data: cnps ? cnps.years.map(String) : ['2021', '2022'] },
+            series: [{ type: 'bar', data: cnps ? cnps.values.map(v => Math.round(v)) : [350000, 380000], itemStyle: {color: this.colors.blue}, name: 'Immatriculations CNPS', label: { show: true, position: 'top', fontSize: 9, formatter: (p) => (p.value/1000).toFixed(0) + 'k' } }]
         });
     },
 
@@ -1741,9 +1801,12 @@ const DashboardV3 = {
             xAxis: { data: ['2020', '2022'] },
             series: [{ type: 'bar', data: [500, 700], itemStyle: {color: this.colors.orange} }]
         });
+        const credit = this.ad('credit_economie');
         this.createChart('chart-tert-credit-private', {
-            xAxis: { data: ['2020', '2021', '2022', '2023'] },
-            series: [{ type: 'line', data: [10, 12, 15, 14], name: '% Croissance', itemStyle: {color: this.colors.green} }]
+            tooltip: { trigger: 'axis', valueFormatter: (v) => Math.round(v).toLocaleString() + ' Mds FCFA' },
+            xAxis: { data: credit ? credit.years.map(String) : ['2020', '2021', '2022', '2023'] },
+            yAxis: { name: 'Mds FCFA', nameLocation: 'middle', nameGap: 55 },
+            series: [{ type: 'line', data: credit ? credit.values.map(v => Math.round(v)) : [10, 12, 15, 14], name: 'Crédit à l\'économie', itemStyle: {color: this.colors.green}, smooth: true, lineStyle: { width: 3 }, areaStyle: { opacity: 0.1 }, symbolSize: 8 }]
         });
     },
 
@@ -1754,9 +1817,11 @@ const DashboardV3 = {
         const terEnr = s ? s.tertiary_enroll : null;
         const lit = s ? s.literacy : null;
 
-        // Données réelles: dernière valeur connue pour le radar
-        const primLatest = primEnr ? Math.round(primEnr.values[primEnr.values.length - 1]) : 102;
-        const secLatest = secEnr ? Math.round(secEnr.values[secEnr.values.length - 1]) : 66;
+        // ANStat scolarisation (plus récent) ou World Bank
+        const scolPrim = this.ad('scolarisation_primaire');
+        const scolSec = this.ad('scolarisation_secondaire');
+        const primLatest = scolPrim ? Math.round(scolPrim.values[scolPrim.values.length - 1]) : (primEnr ? Math.round(primEnr.values[primEnr.values.length - 1]) : 102);
+        const secLatest = scolSec ? Math.round(scolSec.values[scolSec.values.length - 1]) : (secEnr ? Math.round(secEnr.values[secEnr.values.length - 1]) : 66);
         const terLatest = terEnr ? Math.round(terEnr.values[terEnr.values.length - 1]) : 11;
 
         this.createChart('chart-edu-rates', {
@@ -1794,11 +1859,13 @@ const DashboardV3 = {
             }]
         });
 
-        // Scolarisation primaire évolution (données réelles)
+        // Scolarisation primaire évolution (ANStat si dispo, sinon World Bank)
+        const scolPrimSrc = scolPrim || primEnr;
         this.createChart('chart-edu-completion', {
-            xAxis: { data: primEnr ? [primEnr.years[0], primEnr.years[primEnr.years.length - 1]].map(String) : ['2015', '2023'] },
-            yAxis: { max: 120 },
-            series: [{ type: 'bar', data: primEnr ? [Math.round(primEnr.values[0]), Math.round(primEnr.values[primEnr.values.length - 1])] : [86, 102], itemStyle: {color: this.colors.green}, label: {show: true, position: 'top', formatter: '{c}%'} }]
+            tooltip: { trigger: 'axis', valueFormatter: (v) => v + '%' },
+            xAxis: { data: scolPrimSrc ? scolPrimSrc.years.map(String) : ['2015', '2023'] },
+            yAxis: { max: 120, name: 'Taux brut (%)' },
+            series: [{ type: 'bar', data: scolPrimSrc ? scolPrimSrc.values.map(v => Math.round(v * 10) / 10) : [86, 102], itemStyle: {color: this.colors.green, borderRadius: [4,4,0,0]}, label: {show: true, position: 'top', formatter: '{c}%', fontSize: 10} }]
         });
         this.createChart('chart-edu-gender-parity', {
             xAxis: { data: ['Primaire', 'Secondaire'] },
@@ -1854,10 +1921,16 @@ const DashboardV3 = {
             yAxis: { type: 'category', data: ['Informel', 'Formel'] },
             series: [{ type: 'bar', data: [85, 15], itemStyle: { color: (p) => p.dataIndex === 0 ? this.colors.slate : this.colors.blue } }]
         });
+        const cnpsEmp = this.ad('immatriculations_cnps');
+        const cgreae = this.ad('immatriculations_cgreae');
         this.createChart('chart-emp-creation', {
-            tooltip: { trigger: 'axis' },
-            xAxis: { data: ['2021', '2022', '2023'] },
-            series: [{ type: 'line', data: [80000, 95000, 110000], areaStyle: { opacity: 0.1 }, smooth: true, itemStyle: {color: this.colors.green} }]
+            tooltip: { trigger: 'axis', valueFormatter: (v) => Math.round(v).toLocaleString() },
+            legend: { top: 0, textStyle: { fontSize: 10 } },
+            xAxis: { data: cnpsEmp ? cnpsEmp.years.map(String) : ['2021', '2022', '2023'] },
+            series: [
+                { name: 'CNPS (Privé)', type: 'bar', data: cnpsEmp ? cnpsEmp.values.map(v => Math.round(v)) : [80000, 95000, 110000], itemStyle: { color: this.colors.green, borderRadius: [4,4,0,0] } },
+                { name: 'CGREAE (Public)', type: 'bar', data: cgreae ? cgreae.values.map(v => Math.round(v)) : [15000, 18000, 20000], itemStyle: { color: this.colors.blue, borderRadius: [4,4,0,0] } }
+            ]
         });
 
         // New Employment Charts
@@ -1892,20 +1965,23 @@ const DashboardV3 = {
         const healthExp = s ? s.health_expenditure : null;
         const phys = s ? s.physicians : null;
 
-        // Espérance de vie (données réelles)
+        // Espérance de vie (ANStat si dispo, sinon World Bank)
+        const espAnstat = this.ad('esperance_vie_anstat');
+        const espSrc = espAnstat || lifeExp;
         this.createChart('chart-health-life-exp', {
-            tooltip: { trigger: 'axis' },
-            xAxis: { data: lifeExp ? lifeExp.years.slice(-6).map(String) : ['2018','2019','2020','2021','2022','2023'] },
-            yAxis: { min: 50 },
-            series: [{ type: 'line', data: lifeExp ? lifeExp.values.slice(-6).map(v => Math.round(v * 10) / 10) : [59.8, 60.3, 60.1, 60.3, 61.6, 61.9], smooth: true, markPoint: {data: [{type: 'max'}]} }]
+            tooltip: { trigger: 'axis', valueFormatter: (v) => v + ' ans' },
+            xAxis: { data: espSrc ? espSrc.years.slice(-6).map(String) : ['2018','2019','2020','2021','2022','2023'] },
+            yAxis: { min: 50, name: 'Années', nameLocation: 'middle', nameGap: 35 },
+            series: [{ type: 'line', data: espSrc ? espSrc.values.slice(-6).map(v => Math.round(v * 10) / 10) : [59.8, 60.3, 60.1, 60.3, 61.6, 61.9], smooth: true, symbolSize: 8, lineStyle: { width: 3, color: this.colors.green }, itemStyle: { color: this.colors.green }, markPoint: {data: [{type: 'max'}]}, label: { show: true, formatter: '{c}', position: 'top', fontSize: 9 } }]
         });
-        // Mortalité infantile (données réelles)
-        const imFirst = infMort ? Math.round(infMort.values[0] * 10) / 10 : 91.4;
-        const imLast = infMort ? Math.round(infMort.values[infMort.values.length - 1] * 10) / 10 : 46.6;
+        // Mortalité infantile (ANStat si dispo, sinon World Bank)
+        const mortAnstat = this.ad('mortalite_infantile_anstat');
+        const mortSrc = mortAnstat || infMort;
         this.createChart('chart-health-infant', {
-            tooltip: { trigger: 'axis' },
-            xAxis: { data: infMort ? [String(infMort.years[0]), String(infMort.years[infMort.years.length - 1])] : ['2000', '2023'] },
-            series: [{ type: 'bar', data: [imFirst, imLast], name: 'Pour 1000', itemStyle: {color: this.colors.red}, label: {show: true, position: 'top'} }]
+            tooltip: { trigger: 'axis', valueFormatter: (v) => v + ' ‰' },
+            xAxis: { data: mortSrc ? mortSrc.years.map(String) : ['2000', '2023'] },
+            yAxis: { name: 'Pour 1000 naissances', nameLocation: 'middle', nameGap: 40 },
+            series: [{ type: 'line', data: mortSrc ? mortSrc.values.map(v => Math.round(v * 10) / 10) : [91.4, 46.6], name: 'Mortalité infantile', itemStyle: {color: this.colors.red}, lineStyle: { width: 3, color: this.colors.red }, smooth: true, symbolSize: 8, label: {show: true, position: 'top', formatter: '{c}', fontSize: 9} }]
         });
         this.createChart('chart-health-access', {
             tooltip: { trigger: 'axis' },
@@ -2173,29 +2249,46 @@ const DashboardV3 = {
             }]
         });
 
-        // 8. IDE reçus en volume (données réelles base éco)
+        // 8. Compte courant BdP + IDE (données réelles ANStat)
+        const compteCourant = this.ad('compte_courant_bdp');
+        const ideNets = this.ad('ide_nets_bdp');
         const ideTotal = this.nd('ide_total_mds');
+        const bdpYears = compteCourant ? compteCourant.years.map(String) : (ideTotal ? ideTotal.years.map(String) : ['2017','2018','2019','2020','2021','2022','2023']);
         this.createChart('chart-int-remittances', {
-            tooltip: { trigger: 'axis', valueFormatter: (v) => Math.round(v) + ' Mds FCFA' },
-            xAxis: { data: ideTotal ? ideTotal.years.map(String) : ['2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023'] },
-            yAxis: { axisLabel: { formatter: (v) => v.toFixed(0) }, splitLine: { lineStyle: { type: 'dashed', color: '#F3F4F6' } } },
-            series: [{ type: 'bar', data: ideTotal ? ideTotal.values.map(v => Math.round(v)) : [292, 342, 566, 345, 497, 410, 772, 998, 1507], name: 'IDE (Mds FCFA)', itemStyle: { color: this.colors.green, borderRadius: [6,6,0,0] }, label: { show: true, position: 'top', formatter: '{c}', fontSize: 9 } }]
+            tooltip: { trigger: 'axis', valueFormatter: (v) => Math.round(v).toLocaleString() + ' Mds FCFA' },
+            legend: { top: 0, textStyle: { fontSize: 10 } },
+            xAxis: { data: bdpYears },
+            yAxis: { axisLabel: { formatter: (v) => (v/1000).toFixed(0) + 'k' }, splitLine: { lineStyle: { type: 'dashed', color: '#F3F4F6' } } },
+            series: [
+                { name: 'Compte courant', type: 'bar', data: compteCourant ? compteCourant.values.map(v => Math.round(v)) : (ideTotal ? ideTotal.values.map(v => Math.round(v)) : [292, 342, 566, 345, 497, 410, 772]), itemStyle: { color: (p) => p.value >= 0 ? this.colors.green : this.colors.red, borderRadius: [4,4,0,0] } },
+                { name: 'IDE nets', type: 'line', data: ideNets ? ideNets.values.map(v => Math.round(v)) : [], itemStyle: { color: this.colors.blue }, lineStyle: { width: 2 }, symbolSize: 8 }
+            ]
         });
 
-        // 9. Taux de couverture (données réelles Douanes)
+        // 9. Taux de change + Taux de couverture (données réelles ANStat + Douanes)
+        const tauxChange = this.ad('taux_change_usd_avg');
         const tauxCouv = this.nd('taux_couverture');
-        const tauxCouvVal = tauxCouv ? Math.round(tauxCouv.values[tauxCouv.values.length - 1] * 10) / 10 : 97.0;
-        this.createChart('chart-int-passport', {
-            series: [{ type: 'gauge', min: 50, max: 150, center: ['50%', '60%'], radius: '80%',
-                progress: { show: true, width: 12 },
-                axisLine: { lineStyle: { width: 12, color: [[0.33, this.colors.red], [0.66, this.colors.orange], [1, this.colors.green]] } },
-                axisTick: { show: false },
-                splitLine: { length: 8, lineStyle: { width: 2, color: '#999' } },
-                axisLabel: { distance: 20, color: '#6B7280', fontSize: 10, formatter: '{value}%' },
-                detail: { valueAnimation: true, formatter: '{value}%', fontSize: 20, fontWeight: 'bold', offsetCenter: [0, '40%'], color: this.colors.slate },
-                data: [{ value: tauxCouvVal, name: 'Exports/Imports' }]
-            }]
-        });
+        if (tauxChange) {
+            this.createChart('chart-int-passport', {
+                tooltip: { trigger: 'axis', valueFormatter: (v) => v.toFixed(1) + ' FCFA/USD' },
+                xAxis: { data: tauxChange.years.map(String), name: 'Année', nameLocation: 'middle', nameGap: 30, nameTextStyle: { fontWeight: 'bold', color: '#6B7280' } },
+                yAxis: { scale: true, name: 'FCFA/USD', nameLocation: 'middle', nameGap: 45, nameTextStyle: { fontWeight: 'bold', color: '#6B7280' }, splitLine: { lineStyle: { type: 'dashed', color: '#F3F4F6' } } },
+                series: [{ name: 'Taux moyen annuel', type: 'line', data: tauxChange.values.map(v => Math.round(v * 10) / 10), smooth: true, symbolSize: 8, lineStyle: { width: 3, color: this.colors.purple }, itemStyle: { color: this.colors.purple }, areaStyle: { opacity: 0.1 }, label: { show: true, formatter: '{c}', position: 'top', fontSize: 9 } }]
+            });
+        } else {
+            const tauxCouvVal = tauxCouv ? Math.round(tauxCouv.values[tauxCouv.values.length - 1] * 10) / 10 : 97.0;
+            this.createChart('chart-int-passport', {
+                series: [{ type: 'gauge', min: 50, max: 150, center: ['50%', '60%'], radius: '80%',
+                    progress: { show: true, width: 12 },
+                    axisLine: { lineStyle: { width: 12, color: [[0.33, this.colors.red], [0.66, this.colors.orange], [1, this.colors.green]] } },
+                    axisTick: { show: false },
+                    splitLine: { length: 8, lineStyle: { width: 2, color: '#999' } },
+                    axisLabel: { distance: 20, color: '#6B7280', fontSize: 10, formatter: '{value}%' },
+                    detail: { valueAnimation: true, formatter: '{value}%', fontSize: 20, fontWeight: 'bold', offsetCenter: [0, '40%'], color: this.colors.slate },
+                    data: [{ value: tauxCouvVal, name: 'Exports/Imports' }]
+                }]
+            });
+        }
 
         // 10. Exports par catégorie de marchandises (données réelles Douanes)
         const expAgri = this.nd('export_agri_industrielle');
@@ -2745,9 +2838,11 @@ const ExplorerModule = {
 
         this.detailChart = echarts.init(container);
         
-        const values = indicator.values || [];
-        const years = values.map(v => v.year);
-        const data = values.map(v => v.value);
+        // Always sort chronologically (ascending) for chart display
+        const sorted = [...(indicator.values || [])].sort((a, b) => a.year - b.year);
+        const years = sorted.map(v => v.year);
+        const data = sorted.map(v => v.value);
+        const unitLabel = indicator.unit || this.inferUnit(indicator.name) || '';
 
         const option = {
             color: ['#FF8200'],
@@ -2759,7 +2854,7 @@ const ExplorerModule = {
                 textStyle: { color: '#1F2937', fontFamily: 'Inter' },
                 formatter: (params) => {
                     const p = params[0];
-                    return `<strong>${p.name}</strong><br/>${indicator.name}: <strong>${this.formatValue(p.value)}</strong> ${indicator.unit || ''}`;
+                    return `<strong>${p.name}</strong><br/>${indicator.name}: <strong>${this.formatValue(p.value)}</strong> ${unitLabel}`;
                 }
             },
             grid: { left: '3%', right: '4%', bottom: '8%', top: '10%', containLabel: true },
@@ -2775,7 +2870,7 @@ const ExplorerModule = {
             },
             yAxis: {
                 type: 'value',
-                name: this.inferUnit(indicator.name) || 'Valeur',
+                name: unitLabel || 'Valeur',
                 nameLocation: 'center',
                 nameGap: 55,
                 nameTextStyle: { color: '#6B7280', fontFamily: 'Inter', fontSize: 12, fontWeight: 'bold' },
@@ -2836,17 +2931,17 @@ const ExplorerModule = {
             return;
         }
 
-        // Sort by year descending
-        values.sort((a, b) => b.year - a.year);
+        // Sort by year descending (use a copy to avoid mutating original)
+        const sortedValues = [...values].sort((a, b) => b.year - a.year);
         
-        rangeEl.textContent = `${values[values.length - 1].year} - ${values[0].year}`;
+        rangeEl.textContent = `${sortedValues[sortedValues.length - 1].year} - ${sortedValues[0].year}`;
 
-        tbody.innerHTML = values.map((v, i) => {
+        tbody.innerHTML = sortedValues.map((v, i) => {
             let variation = '-';
             let variationClass = 'variation-neutral';
             
-            if (i < values.length - 1) {
-                const prevValue = values[i + 1].value;
+            if (i < sortedValues.length - 1) {
+                const prevValue = sortedValues[i + 1].value;
                 if (prevValue !== 0) {
                     const change = ((v.value - prevValue) / Math.abs(prevValue)) * 100;
                     variation = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
