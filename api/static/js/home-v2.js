@@ -300,26 +300,51 @@ function initSearchForm() {
     });
 }
 
+const LOADING_MESSAGES = [
+    { icon: 'fa-satellite-dish', text: 'Connexion aux bases de données...' },
+    { icon: 'fa-database', text: 'Recherche dans 1 600+ indicateurs...' },
+    { icon: 'fa-brain', text: 'Identification de l\'indicateur...' },
+    { icon: 'fa-chart-line', text: 'Extraction des données...' },
+    { icon: 'fa-magic', text: 'Préparation de la visualisation...' }
+];
+let loadingMsgIndex = 0;
+
 function showLoading() {
     const loader = document.getElementById('inline-loading');
     loader.style.display = 'block';
-    
+    loadingMsgIndex = 0;
+
     // Reset steps
     document.querySelectorAll('.loader-steps .step').forEach(step => {
         step.classList.remove('active', 'completed');
     });
     document.querySelector('.loader-steps .step[data-step="1"]').classList.add('active');
-    
-    // Animate steps
+
+    // Animate rotating messages
+    const msgEl = document.getElementById('loader-dynamic-msg');
+    if (msgEl) {
+        msgEl.innerHTML = `<i class="fas ${LOADING_MESSAGES[0].icon}"></i> ${LOADING_MESSAGES[0].text}`;
+    }
+
     let currentStep = 1;
     loadingInterval = setInterval(() => {
+        // Cycle messages
+        loadingMsgIndex = (loadingMsgIndex + 1) % LOADING_MESSAGES.length;
+        if (msgEl) {
+            msgEl.style.opacity = '0';
+            setTimeout(() => {
+                msgEl.innerHTML = `<i class="fas ${LOADING_MESSAGES[loadingMsgIndex].icon}"></i> ${LOADING_MESSAGES[loadingMsgIndex].text}`;
+                msgEl.style.opacity = '1';
+            }, 200);
+        }
+        // Advance steps
         if (currentStep < 3) {
             document.querySelector(`.loader-steps .step[data-step="${currentStep}"]`).classList.remove('active');
             document.querySelector(`.loader-steps .step[data-step="${currentStep}"]`).classList.add('completed');
             currentStep++;
             document.querySelector(`.loader-steps .step[data-step="${currentStep}"]`).classList.add('active');
         }
-    }, 1200);
+    }, 1500);
 }
 
 function stopLoadingAnimation() {
@@ -327,7 +352,6 @@ function stopLoadingAnimation() {
         clearInterval(loadingInterval);
         loadingInterval = null;
     }
-    // Mark all as completed
     document.querySelectorAll('.loader-steps .step').forEach(step => {
         step.classList.remove('active');
         step.classList.add('completed');
@@ -400,15 +424,22 @@ function displayResults(data) {
         sourceLinkBtn.style.display = 'none';
     }
     
-    // === PROXY / NO-DATA BANNERS (above chart) ===
+    // === RESOLVE UNIT (prefer backend, fallback to inferUnit) ===
     const hasData = data.data && data.data.length > 0;
     const isProxy = data.match_type === 'proxy';
+    const resolvedUnit = data.unit || inferUnit(data.indicator_name) || '';
+
+    // === BRIEF DATA SUMMARY (shown above the chart) ===
+    const summaryEl = document.getElementById('data-summary');
+    if (summaryEl) {
+        summaryEl.innerHTML = generateDataSummary(data, resolvedUnit);
+        summaryEl.style.display = hasData ? 'block' : 'none';
+    }
     
     // Set chart title
     const chartTitleEl = document.getElementById('chart-title');
     if (chartTitleEl) {
-        const unit = inferUnit(data.indicator_name) || '';
-        let titleText = (data.indicator_name || 'Indicateur') + (unit ? ` (${unit})` : '');
+        let titleText = (data.indicator_name || 'Indicateur') + (resolvedUnit ? ` (${resolvedUnit})` : '');
         let bannerHtml = '';
         if (!hasData) {
             bannerHtml = `<div style="background:linear-gradient(135deg,#FEE2E2,#FEF3C7);border-left:5px solid #EF4444;padding:0.75rem 1rem;border-radius:10px;margin-bottom:0.75rem;display:flex;align-items:center;gap:0.6rem;font-size:0.9rem;">
@@ -503,6 +534,30 @@ function displayResults(data) {
 }
 
 let lastQueryText = '';  // store the original query for analysis endpoint
+
+function generateDataSummary(data, unit) {
+    if (!data.data || data.data.length === 0) return '';
+    const sorted = [...data.data].sort((a, b) => a.year - b.year);
+    const name = data.indicator_name || 'L\'indicateur';
+    const fmt = (v) => typeof v === 'number' ? v.toLocaleString('fr-FR', { maximumFractionDigits: 2 }) : v;
+    const unitStr = unit ? ` ${unit}` : '';
+
+    if (sorted.length === 1) {
+        const d = sorted[0];
+        return `<div class="data-summary-card"><i class="fas fa-chart-bar"></i> <strong>${name}</strong> est de <strong>${fmt(d.value)}${unitStr}</strong> en <strong>${d.year}</strong>.</div>`;
+    }
+
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+    let trend = '';
+    if (first.value !== 0) {
+        const pct = ((last.value - first.value) / Math.abs(first.value)) * 100;
+        const arrow = pct >= 0 ? '<i class="fas fa-arrow-up" style="color:#16A34A;"></i>' : '<i class="fas fa-arrow-down" style="color:#DC2626;"></i>';
+        trend = `, soit une variation de ${arrow} <strong>${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%</strong>`;
+    }
+
+    return `<div class="data-summary-card"><i class="fas fa-chart-line"></i> <strong>${name}</strong> est passé de <strong>${fmt(first.value)}${unitStr}</strong> en <strong>${first.year}</strong> à <strong>${fmt(last.value)}${unitStr}</strong> en <strong>${last.year}</strong>${trend}.</div>`;
+}
 
 function fetchAnalysisLazy(data) {
     const messageEl = document.getElementById('result-message');
@@ -1252,7 +1307,9 @@ function showError(message) {
         </ul>
     `;
     
-    // Hide chart and clear table
+    // Hide data summary, chart and clear table
+    const summaryEl = document.getElementById('data-summary');
+    if (summaryEl) summaryEl.style.display = 'none';
     document.getElementById('result-chart').style.display = 'none';
     document.querySelector('#result-table tbody').innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">-</td></tr>';
     document.getElementById('result-source').innerHTML = '<p style="color: var(--text-muted);">Aucune donnée disponible</p>';

@@ -2804,9 +2804,18 @@ const ExplorerModule = {
             document.getElementById('detail-indicator-code').textContent = data.indicator.code;
             
             // Update metadata
-            document.getElementById('meta-unit').textContent = data.indicator.unit || '-';
+            const resolvedUnit = data.indicator.unit || this.inferUnit(data.indicator.name) || '-';
+            document.getElementById('meta-unit').textContent = resolvedUnit;
+            // Store resolved unit on indicator object for chart/table usage
+            data.indicator.unit = resolvedUnit === '-' ? '' : resolvedUnit;
             document.getElementById('meta-source').textContent = data.indicator.source || '-';
-            document.getElementById('meta-definition').textContent = data.indicator.definition || data.indicator.description || 'Pas de définition disponible';
+            const defText = data.indicator.definition || data.indicator.description || '';
+            const methText = data.indicator.methodology || '';
+            let fullDesc = defText || 'Pas de définition disponible';
+            if (methText && methText !== defText) {
+                fullDesc += '\n\nMéthodologie : ' + methText;
+            }
+            document.getElementById('meta-definition').textContent = fullDesc;
             
             const metaLink = document.getElementById('meta-link');
             if (data.indicator.source_link) {

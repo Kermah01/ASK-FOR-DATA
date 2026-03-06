@@ -4,7 +4,7 @@
 {% block title %}Ask For Data | Plateforme Intelligente de Données Ivoiriennes{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/home-v2.css' %}?v=2.3">
+<link rel="stylesheet" href="{% static 'css/home-v2.css' %}?v=2.4">
 {% endblock %}
 
 {% block content %}
@@ -132,6 +132,7 @@
                     </div>
                     <div class="loader-text">
                         <span class="loader-title">Analyse en cours...</span>
+                        <div id="loader-dynamic-msg" class="loader-dynamic-msg"></div>
                         <div class="loader-steps">
                             <span class="step active" data-step="1">Recherche</span>
                             <span class="step-separator">→</span>
@@ -368,6 +369,9 @@
             </div>
         </div>
 
+        <!-- Brief Data Summary -->
+        <div id="data-summary" style="display:none;"></div>
+
         <!-- Data Grid (shown FIRST so user sees data immediately) -->
         <div class="result-grid">
             <!-- Chart Card -->
@@ -501,5 +505,5 @@
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="{% static 'js/home-v2.js' %}?v=2.3"></script>
+<script src="{% static 'js/home-v2.js' %}?v=2.4"></script>
 {% endblock %}

@@ -88,6 +88,50 @@ class DataService:
         
         return indicators
     
+    @staticmethod
+    def _infer_unit(name: str) -> str:
+        """Infer the unit from the indicator name (mirrors frontend inferUnit)."""
+        import re as _re
+        if not name:
+            return ''
+        n = name.lower()
+        # Check for parenthesized unit at end
+        paren = _re.search(r'\(([^)]+)\)\s*$', name)
+        if paren:
+            u = paren.group(1)
+            if _re.search(r'current US\$', u, _re.I): return 'USD courants'
+            if _re.search(r'constant.*US\$', u, _re.I): return 'USD constants'
+            if _re.search(r'current LCU', u, _re.I): return 'Monnaie locale courante'
+            if _re.search(r'constant LCU', u, _re.I): return 'Monnaie locale constante'
+            if _re.search(r'%\s*(of|du|des)?\s*GNI', u, _re.I): return '% du RNB'
+            if _re.search(r'%\s*(of|du|des)?\s*GDP', u, _re.I) or _re.search(r'%\s*PIB', u, _re.I): return '% du PIB'
+            if _re.search(r'%\s*(of|du|des)?\s*total', u, _re.I): return '% du total'
+            if _re.search(r'metric ton', u, _re.I): return 'Tonnes métriques'
+            if _re.search(r'kg', u, _re.I): return 'kg'
+            if _re.search(r'GWh', u, _re.I): return 'GWh'
+            if _re.search(r'km²|sq\.\s*km', u, _re.I): return 'km²'
+            return u
+        if _re.search(r'\(%\)', name) or _re.search(r'\(en %\)', name, _re.I): return '%'
+        if _re.search(r'% (du |des |of |d\')', n): return '%'
+        if _re.search(r'taux|ratio|part |poids ', n) and _re.search(r'(%|pib|pct|proportion)', n): return '%'
+        if _re.search(r'mds?\s*fcfa|milliards?\s*fcfa', n): return 'Milliards FCFA'
+        if _re.search(r'fcfa', n): return 'FCFA'
+        if _re.search(r'tonnes', n): return 'Tonnes'
+        if _re.search(r'milliers', n): return 'Milliers'
+        if _re.search(r'per 1[,.]?000 live births', n): return 'pour 1 000 naissances vivantes'
+        if _re.search(r'per 1[,.]?000 people', n): return 'pour 1 000 habitants'
+        if _re.search(r'per 100[,.]?000', n): return 'pour 100 000'
+        if _re.search(r'per capita', n): return 'par habitant'
+        if _re.search(r'years|ans|année', n) and _re.search(r'espérance|life expect', n): return 'Années'
+        return ''
+
+    @staticmethod
+    def _clean_unit(unit: str) -> str:
+        """Strip non-breaking spaces and extra whitespace from unit strings."""
+        if not unit:
+            return ''
+        return unit.replace('\xa0', ' ').strip()
+
     def get_indicator_detail(self, code: str) -> Optional[Dict]:
         """Retourne les détails complets d'un indicateur avec toutes ses valeurs"""
         # Chercher l'indicateur dans les données
@@ -125,11 +169,14 @@ class DataService:
         if not description:
             description = definition_str
         
+        indicator_name = str(indicator_row['Indicateur'])
         return {
             'code': str(code),
-            'name': str(indicator_row['Indicateur']),
+            'name': indicator_name,
+            'unit': self._clean_unit(self._infer_unit(indicator_name)),
             'description': description,
             'definition': description,
+            'source': 'Banque Mondiale (World Development Indicators)',
             'source_link': str(source_link) if pd.notna(source_link) else '',
             'methodology': methodo_str,
             'values': values
@@ -329,6 +376,7 @@ class DataService:
         return {
             'code': code,
             'name': indicator['name'],
+            'unit': indicator.get('unit', ''),
             'source': 'Banque Mondiale (World Development Indicators)',
             'source_link': indicator['source_link'],
             'methodology': indicator['methodology'],
@@ -472,9 +520,11 @@ class DataService:
         return {
             'code': code,
             'name': detail['name'],
+            'unit': detail.get('unit', '') or self._infer_unit(detail['name']),
             'source': detail.get('source', ''),
             'source_link': detail.get('source_link', ''),
             'methodology': detail.get('methodology', ''),
+            'description': detail.get('definition', '') or detail.get('description', ''),
             'values': detail['values'],
         }
 

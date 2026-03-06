@@ -556,8 +556,9 @@ RÈGLES STRICTES:
 5. Donne la tendance GLOBALE avec les chiffres clés. Pas de détail année par année.
 6. Interprétations PRUDENTES: "cela pourrait s'expliquer par...", "possiblement lié à..."
 7. Utilise **gras** pour les chiffres clés et concepts importants.
-8. Termine par: "Les données détaillées sont présentées dans le graphique et le tableau ci-dessous."
+8. NE TERMINE PAS par "les données sont présentées ci-dessous" car le graphique et le tableau sont DÉJÀ affichés au-dessus de ton analyse.
 9. Ton ton doit être naturel, comme un expert qui parle à un citoyen, un utilisateur lambda qui n'est pas forcément bon statisticien. PAS de langage robotique.
+10. JAMAIS de salutations (Bonjour, Bonsoir, etc.), JAMAIS de formules de politesse en début ou fin. Va DIRECTEMENT au contenu analytique. Cette analyse est un complément aux données déjà affichées, pas une conversation.
 
 Réponds UNIQUEMENT en JSON:
 {{
@@ -754,6 +755,7 @@ Réponds UNIQUEMENT en JSON:
                 'message': '',
                 'indicator_code': indicator_code,
                 'indicator_name': indicator_data['name'],
+                'unit': indicator_data.get('unit', ''),
                 'match_type': match_type,
                 'proxy_explanation': proxy_explanation,
                 'data': values,
