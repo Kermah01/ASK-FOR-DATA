@@ -207,6 +207,67 @@ def query_data(request):
     return Response(result)
 
 
+@api_view(['POST'])
+def query_analysis(request):
+    """
+    Endpoint lazy pour générer l'analyse détaillée de l'IA (Phase 2).
+    Appelé après que les données ont déjà été affichées à l'utilisateur.
+    
+    POST /api/query-analysis
+    Body: {"indicator_code": "...", "query": "...", "match_type": "exact|proxy", "proxy_explanation": "..."}
+    """
+    indicator_code = request.data.get('indicator_code', '').strip()
+    query = request.data.get('query', '').strip()
+    match_type = request.data.get('match_type', 'exact')
+    proxy_explanation = request.data.get('proxy_explanation')
+
+    if not indicator_code or not query:
+        return Response({'success': False, 'message': 'Paramètres manquants.'}, status=400)
+
+    # Check analysis cache
+    analysis_cache_key = hashlib.sha256(f"analysis:{indicator_code}:{query.lower()}".encode()).hexdigest()
+    cached = QueryCache.objects.filter(query_hash=analysis_cache_key).first()
+    if cached and cached.is_trusted:
+        cached.hit_count += 1
+        cached.save(update_fields=['hit_count'])
+        return Response(cached.response_json)
+
+    # Determine which Gemini service to use
+    is_authenticated = request.user.is_authenticated
+    if is_authenticated:
+        profile = _get_or_create_profile(request.user)
+        if profile.has_own_key:
+            user_api_key = profile.get_api_key()
+            service = get_service_for_key(user_api_key)
+        else:
+            service = gemini_service
+    else:
+        service = gemini_service
+
+    if service is None:
+        return Response({'success': False, 'message': 'Service IA non configuré.'}, status=500)
+
+    result = service.generate_analysis(indicator_code, query, match_type, proxy_explanation)
+
+    # Cache successful analysis
+    if result.get('success'):
+        try:
+            QueryCache.objects.update_or_create(
+                query_hash=analysis_cache_key,
+                defaults={
+                    'query_text': f"[analysis] {query}",
+                    'response_json': result,
+                    'positive_feedback': 0,
+                    'negative_feedback': 0,
+                    'invalidated': False,
+                }
+            )
+        except Exception:
+            pass
+
+    return Response(result)
+
+
 @api_view(['GET'])
 def list_indicators(request):
     """

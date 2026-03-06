@@ -282,6 +282,7 @@ function initSearchForm() {
 
             if (data.success) {
                 hideLoading();
+                lastQueryText = query;
                 displayResults(data);
             } else if (data.needs_login) {
                 hideLoading();
@@ -388,11 +389,9 @@ function displayResults(data) {
     
     // Update title
     document.getElementById('result-title').textContent = data.indicator_name || 'Analyse des Données';
-    
-    // Update code tag
     document.getElementById('result-code').textContent = data.indicator_code || '';
     
-    // Update source link button
+    // Source link button
     const sourceLinkBtn = document.getElementById('result-source-link');
     if (data.source_link) {
         sourceLinkBtn.href = data.source_link;
@@ -401,45 +400,50 @@ function displayResults(data) {
         sourceLinkBtn.style.display = 'none';
     }
     
-    // Update AI message (convert markdown to HTML)
-    const messageEl = document.getElementById('result-message');
+    // === PROXY / NO-DATA BANNERS (above chart) ===
     const hasData = data.data && data.data.length > 0;
     const isProxy = data.match_type === 'proxy';
-    let msgHtml = '';
-    // Show a prominent banner when the exact indicator is not available
-    if (!hasData) {
-        msgHtml += `<div style="background: linear-gradient(135deg, #FEE2E2, #FEF3C7); border-left: 5px solid #EF4444; padding: 1rem 1.25rem; border-radius: 10px; margin-bottom: 1.25rem; display:flex; align-items:center; gap:0.75rem;">
-            <i class="fas fa-exclamation-circle" style="font-size:1.5rem; color:#EF4444; flex-shrink:0;"></i>
-            <div>
-                <strong style="color:#991B1B; font-size:1.05rem;">Donn\u00e9es non disponibles</strong><br>
-                <span style="color:#92400E; font-size:0.9rem;">Cet indicateur ne dispose pas encore de donn\u00e9es dans notre base. L'analyse ci-dessous est fournie \u00e0 titre informatif.</span>
-            </div>
-        </div>`;
-    } else if (isProxy) {
-        msgHtml += `<div style="background: linear-gradient(135deg, #FEF3C7, #FFF7ED); border-left: 5px solid #F59E0B; padding: 1rem 1.25rem; border-radius: 10px; margin-bottom: 1.25rem; display:flex; align-items:center; gap:0.75rem;">
-            <i class="fas fa-info-circle" style="font-size:1.5rem; color:#F59E0B; flex-shrink:0;"></i>
-            <div>
-                <strong style="color:#92400E; font-size:1.05rem;">Indicateur exact non disponible</strong><br>
-                <span style="color:#78350F; font-size:0.9rem;">L'indicateur demand\u00e9 n'existe pas directement dans notre base. Les donn\u00e9es ci-dessous proviennent d'un <strong>indicateur approch\u00e9 (proxy)</strong> identifi\u00e9 par l'IA.</span>
-            </div>
-        </div>`;
-    }
-    if (data.message) {
-        msgHtml += markdownToHtml(data.message);
-    }
-    messageEl.innerHTML = msgHtml;
     
-    // Update metadata
+    // Set chart title
+    const chartTitleEl = document.getElementById('chart-title');
+    if (chartTitleEl) {
+        const unit = inferUnit(data.indicator_name) || '';
+        let titleText = (data.indicator_name || 'Indicateur') + (unit ? ` (${unit})` : '');
+        let bannerHtml = '';
+        if (!hasData) {
+            bannerHtml = `<div style="background:linear-gradient(135deg,#FEE2E2,#FEF3C7);border-left:5px solid #EF4444;padding:0.75rem 1rem;border-radius:10px;margin-bottom:0.75rem;display:flex;align-items:center;gap:0.6rem;font-size:0.9rem;">
+                <i class="fas fa-exclamation-circle" style="color:#EF4444;"></i>
+                <span style="color:#991B1B;"><strong>Données non disponibles</strong> — Cet indicateur n'est pas encore dans notre base.</span>
+            </div>`;
+        } else if (isProxy) {
+            bannerHtml = `<div style="background:linear-gradient(135deg,#FEF3C7,#FFF7ED);border-left:5px solid #F59E0B;padding:0.75rem 1rem;border-radius:10px;margin-bottom:0.75rem;display:flex;align-items:center;gap:0.6rem;font-size:0.9rem;">
+                <i class="fas fa-info-circle" style="color:#F59E0B;"></i>
+                <span style="color:#92400E;"><strong>Indicateur approché (proxy)</strong> — L'indicateur exact n'est pas dans notre base.</span>
+            </div>`;
+        }
+        chartTitleEl.innerHTML = bannerHtml + `<span>${titleText}</span>`;
+    }
+
+    // Update table
+    buildEnhancedTable(data);
+    
+    // Store data for chart type switching
+    currentChartData = data;
+    
+    // Determine initial chart type
+    currentChartType = (data.data && data.data.length === 1) ? 'bar' : 'line';
+    updateChartTypeButtons(currentChartType);
+    initChartTypeSelector();
+    renderChart(data, currentChartType);
+    initDownloadButtons(data);
+    
+    // Metadata
     let metaHtml = `<p><strong>Code indicateur :</strong> ${data.indicator_code || 'N/A'}</p>`;
-    if (data.source) {
-        metaHtml += `<p><strong>Source :</strong> ${data.source}</p>`;
-    }
-    if (data.source_link) {
-        metaHtml += `<p><a href="${data.source_link}" target="_blank" style="color: var(--green-600); text-decoration: none;">Accéder aux données sources <i class="fas fa-external-link-alt" style="font-size: 0.75rem;"></i></a></p>`;
-    }
+    if (data.source) metaHtml += `<p><strong>Source :</strong> ${data.source}</p>`;
+    if (data.source_link) metaHtml += `<p><a href="${data.source_link}" target="_blank" style="color:var(--green-600);text-decoration:none;">Accéder aux données sources <i class="fas fa-external-link-alt" style="font-size:0.75rem;"></i></a></p>`;
     document.getElementById('result-source').innerHTML = metaHtml;
     
-    // Show source card if source info exists
+    // Source card
     const sourceCard = document.getElementById('source-card');
     if (data.source_link || data.source) {
         sourceCard.style.display = 'block';
@@ -449,9 +453,7 @@ function displayResults(data) {
             try {
                 const url = new URL(data.source_link);
                 document.getElementById('source-card-text').textContent = data.source || url.hostname.replace('www.', '');
-            } catch {
-                document.getElementById('source-card-text').textContent = data.source || 'Accéder à la source';
-            }
+            } catch { document.getElementById('source-card-text').textContent = data.source || 'Accéder à la source'; }
         } else {
             document.getElementById('source-card-link').removeAttribute('href');
             document.getElementById('source-card-link').style.pointerEvents = 'none';
@@ -460,49 +462,107 @@ function displayResults(data) {
     } else {
         sourceCard.style.display = 'none';
     }
-    
-    // Set chart title
-    const chartTitleEl = document.getElementById('chart-title');
-    if (chartTitleEl) {
-        const unit = inferUnit(data.indicator_name) || '';
-        chartTitleEl.textContent = (data.indicator_name || 'Indicateur') + (unit ? ` (${unit})` : '');
-    }
 
-    // Update table with variation column
-    buildEnhancedTable(data);
-    
-    // Store data for chart type switching
-    currentChartData = data;
-    
-    // Determine initial chart type: bar for single data point, line otherwise
-    if (data.data && data.data.length === 1) {
-        currentChartType = 'bar';
-    } else {
-        currentChartType = 'line';
-    }
-    
-    // Update chart type buttons
-    updateChartTypeButtons(currentChartType);
-    
-    // Initialize chart type selector
-    initChartTypeSelector();
-    
-    // Render chart
-    renderChart(data, currentChartType);
-    
-    // Initialize download buttons
-    initDownloadButtons(data);
-    
-    // Display recommendations
+    // Recommendations (from fast response)
     if (data.related_indicators && data.related_indicators.length > 0) {
         displayRecommendations(data.related_indicators);
     } else {
         document.getElementById('recommendations-section').style.display = 'none';
     }
     
-    // Initialize feedback buttons
+    // Feedback
     currentQueryHash = data.query_hash || null;
     initFeedbackButtons();
+    
+    // === AI ANALYSIS CARD (lazy loaded) ===
+    const analysisCard = document.getElementById('ai-analysis-card');
+    const analysisBody = document.getElementById('ai-analysis-body');
+    const messageEl = document.getElementById('result-message');
+    const toggleIcon = document.getElementById('ai-toggle-icon');
+    
+    if (data.message && data.message.trim()) {
+        // Cached response already has analysis — show it directly
+        analysisCard.style.display = 'block';
+        messageEl.innerHTML = markdownToHtml(data.message);
+        analysisBody.style.display = 'none';
+        analysisCard._loaded = true;
+    } else {
+        // No analysis yet — show card with loading state, fetch lazily
+        analysisCard.style.display = 'block';
+        analysisBody.style.display = 'none';
+        analysisCard._loaded = false;
+        messageEl.innerHTML = '<div class="ai-loading"><i class="fas fa-spinner fa-spin"></i> Génération de l\'analyse en cours...</div>';
+        
+        // Fetch analysis in background
+        fetchAnalysisLazy(data);
+    }
+    if (toggleIcon) toggleIcon.className = 'fas fa-chevron-down';
+    
+    // Wire toggle
+    initAnalysisToggle();
+}
+
+let lastQueryText = '';  // store the original query for analysis endpoint
+
+function fetchAnalysisLazy(data) {
+    const messageEl = document.getElementById('result-message');
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value 
+        || document.cookie.split('; ').find(r => r.startsWith('csrftoken='))?.split('=')[1] || '';
+    
+    fetch('/api/query-analysis', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            indicator_code: data.indicator_code,
+            query: lastQueryText,
+            match_type: data.match_type || 'exact',
+            proxy_explanation: data.proxy_explanation || null
+        })
+    })
+    .then(r => r.json())
+    .then(result => {
+        const card = document.getElementById('ai-analysis-card');
+        if (result.success && result.message) {
+            messageEl.innerHTML = markdownToHtml(result.message);
+            card._loaded = true;
+            // Update recommendations if the analysis returned better ones
+            if (result.related_indicators && result.related_indicators.length > 0) {
+                displayRecommendations(result.related_indicators);
+            }
+        } else {
+            messageEl.innerHTML = '<p style="color:#6B7280;">Analyse indisponible pour le moment.</p>';
+            card._loaded = true;
+        }
+    })
+    .catch(() => {
+        messageEl.innerHTML = '<p style="color:#6B7280;">Analyse indisponible pour le moment.</p>';
+        document.getElementById('ai-analysis-card')._loaded = true;
+    });
+}
+
+function initAnalysisToggle() {
+    const toggleHeader = document.getElementById('ai-analysis-toggle');
+    const toggleBtn = document.getElementById('ai-toggle-btn');
+    
+    // Clone to remove old listeners
+    if (toggleHeader) {
+        const newHeader = toggleHeader.cloneNode(true);
+        toggleHeader.parentNode.replaceChild(newHeader, toggleHeader);
+        newHeader.addEventListener('click', toggleAnalysis);
+    }
+}
+
+function toggleAnalysis() {
+    const body = document.getElementById('ai-analysis-body');
+    const icon = document.getElementById('ai-toggle-icon');
+    if (!body) return;
+    
+    const isVisible = body.style.display !== 'none';
+    body.style.display = isVisible ? 'none' : 'block';
+    if (icon) icon.className = isVisible ? 'fas fa-chevron-down' : 'fas fa-chevron-up';
 }
 
 // =============================================

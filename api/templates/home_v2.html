@@ -4,7 +4,7 @@
 {% block title %}Ask For Data | Plateforme Intelligente de Données Ivoiriennes{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/home-v2.css' %}?v=2.2">
+<link rel="stylesheet" href="{% static 'css/home-v2.css' %}?v=2.3">
 {% endblock %}
 
 {% block content %}
@@ -368,27 +368,7 @@
             </div>
         </div>
 
-        <!-- AI Response -->
-        <div class="result-card ai-response-card">
-            <div class="card-header">
-                <i class="fas fa-robot"></i>
-                <span>Réponse de l'IA</span>
-                <div class="feedback-actions" id="feedback-actions">
-                    <button type="button" class="feedback-btn feedback-positive" id="feedback-positive" title="Bonne réponse">
-                        <i class="fas fa-thumbs-up"></i>
-                    </button>
-                    <button type="button" class="feedback-btn feedback-negative" id="feedback-negative" title="Mauvaise réponse — l'IA réanalysera">
-                        <i class="fas fa-thumbs-down"></i>
-                    </button>
-                    <span class="feedback-message" id="feedback-message"></span>
-                </div>
-            </div>
-            <div class="card-body">
-                <p id="result-message"></p>
-            </div>
-        </div>
-
-        <!-- Data Grid -->
+        <!-- Data Grid (shown FIRST so user sees data immediately) -->
         <div class="result-grid">
             <!-- Chart Card -->
             <div class="result-card chart-card">
@@ -484,6 +464,31 @@
             </div>
         </div>
 
+        <!-- AI Analysis (collapsible, below data) -->
+        <div class="result-card ai-response-card" id="ai-analysis-card" style="display:none;">
+            <div class="card-header" id="ai-analysis-toggle" style="cursor:pointer;">
+                <i class="fas fa-robot"></i>
+                <span>Analyse détaillée de l'IA</span>
+                <div style="display:flex; align-items:center; gap:0.5rem; margin-left:auto;">
+                    <div class="feedback-actions" id="feedback-actions">
+                        <button type="button" class="feedback-btn feedback-positive" id="feedback-positive" title="Bonne réponse">
+                            <i class="fas fa-thumbs-up"></i>
+                        </button>
+                        <button type="button" class="feedback-btn feedback-negative" id="feedback-negative" title="Mauvaise réponse — l'IA réanalysera">
+                            <i class="fas fa-thumbs-down"></i>
+                        </button>
+                        <span class="feedback-message" id="feedback-message"></span>
+                    </div>
+                    <button type="button" class="ai-toggle-btn" id="ai-toggle-btn" title="Afficher / Masquer l'analyse">
+                        <i class="fas fa-chevron-down" id="ai-toggle-icon"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body ai-analysis-body" id="ai-analysis-body" style="display:none;">
+                <div id="result-message"></div>
+            </div>
+        </div>
+
         <!-- Recommendations -->
         <div id="recommendations-section" class="recommendations-section" style="display: none;">
             <h3><i class="fas fa-lightbulb"></i> Indicateurs similaires</h3>
@@ -496,5 +501,5 @@
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="{% static 'js/home-v2.js' %}?v=2.2"></script>
+<script src="{% static 'js/home-v2.js' %}?v=2.3"></script>
 {% endblock %}

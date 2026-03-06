@@ -737,47 +737,21 @@ Réponds UNIQUEMENT en JSON:
                         calculation_result = ((last_value - first_value) / first_value) * 100
                         calculation_formula = f"(({last_value} - {first_value}) / {first_value}) × 100"
             
-            # === PHASE 2: ANALYSE STATISTIQUE DES DONNÉES RÉELLES ===
-            # Get French definition for the indicator
+            # Skip Phase 2 (AI analysis) — return data immediately for speed
+            # Analysis will be fetched lazily via /api/query-analysis
             definition_fr = ''
             if indicator_code.startswith('NAT.'):
                 definition_fr = indicator_data.get('description', '') or indicator_data.get('methodology', '')
             else:
                 cached_def = data_service._desc_cache.get(indicator_code, {})
                 definition_fr = cached_def.get('full_fr', '') or indicator_data.get('methodology', '')
-            
-            analysis_prompt = self._build_data_analysis_prompt(
-                indicator_data['name'],
-                values,
-                indicator_data.get('methodology', ''),
-                user_query,
-                match_type=match_type,
-                proxy_explanation=proxy_explanation,
-                definition=definition_fr
-            )
-            
-            try:
-                analysis_text = self._call_gemini(analysis_prompt)
-                analysis_text = self._clean_json_response(analysis_text)
-                analysis_json = json.loads(analysis_text)
-                message = analysis_json.get('analysis', '')
-                related_indicators = analysis_json.get('related_indicators', [])
-            except:
-                # Fallback: générer un message basique
-                message = self._generate_response_message(
-                    indicator_data['name'], values, '',
-                    start_year, end_year, calculation_result, calculation_formula
-                )
-                related_indicators = []
-            
-            if not related_indicators:
-                related_indicators = data_service.get_related_indicators(indicator_code, limit=5)
-            
+
+            related_indicators = data_service.get_related_indicators(indicator_code, limit=5)
             chart_type = 'line' if len(values) > 1 else 'bar'
             
             return {
                 'success': True,
-                'message': message,
+                'message': '',
                 'indicator_code': indicator_code,
                 'indicator_name': indicator_data['name'],
                 'match_type': match_type,
@@ -810,6 +784,70 @@ Réponds UNIQUEMENT en JSON:
                 }
             return self._handle_fallback(user_query, str(e))
     
+    def generate_analysis(self, indicator_code: str, user_query: str,
+                          match_type: str = 'exact', proxy_explanation: str = None) -> Dict:
+        """
+        Phase 2 uniquement: génère l'analyse détaillée pour un indicateur déjà identifié.
+        Appelé de manière lazy après que les données ont déjà été affichées.
+        """
+        try:
+            # Récupérer les données
+            if indicator_code.startswith('NAT.'):
+                indicator_data = data_service.get_indicator_data_for_national(indicator_code)
+            else:
+                indicator_data = data_service.get_indicator_data_for_query(indicator_code)
+            
+            if not indicator_data or not indicator_data.get('values'):
+                return {'success': False, 'message': 'Données introuvables pour cet indicateur.'}
+            
+            values = indicator_data['values']
+            
+            definition_fr = ''
+            if indicator_code.startswith('NAT.'):
+                definition_fr = indicator_data.get('description', '') or indicator_data.get('methodology', '')
+            else:
+                cached_def = data_service._desc_cache.get(indicator_code, {})
+                definition_fr = cached_def.get('full_fr', '') or indicator_data.get('methodology', '')
+            
+            analysis_prompt = self._build_data_analysis_prompt(
+                indicator_data['name'],
+                values,
+                indicator_data.get('methodology', ''),
+                user_query,
+                match_type=match_type,
+                proxy_explanation=proxy_explanation,
+                definition=definition_fr
+            )
+            
+            analysis_text = self._call_gemini(analysis_prompt)
+            analysis_text = self._clean_json_response(analysis_text)
+            analysis_json = json.loads(analysis_text)
+            message = analysis_json.get('analysis', '')
+            related_indicators = analysis_json.get('related_indicators', [])
+            
+            if not related_indicators:
+                related_indicators = data_service.get_related_indicators(indicator_code, limit=5)
+            
+            return {
+                'success': True,
+                'message': message,
+                'related_indicators': related_indicators
+            }
+        except Exception as e:
+            logger.error(f"generate_analysis error: {e}")
+            # Fallback: basic message
+            try:
+                msg = self._generate_response_message(
+                    indicator_data['name'], values, '', None, None, None, None
+                )
+            except:
+                msg = "Analyse indisponible pour le moment."
+            return {
+                'success': True,
+                'message': msg,
+                'related_indicators': []
+            }
+
     def _handle_fallback(self, user_query: str, error_msg: str = '') -> Dict:
         """Gestion unifiée du fallback quand Gemini échoue."""
         fallback_match = self._try_fallback_search(user_query)

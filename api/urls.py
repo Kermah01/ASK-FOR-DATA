@@ -6,6 +6,7 @@ from . import views
 
 urlpatterns = [
     path('query', views.query_data, name='query_data'),
+    path('query-analysis', views.query_analysis, name='query_analysis'),
     path('suggest', views.suggest_indicators, name='suggest_indicators'),
     path('indicators', views.list_indicators, name='list_indicators'),
     path('indicator/<str:code>', views.indicator_detail, name='indicator_detail'),
