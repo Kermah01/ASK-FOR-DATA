@@ -145,7 +145,9 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'api' / 'static']
 
-# Use simpler WhiteNoise storage to avoid manifest issues
+# WhiteNoise configuration
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_STATIC_ROOT = STATIC_ROOT
 STATICFILES_STORAGE = 'whitenoise.storage.StaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
