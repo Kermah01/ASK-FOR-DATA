@@ -26,6 +26,11 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() in ('true', '1', 'yes')
 
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
+# Automatically allow all Render domains
+if not DEBUG:
+    ALLOWED_HOSTS.append('.onrender.com')
+    ALLOWED_HOSTS.append('*.onrender.com')
+
 CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:8000,http://127.0.0.1:8000').split(',')
 CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only allow all in dev
 
