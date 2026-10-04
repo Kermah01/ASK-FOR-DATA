@@ -110,7 +110,13 @@ def query_data(request):
     if not is_authenticated:
         from django.conf import settings as conf_settings
         anon_limit = getattr(conf_settings, 'ANONYMOUS_QUERIES_LIMIT', 2)
-        anon_queries = request.session.get('anon_queries', 0)
+        # Best-effort : une erreur DB sur la session (table absente, etc.)
+        # ne doit pas bloquer la réponse IA.
+        try:
+            anon_queries = request.session.get('anon_queries', 0)
+        except Exception:
+            logger.exception("Lecture de session impossible (quota anonyme ignoré).")
+            anon_queries = 0
 
         if anon_queries >= anon_limit:
             return Response({
@@ -126,22 +132,34 @@ def query_data(request):
     if is_authenticated:
         profile = _get_or_create_profile(request.user)
 
-    # Vérifier le cache d'abord
+    # Vérifier le cache d'abord (best-effort : si la table de cache est
+    # absente ou la DB en erreur, on continue sans cache — la réponse IA
+    # doit partir quand même).
     query_hash = hashlib.sha256(query.lower().strip().encode()).hexdigest()
-    cached = QueryCache.objects.filter(query_hash=query_hash).first()
+    cached = None
+    try:
+        cached = QueryCache.objects.filter(query_hash=query_hash).first()
+    except Exception:
+        logger.exception("Lecture du cache de requêtes impossible (ignorée).")
     if cached and cached.is_trusted:
-        cached.hit_count += 1
-        cached.save(update_fields=['hit_count'])
+        try:
+            cached.hit_count += 1
+            cached.save(update_fields=['hit_count'])
+        except Exception:
+            logger.exception("Mise à jour du compteur de cache impossible (ignorée).")
         response_data = cached.response_json
         response_data['cached'] = True
         response_data['query_hash'] = query_hash
         # Incrémenter le compteur anonyme même pour les résultats en cache
         if not is_authenticated:
-            request.session['anon_queries'] = request.session.get('anon_queries', 0) + 1
-            request.session.modified = True
-            from django.conf import settings as conf_settings
-            anon_limit = getattr(conf_settings, 'ANONYMOUS_QUERIES_LIMIT', 2)
-            response_data['remaining'] = anon_limit - request.session['anon_queries']
+            try:
+                request.session['anon_queries'] = request.session.get('anon_queries', 0) + 1
+                request.session.modified = True
+                from django.conf import settings as conf_settings
+                anon_limit = getattr(conf_settings, 'ANONYMOUS_QUERIES_LIMIT', 2)
+                response_data['remaining'] = anon_limit - request.session['anon_queries']
+            except Exception:
+                logger.exception("Écriture de session impossible (quota anonyme ignoré).")
         return Response(response_data)
 
     # Vérifier le quota (utilisateurs connectés uniquement)
@@ -184,12 +202,16 @@ def query_data(request):
     if is_authenticated:
         result['remaining'] = quota['remaining']
     else:
-        # Incrémenter le compteur anonyme
-        request.session['anon_queries'] = request.session.get('anon_queries', 0) + 1
-        request.session.modified = True
-        from django.conf import settings as conf_settings
-        anon_limit = getattr(conf_settings, 'ANONYMOUS_QUERIES_LIMIT', 2)
-        result['remaining'] = anon_limit - request.session['anon_queries']
+        # Incrémenter le compteur anonyme (best-effort : une erreur DB sur la
+        # session ne doit pas bloquer la réponse IA déjà obtenue).
+        try:
+            request.session['anon_queries'] = request.session.get('anon_queries', 0) + 1
+            request.session.modified = True
+            from django.conf import settings as conf_settings
+            anon_limit = getattr(conf_settings, 'ANONYMOUS_QUERIES_LIMIT', 2)
+            result['remaining'] = anon_limit - request.session['anon_queries']
+        except Exception:
+            logger.exception("Écriture de session impossible (quota anonyme ignoré).")
 
     # Mettre en cache les résultats réussis
     if result.get('success'):
@@ -228,12 +250,19 @@ def query_analysis(request):
     if not indicator_code or not query:
         return Response({'success': False, 'message': 'Paramètres manquants.'}, status=400)
 
-    # Check analysis cache
+    # Check analysis cache (best-effort : une erreur DB ne bloque pas l'analyse)
     analysis_cache_key = hashlib.sha256(f"analysis:{indicator_code}:{query.lower()}".encode()).hexdigest()
-    cached = QueryCache.objects.filter(query_hash=analysis_cache_key).first()
+    cached = None
+    try:
+        cached = QueryCache.objects.filter(query_hash=analysis_cache_key).first()
+    except Exception:
+        logger.exception("Lecture du cache d'analyses impossible (ignorée).")
     if cached and cached.is_trusted:
-        cached.hit_count += 1
-        cached.save(update_fields=['hit_count'])
+        try:
+            cached.hit_count += 1
+            cached.save(update_fields=['hit_count'])
+        except Exception:
+            logger.exception("Mise à jour du compteur de cache impossible (ignorée).")
         return Response(cached.response_json)
 
     # Determine which AI service to use
