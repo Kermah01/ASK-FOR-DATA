@@ -140,7 +140,7 @@ const ChatApp = {
                 this.appendMessage('assistant', data.message || 'Une erreur est survenue.');
                 if (data.needs_key) {
                     this.appendMessage('assistant',
-                        '🔑 **Ajoutez votre propre clé API Anthropic** pour des requêtes illimitées → [Configurer ma clé](/setup-api-key/)');
+                        '🔑 **Ajoutez votre propre clé API Gemini** pour des requêtes illimitées → [Configurer ma clé](/setup-api-key/)');
                 }
             }
         } catch (error) {

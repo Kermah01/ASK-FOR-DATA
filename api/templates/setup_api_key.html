@@ -9,7 +9,7 @@
         <a href="{% url 'home' %}">
             <img src="{% static 'img/logo.png' %}" alt="Ask For Data" style="height: 150px; width: auto; margin-bottom: 1rem;">
         </a>
-        <h1><i class="fas fa-key text-primary"></i> Ma clé API Anthropic</h1>
+        <h1><i class="fas fa-key text-primary"></i> Ma clé API Gemini</h1>
         <p class="subtitle">Configurez votre propre clé pour des requêtes illimitées</p>
     </div>
 
@@ -28,7 +28,7 @@
                 <code style="background: rgba(46,204,113,0.1); padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.95rem; display: inline-block; border: 1px solid rgba(46,204,113,0.3);">
                     {{ masked_key }}
                 </code>
-                <p class="text-muted" style="font-size: 0.85rem; margin-top: 0.5rem;">Requêtes illimitées avec votre propre compte Anthropic.</p>
+                <p class="text-muted" style="font-size: 0.85rem; margin-top: 0.5rem;">Requêtes illimitées avec votre propre quota Google.</p>
                 {% else %}
                 <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
                     <span style="display: inline-block; width: 10px; height: 10px; background: var(--primary); border-radius: 50%;"></span>
@@ -69,12 +69,12 @@
             <div style="display: flex; gap: 1rem; margin-bottom: 2rem; align-items: flex-start;">
                 <div style="min-width: 40px; height: 40px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem;">1</div>
                 <div style="flex: 1;">
-                    <h4 style="margin-bottom: 0.3rem;">Ouvrir la Console Anthropic</h4>
+                    <h4 style="margin-bottom: 0.3rem;">Ouvrir Google AI Studio</h4>
                     <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 0.5rem;">
-                        Cliquez le bouton ci-dessous et <strong>créez un compte Anthropic</strong> (ou connectez-vous).
+                        Cliquez le bouton ci-dessous. Connectez-vous avec <strong>votre compte Gmail</strong>.
                     </p>
-                    <a href="https://platform.claude.com/" target="_blank" class="btn btn-primary" style="display: inline-flex;">
-                        <i class="fas fa-external-link-alt"></i> Ouvrir la Console Anthropic
+                    <a href="https://aistudio.google.com/apikey" target="_blank" class="btn btn-primary" style="display: inline-flex;">
+                        <i class="fas fa-external-link-alt"></i> Ouvrir Google AI Studio
                     </a>
                 </div>
             </div>
@@ -83,9 +83,9 @@
             <div style="display: flex; gap: 1rem; margin-bottom: 2rem; align-items: flex-start;">
                 <div style="min-width: 40px; height: 40px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem;">2</div>
                 <div style="flex: 1;">
-                    <h4 style="margin-bottom: 0.3rem;">Ajouter des crédits</h4>
+                    <h4 style="margin-bottom: 0.3rem;">Accepter les conditions d'utilisation</h4>
                     <p class="text-muted" style="font-size: 0.9rem;">
-                        L'API Claude est facturée à l'usage. Dans <strong>Settings &rarr; Billing</strong>, ajoutez un petit montant de crédits (quelques dollars suffisent largement pour un usage personnel : une question coûte une fraction de centime).
+                        Si c'est votre première visite, Google vous demandera d'<strong>accepter les conditions d'utilisation de l'API Gemini</strong>. Cochez la case et validez. Si cette étape ne s'affiche pas, c'est que vous avez déjà accepté.
                     </p>
                 </div>
             </div>
@@ -96,13 +96,13 @@
                 <div style="flex: 1;">
                     <h4 style="margin-bottom: 0.3rem;">Créer une clé API</h4>
                     <p class="text-muted" style="font-size: 0.9rem;">
-                        Dans la console, ouvrez <strong>Settings &rarr; API Keys</strong> puis cliquez sur
-                        <strong>"Create Key"</strong>. Donnez-lui un nom (ex: "ask-for-data") et
-                        <strong>copiez la clé affichée</strong> — elle n'est montrée qu'une seule fois.
+                        Sur la page des clés API, cliquez sur <strong>"Create API Key"</strong> (bouton bleu).
+                        Puis choisissez <strong>"Create API key in new project"</strong>.
+                        Google va créer un projet et générer une clé pour vous. <strong>Copiez la clé affichée</strong>.
                     </p>
                     <div style="background: rgba(255,140,0,0.1); border: 1px solid rgba(255,140,0,0.3); padding: 0.6rem 0.8rem; border-radius: 6px; margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-dark);">
                         <i class="fas fa-exclamation-triangle" style="color: #FF8C00;"></i>
-                        <strong>Important :</strong> La clé ressemble à <code>sk-ant-api03-...</code>. Copiez-la intégralement.
+                        <strong>Important :</strong> La clé ressemble à <code>AIzaSy...</code> ou <code>AQ....</code> (nouveau format). Copiez-la intégralement.
                     </div>
                 </div>
             </div>
@@ -111,11 +111,13 @@
             <div style="display: flex; gap: 1rem; margin-bottom: 2rem; align-items: flex-start;">
                 <div style="min-width: 40px; height: 40px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem;">4</div>
                 <div style="flex: 1;">
-                    <h4 style="margin-bottom: 0.3rem;">Garder votre clé secrète</h4>
+                    <h4 style="margin-bottom: 0.3rem;">Vérifier que l'API Generative Language est activée</h4>
                     <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 0.5rem;">
-                        Ne partagez jamais votre clé et ne la publiez pas (dépôt Git, capture d'écran...).
-                        Vous pouvez la révoquer à tout moment depuis la console Anthropic.
+                        Normalement, Google active automatiquement l'API en créant la clé. Si ça ne fonctionne pas, allez dans la console Google Cloud et activez <strong>"Generative Language API"</strong> manuellement :
                     </p>
+                    <a href="https://console.cloud.google.com/apis/library/generativelanguage.googleapis.com" target="_blank" style="color: var(--primary); font-weight: 600; text-decoration: none; font-size: 0.9rem;">
+                        <i class="fas fa-external-link-alt"></i> Activer Generative Language API
+                    </a>
                 </div>
             </div>
 
@@ -128,7 +130,7 @@
                         Nous allons <strong>tester la clé</strong> avant de la sauvegarder. Si elle fonctionne, elle sera chiffrée et stockée de manière sécurisée.
                     </p>
                     <div style="display: flex; gap: 0.5rem;">
-                        <input type="text" id="api-key-input" placeholder="sk-ant-..."
+                        <input type="text" id="api-key-input" placeholder="AIzaSy... ou AQ...."
                             style="flex: 1; padding: 0.75rem 1rem; border: 2px solid var(--border-light); border-radius: 8px; font-family: monospace; font-size: 0.95rem; background: var(--bg-surface); color: var(--text-dark);">
                         <button class="btn btn-primary" onclick="saveApiKey()" id="save-btn">
                             <i class="fas fa-save"></i> Tester et enregistrer
@@ -146,10 +148,10 @@
         <div style="margin-top: 1rem;">
             <details style="margin-bottom: 1rem;">
                 <summary style="cursor: pointer; font-weight: 600; color: var(--text-dark);">
-                    Combien ça coûte ?
+                    C'est vraiment gratuit ?
                 </summary>
                 <p class="text-muted" style="margin-top: 0.5rem; font-size: 0.9rem;">
-                    L'API Claude est facturée à l'usage (pré-paiement de crédits). Une question sur Ask For Data coûte typiquement <strong>moins d'un centime</strong> : quelques dollars de crédits couvrent des centaines de requêtes.
+                    Oui ! Google offre un quota gratuit généreux : <strong>1 500 requêtes/jour</strong> et <strong>1 million de tokens/minute</strong> avec le modèle Gemini 2.5 Flash. Largement suffisant pour un usage personnel. Aucune carte bancaire n'est requise.
                 </p>
             </details>
             <details style="margin-bottom: 1rem;">
@@ -157,7 +159,7 @@
                     Ma clé est-elle en sécurité ?
                 </summary>
                 <p class="text-muted" style="margin-top: 0.5rem; font-size: 0.9rem;">
-                    Votre clé est <strong>chiffrée avec AES-256 (Fernet)</strong> avant d'être stockée en base de données. Seul le serveur peut la déchiffrer pour appeler l'API Claude. Elle n'est jamais affichée en clair.
+                    Votre clé est <strong>chiffrée avec AES-256 (Fernet)</strong> avant d'être stockée en base de données. Seul le serveur peut la déchiffrer pour appeler l'API Gemini. Elle n'est jamais affichée en clair.
                 </p>
             </details>
             <details style="margin-bottom: 1rem;">
@@ -165,7 +167,7 @@
                     Comment savoir si ma clé est bien utilisée ?
                 </summary>
                 <p class="text-muted" style="margin-top: 0.5rem; font-size: 0.9rem;">
-                    Le panneau <strong>"Clé API active"</strong> en haut de cette page affiche quelle clé est utilisée (masquée). Si votre clé personnelle est active, vous verrez son début <code>sk-ant-...</code> et sa fin. Sinon, c'est la clé partagée du serveur.
+                    Le panneau <strong>"Clé API active"</strong> en haut de cette page affiche quelle clé est utilisée (masquée). Si votre clé personnelle est active, vous verrez son début (<code>AIzaSy...</code> ou <code>AQ....</code>) et sa fin. Sinon, c'est la clé partagée du serveur.
                 </p>
             </details>
             <details style="margin-bottom: 1rem;">
@@ -173,7 +175,7 @@
                     Je peux supprimer ma clé ?
                 </summary>
                 <p class="text-muted" style="margin-top: 0.5rem; font-size: 0.9rem;">
-                    Oui, à tout moment depuis cette page. Vous pouvez aussi révoquer la clé directement depuis la <a href="https://platform.claude.com/" target="_blank">Console Anthropic</a>.
+                    Oui, à tout moment depuis cette page. Vous pouvez aussi révoquer la clé directement depuis <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>.
                 </p>
             </details>
             <details>
@@ -224,8 +226,8 @@ async function saveApiKey() {
     const btn = document.getElementById('save-btn');
     const key = input.value.trim();
 
-    if (!key || !key.startsWith('sk-ant-')) {
-        showMessage('La clé doit commencer par "sk-ant-..."', true);
+    if (!key || !(key.startsWith('AIza') || key.startsWith('AQ.'))) {
+        showMessage('La clé doit commencer par "AIza..." ou "AQ."', true);
         return;
     }
 

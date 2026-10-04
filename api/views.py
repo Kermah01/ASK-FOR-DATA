@@ -68,7 +68,7 @@ def setup_api_key_page(request):
     if profile.has_own_key:
         try:
             actual_key = profile.get_api_key()
-            if actual_key != conf_settings.ANTHROPIC_API_KEY:
+            if actual_key != conf_settings.GEMINI_API_KEY:
                 masked_key = actual_key[:8] + '...' + actual_key[-4:]
                 has_valid_key = True
             else:
@@ -76,7 +76,7 @@ def setup_api_key_page(request):
         except Exception:
             profile.clear_api_key()
     
-    server_key = conf_settings.ANTHROPIC_API_KEY
+    server_key = conf_settings.GEMINI_API_KEY
     server_key_masked = (server_key[:10] + '...' + server_key[-4:]) if server_key else 'non configurée'
     
     return render(request, 'setup_api_key.html', {
@@ -151,7 +151,7 @@ def query_data(request):
             return Response({
                 'success': False,
                 'message': f'Vous avez atteint votre limite de requêtes gratuites pour aujourd\'hui. '
-                           f'Ajoutez votre propre clé API Anthropic pour des requêtes illimitées.',
+                           f'Ajoutez votre propre clé API Gemini pour des requêtes illimitées.',
                 'needs_key': True,
                 'remaining': 0
             }, status=status.HTTP_429_TOO_MANY_REQUESTS)
@@ -160,7 +160,7 @@ def query_data(request):
     if is_authenticated and profile.has_own_key:
         user_api_key = profile.get_api_key()
         from django.conf import settings as conf_settings
-        if user_api_key == conf_settings.ANTHROPIC_API_KEY:
+        if user_api_key == conf_settings.GEMINI_API_KEY:
             logger.warning(f"User {request.user.email} has_own_key=True but decryption fell back to server key!")
             service = get_default_service()
         else:
@@ -173,7 +173,7 @@ def query_data(request):
         return Response({
             'success': False,
             'message': 'L\'assistant IA n\'est pas configuré sur ce serveur '
-                       '(variable d\'environnement ANTHROPIC_API_KEY manquante). '
+                       '(variable d\'environnement GEMINI_API_KEY manquante). '
                        'Les données restent consultables via le tableau de bord et le catalogue d\'indicateurs.'
         }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
     
@@ -244,14 +244,14 @@ def query_analysis(request):
         if profile.has_own_key:
             user_api_key = profile.get_api_key()
             from django.conf import settings as conf_settings
-            if user_api_key != conf_settings.ANTHROPIC_API_KEY:
+            if user_api_key != conf_settings.GEMINI_API_KEY:
                 service = get_service_for_key(user_api_key)
 
     if service is None:
         return Response({
             'success': False,
             'message': 'L\'assistant IA n\'est pas configuré sur ce serveur '
-                       '(variable d\'environnement ANTHROPIC_API_KEY manquante).'
+                       '(variable d\'environnement GEMINI_API_KEY manquante).'
         }, status=503)
 
     result = service.generate_analysis(indicator_code, query, match_type, proxy_explanation)
@@ -735,47 +735,27 @@ def suggest_indicators(request):
 @csrf_exempt
 @api_view(['POST'])
 def save_api_key(request):
-    """Sauvegarde la clé API Anthropic (Claude) de l'utilisateur"""
+    """Sauvegarde la clé API Gemini (Google AI) de l'utilisateur"""
     if not request.user.is_authenticated:
         return Response({'success': False, 'message': 'Non authentifié.'}, status=401)
 
     api_key = request.data.get('api_key', '').strip()
-    if not api_key or not api_key.startswith('sk-ant-'):
+    # Les clés Google AI commencent par "AIza" (format historique) ou "AQ."
+    # (nouveau format). Le vrai test est l'appel API minimal ci-dessous.
+    if not api_key or not (api_key.startswith('AIza') or api_key.startswith('AQ.')):
         return Response({
             'success': False,
-            'message': 'Clé API invalide. Elle doit commencer par "sk-ant-".'
+            'message': 'Clé API invalide. Une clé Google AI commence par "AIza" ou "AQ.".'
         }, status=400)
 
-    # Vérifier que la clé fonctionne avec un appel minimal
-    import anthropic
+    # Vérifier que la clé fonctionne avec un appel minimal réel
     from django.conf import settings as conf_settings
-    try:
-        client = anthropic.Anthropic(api_key=api_key, max_retries=0)
-        client.messages.create(
-            model=conf_settings.CLAUDE_MODEL,
-            max_tokens=1,
-            messages=[{'role': 'user', 'content': 'ping'}],
-        )
-    except anthropic.AuthenticationError:
-        return Response({
-            'success': False,
-            'message': 'Clé API invalide ou révoquée. Vérifiez-la dans la console Anthropic.'
-        }, status=400)
-    except anthropic.RateLimitError:
-        return Response({
-            'success': False,
-            'message': 'Cette clé API a atteint sa limite de requêtes. Réessayez dans quelques minutes.'
-        }, status=400)
-    except anthropic.APIConnectionError:
-        return Response({
-            'success': False,
-            'message': 'Impossible de joindre l\'API Anthropic pour tester la clé. Réessayez plus tard.'
-        }, status=502)
-    except Exception as e:
-        return Response({
-            'success': False,
-            'message': f'Clé API invalide ou non fonctionnelle: {str(e)[:100]}'
-        }, status=400)
+    from .ai_service import test_api_key
+    ok, error_message, error_status = test_api_key(
+        api_key, model=conf_settings.GEMINI_MODEL
+    )
+    if not ok:
+        return Response({'success': False, 'message': error_message}, status=error_status)
 
     profile = _get_or_create_profile(request.user)
     profile.set_api_key(api_key)
@@ -831,7 +811,7 @@ def user_status(request):
     if profile.has_own_key:
         try:
             actual_key = profile.get_api_key()
-            if actual_key != settings.ANTHROPIC_API_KEY:
+            if actual_key != settings.GEMINI_API_KEY:
                 masked_key = actual_key[:8] + '...' + actual_key[-4:]
                 key_source = 'personal'
             else:
@@ -880,7 +860,7 @@ def chat_send(request):
     if not quota['allowed']:
         return Response({
             'success': False,
-            'message': 'Limite de requêtes atteinte. Ajoutez votre clé API Anthropic pour des requêtes illimitées.',
+            'message': 'Limite de requêtes atteinte. Ajoutez votre clé API Gemini pour des requêtes illimitées.',
             'needs_key': True,
             'remaining': 0,
         }, status=429)
@@ -909,17 +889,17 @@ def chat_send(request):
     if profile.has_own_key:
         user_api_key = profile.get_api_key()
         from django.conf import settings as conf_settings
-        if user_api_key != conf_settings.ANTHROPIC_API_KEY:
+        if user_api_key != conf_settings.GEMINI_API_KEY:
             service = get_service_for_key(user_api_key)
 
     if service is None:
         return Response({
             'success': False,
             'message': 'L\'assistant IA n\'est pas configuré sur ce serveur '
-                       '(variable d\'environnement ANTHROPIC_API_KEY manquante).'
+                       '(variable d\'environnement GEMINI_API_KEY manquante).'
         }, status=503)
 
-    # Call Claude chat
+    # Call Gemini chat
     result = service.chat_message(history, message_text)
 
     # Save assistant message

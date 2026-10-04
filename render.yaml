@@ -19,9 +19,9 @@ services:
         value: "https://ask-for-data-05go.onrender.com"
       - key: CORS_ALLOWED_ORIGINS
         value: "https://ask-for-data-05go.onrender.com"
-      - key: ANTHROPIC_API_KEY
+      - key: GEMINI_API_KEY
         sync: false
-      - key: CLAUDE_MODEL
-        value: "claude-sonnet-5-5"
+      - key: GEMINI_MODEL
+        value: "gemini-2.5-flash"
       - key: FERNET_KEY
         sync: false

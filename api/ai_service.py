@@ -1,19 +1,43 @@
 """
-Service pour l'intégration avec l'API Claude (Anthropic)
+Service pour l'intégration avec l'API Gemini (Google)
+
+Utilise le SDK officiel actuel `google-genai` (et non l'ancien
+`google-generativeai`, abandonné par Google).
 """
-import anthropic
 import json
 import re
 import os
 import logging
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, Tuple
+
+from google import genai
+from google.genai import types as genai_types
+from google.genai import errors as genai_errors
+
 from .data_service import data_service
 from .national_data_service import national_data_service as nds
 
 logger = logging.getLogger(__name__)
 
-# Modèle par défaut (surchargé via la variable d'environnement CLAUDE_MODEL)
-DEFAULT_MODEL = os.environ.get('CLAUDE_MODEL', 'claude-sonnet-5-5')
+# Modèle par défaut : un modèle flash disponible dans le niveau gratuit de
+# l'API Gemini (surchargeable via la variable d'environnement GEMINI_MODEL)
+DEFAULT_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-2.5-flash')
+
+
+def is_auth_error(e: Exception) -> bool:
+    """Vrai si l'erreur API correspond à une clé invalide/révoquée."""
+    if isinstance(e, genai_errors.APIError):
+        if e.code in (401, 403):
+            return True
+        # L'API Gemini renvoie 400 INVALID_ARGUMENT pour une clé mal formée
+        msg = (e.message or '').lower()
+        return e.code == 400 and 'api key' in msg
+    return False
+
+
+def is_quota_error(e: Exception) -> bool:
+    """Vrai si l'erreur API correspond à un quota/limite de débit dépassé (429)."""
+    return isinstance(e, genai_errors.APIError) and e.code == 429
 
 
 # Dictionnaire de synonymes pour mapper le langage naturel aux concepts des indicateurs
@@ -289,49 +313,73 @@ DIRECT_INDICATOR_MAP = {
 }
 
 
-class ClaudeService:
-    """Service pour interpréter les requêtes utilisateur via l'API Claude (Anthropic)"""
+class GeminiService:
+    """Service pour interpréter les requêtes utilisateur via l'API Gemini (Google)"""
 
     def __init__(self, api_key: str, model: str = None):
         """
-        Initialise le service Claude
+        Initialise le service Gemini
 
         Args:
-            api_key: Clé API Anthropic (sk-ant-...)
+            api_key: Clé API Google AI (AIza... ou AQ....)
             model: Identifiant du modèle (défaut: DEFAULT_MODEL)
         """
-        # Le SDK réessaie automatiquement les erreurs 429/5xx avec backoff exponentiel
-        self.client = anthropic.Anthropic(api_key=api_key, max_retries=3)
+        # Retries automatiques sur 429/5xx avec backoff exponentiel
+        self.client = genai.Client(
+            api_key=api_key,
+            http_options=genai_types.HttpOptions(
+                retry_options=genai_types.HttpRetryOptions(attempts=3),
+            ),
+        )
         self.model = model or DEFAULT_MODEL
 
-    def _call_claude(self, prompt: str, system: str = None, max_tokens: int = 2048,
-                     messages: List[Dict] = None) -> str:
+    def _build_config(self, system: str = None, max_tokens: int = 2048,
+                      json_output: bool = False) -> genai_types.GenerateContentConfig:
+        """Construit la configuration de génération pour l'API Gemini."""
+        kwargs = {'max_output_tokens': max_tokens}
+        if system:
+            kwargs['system_instruction'] = system
+        if json_output:
+            kwargs['response_mime_type'] = 'application/json'
+        # Les modèles 2.5 Flash "réfléchissent" par défaut, ce qui consomme le
+        # budget de tokens et ralentit la réponse : on désactive le thinking
+        # (non supporté par les modèles Pro, d'où le garde-fou sur le nom).
+        model_name = (self.model or '').lower()
+        if '2.5' in model_name and 'pro' not in model_name:
+            kwargs['thinking_config'] = genai_types.ThinkingConfig(thinking_budget=0)
+        return genai_types.GenerateContentConfig(**kwargs)
+
+    def _call_gemini(self, prompt: str, system: str = None, max_tokens: int = 2048,
+                     messages: List[Dict] = None, json_output: bool = False) -> str:
         """
-        Appelle l'API Claude et retourne le texte de la réponse.
-        Lève une exception anthropic.* en cas d'échec (après retries du SDK).
+        Appelle l'API Gemini et retourne le texte de la réponse.
+        Lève une exception google.genai.errors.* en cas d'échec (après retries).
 
         Args:
             prompt: Message utilisateur (ignoré si `messages` est fourni)
             system: Prompt système optionnel
             max_tokens: Limite de tokens en sortie
             messages: Historique complet optionnel [{'role', 'content'}, ...]
+                      (rôles 'user'/'assistant', convertis au format Gemini)
+            json_output: Si True, force une réponse au format JSON
         """
-        kwargs = {
-            'model': self.model,
-            'max_tokens': max_tokens,
-            'messages': messages if messages is not None
-                        else [{'role': 'user', 'content': prompt}],
-            # Fallback serveur en cas de refus de sécurité: l'API relance la
-            # requête sur un modèle adapté au lieu de s'arrêter.
-            'betas': ['server-side-fallback-2026-07-01'],
-            'fallbacks': 'default',
-        }
-        if system:
-            kwargs['system'] = system
-        response = self.client.beta.messages.create(**kwargs)
-        return ''.join(
-            block.text for block in response.content if block.type == 'text'
-        ).strip()
+        if messages is not None:
+            # Format multi-tours natif Gemini: role 'user' ou 'model'
+            contents = [
+                genai_types.Content(
+                    role='model' if msg['role'] == 'assistant' else 'user',
+                    parts=[genai_types.Part.from_text(text=msg['content'])],
+                )
+                for msg in messages
+            ]
+        else:
+            contents = prompt
+        response = self.client.models.generate_content(
+            model=self.model,
+            contents=contents,
+            config=self._build_config(system, max_tokens, json_output),
+        )
+        return (response.text or '').strip()
     
     def _enrich_query(self, user_query: str) -> str:
         """
@@ -464,7 +512,7 @@ class ClaudeService:
                                      definition: str = None) -> str:
         """
         Construit un prompt d'analyse statistique avec les données réelles.
-        Phase 2: Claude analyse les données comme un économiste/statisticien.
+        Phase 2: Gemini analyse les données comme un économiste/statisticien.
         Gère les cas exact match vs proxy indicator.
         """
         # Formater les données
@@ -644,7 +692,7 @@ Réponds UNIQUEMENT en JSON:
         
         try:
             # Phase 1: Identifier l'indicateur
-            response_text = self._call_claude(phase1_prompt)
+            response_text = self._call_gemini(phase1_prompt, json_output=True)
             response_text = self._clean_json_response(response_text)
             ai_response = json.loads(response_text)
             
@@ -758,28 +806,31 @@ Réponds UNIQUEMENT en JSON:
             
         except json.JSONDecodeError as e:
             return self._handle_fallback(user_query, str(e))
-        except anthropic.AuthenticationError as e:
-            logger.error(f"Claude API: clé invalide: {e}")
-            return {
-                'success': False,
-                'message': 'La clé API du service IA est invalide ou expirée. '
-                           'Contactez l\'administrateur. En attendant, les données '
-                           'restent consultables via le tableau de bord.',
-                'data': [],
-                'chart_type': 'none',
-                'error': 'invalid_api_key'
-            }
-        except anthropic.RateLimitError as e:
-            logger.error(f"Claude API: quota dépassé: {e}")
-            return {
-                'success': False,
-                'message': '⚠️ Le service d\'intelligence artificielle est temporairement indisponible '
-                           '(limite de requêtes atteinte). Veuillez réessayer dans quelques minutes. '
-                           'En attendant, les données sont toujours consultables via le tableau de bord.',
-                'data': [],
-                'chart_type': 'none',
-                'error': 'quota_exceeded'
-            }
+        except genai_errors.APIError as e:
+            if is_auth_error(e):
+                logger.error(f"Gemini API: clé invalide: {e}")
+                return {
+                    'success': False,
+                    'message': 'La clé API du service IA est invalide ou expirée. '
+                               'Contactez l\'administrateur. En attendant, les données '
+                               'restent consultables via le tableau de bord.',
+                    'data': [],
+                    'chart_type': 'none',
+                    'error': 'invalid_api_key'
+                }
+            if is_quota_error(e):
+                logger.error(f"Gemini API: quota dépassé: {e}")
+                return {
+                    'success': False,
+                    'message': '⚠️ Le service d\'intelligence artificielle est temporairement indisponible '
+                               '(limite de requêtes atteinte). Veuillez réessayer dans quelques minutes. '
+                               'En attendant, les données sont toujours consultables via le tableau de bord.',
+                    'data': [],
+                    'chart_type': 'none',
+                    'error': 'quota_exceeded'
+                }
+            logger.error(f"Gemini API: erreur {e.code}: {e}")
+            return self._handle_fallback(user_query, str(e))
         except Exception as e:
             return self._handle_fallback(user_query, str(e))
     
@@ -818,7 +869,7 @@ Réponds UNIQUEMENT en JSON:
                 definition=definition_fr
             )
             
-            analysis_text = self._call_claude(analysis_prompt)
+            analysis_text = self._call_gemini(analysis_prompt, json_output=True)
             analysis_text = self._clean_json_response(analysis_text)
             analysis_json = json.loads(analysis_text)
             message = analysis_json.get('analysis', '')
@@ -978,7 +1029,7 @@ Source: {source_display}""")
 --- FIN DONNÉES ---
 IMPORTANT: Cite la SOURCE de chaque indicateur (ex: "Banque Mondiale", "ANStat", "TOFE"). Ne cite JAMAIS les codes techniques."""
 
-        # Build conversation for Claude
+        # Build conversation for Gemini
         system_prompt = f"""Tu es **Ask For Data AI**, un assistant conversationnel expert en statistiques et économie, spécialisé sur la Côte d'Ivoire mais avec des connaissances généralistes en statistiques, économétrie, économie et sciences sociales.
 
 ## Ton identité
@@ -1004,7 +1055,7 @@ IMPORTANT: Cite la SOURCE de chaque indicateur (ex: "Banque Mondiale", "ANStat",
 - Si l'utilisateur pose une question vague, guide-le avec des suggestions.
 {data_section}"""
 
-        # Build message list for Claude (native multi-turn format)
+        # Build message list for Gemini (native multi-turn format)
         # Add conversation history (last 20 messages max)
         messages = [
             {'role': msg['role'], 'content': msg['content']}
@@ -1017,18 +1068,23 @@ IMPORTANT: Cite la SOURCE de chaque indicateur (ex: "Banque Mondiale", "ANStat",
             messages.pop(0)
 
         try:
-            response_text = self._call_claude(
+            response_text = self._call_gemini(
                 prompt=None,
                 system=system_prompt,
                 max_tokens=4096,
                 messages=messages,
             )
-        except anthropic.RateLimitError:
-            response_text = ("⚠️ Le service d'IA est temporairement surchargé (limite de requêtes atteinte). "
-                            "Veuillez réessayer dans quelques minutes.")
-        except anthropic.AuthenticationError:
-            response_text = ("⚠️ La clé API du service d'IA est invalide ou expirée. "
-                            "Contactez l'administrateur du site.")
+        except genai_errors.APIError as e:
+            if is_quota_error(e):
+                response_text = ("⚠️ Le service d'IA est temporairement surchargé (limite de requêtes atteinte). "
+                                "Veuillez réessayer dans quelques minutes.")
+            elif is_auth_error(e):
+                response_text = ("⚠️ La clé API du service d'IA est invalide ou expirée. "
+                                "Contactez l'administrateur du site.")
+            else:
+                logger.error(f"Chat Gemini API error {e.code}: {e}")
+                response_text = ("Désolé, une erreur est survenue lors du traitement de votre message. "
+                                "Veuillez réessayer.")
         except Exception as e:
             logger.error(f"Chat error: {e}")
             response_text = ("Désolé, une erreur est survenue lors du traitement de votre message. "
@@ -1049,7 +1105,7 @@ IMPORTANT: Cite la SOURCE de chaque indicateur (ex: "Banque Mondiale", "ANStat",
     
     def _chat_identify_indicators(self, message: str) -> List[str]:
         """
-        Use Claude Phase 1 to identify the correct indicator codes from a user message.
+        Use Gemini Phase 1 to identify the correct indicator codes from a user message.
         Lightweight call (~1-2K tokens). Same approach as homepage interpret_query Phase 1.
         Returns list of indicator codes.
         """
@@ -1093,12 +1149,12 @@ Réponds UNIQUEMENT en JSON:
 {{"codes": ["CODE1"]}}"""
         
         try:
-            response_text = self._call_claude(prompt)
+            response_text = self._call_gemini(prompt, json_output=True)
             response_text = self._clean_json_response(response_text)
             result = json.loads(response_text)
             codes = result.get('codes', [])
             valid_codes = [c for c in codes if isinstance(c, str) and c]
-            logger.info(f"Chat Claude Phase 1: {valid_codes}")
+            logger.info(f"Chat Gemini Phase 1: {valid_codes}")
             return valid_codes
         except Exception as e:
             logger.error(f"Chat indicator identification error: {e}")
@@ -1109,8 +1165,8 @@ Réponds UNIQUEMENT en JSON:
         Detects if the user message requires data from the database.
         Uses a 3-tier approach:
           1. Direct map (fast, for simple queries)
-          2. Claude Phase 1 (accurate, for complex queries)
-          3. Keyword fallback (if Claude fails)
+          2. Gemini Phase 1 (accurate, for complex queries)
+          3. Keyword fallback (if Gemini fails)
         Returns a LIST of data contexts (supports multiple indicators per message).
         """
         msg_lower = message.lower()
@@ -1153,7 +1209,7 @@ Réponds UNIQUEMENT en JSON:
         longest_match_len = max((len(k) for k in matched_keys), default=0)
         
         # For SIMPLE queries (short, or longest match covers most of the query),
-        # trust the direct map. For COMPLEX queries, prefer Claude Phase 1.
+        # trust the direct map. For COMPLEX queries, prefer Gemini Phase 1.
         is_simple = query_words <= 3 or (longest_match_len / max(len(msg_lower), 1)) > 0.5
         
         if is_simple and matched_keys:
@@ -1164,7 +1220,7 @@ Réponds UNIQUEMENT en JSON:
                     codes_to_fetch.append(code)
                     logger.info(f"Chat direct map: '{key}' → {code}")
         
-        # Step 2: Claude Phase 1 for complex queries or when direct map fails
+        # Step 2: Gemini Phase 1 for complex queries or when direct map fails
         if not codes_to_fetch or not is_simple:
             ai_codes = self._chat_identify_indicators(message)
             for code in ai_codes:
@@ -1225,39 +1281,71 @@ Réponds UNIQUEMENT en JSON:
             return "Banque Mondiale (World Development Indicators)"
 
 
-# Instance globale (sera initialisée dans settings.py)
+# Instance globale (initialisée paresseusement)
 _default_service = None
 
 # Cache des services par clé API (pour ne pas recréer à chaque requête)
 _user_services = {}
 
 
-def get_default_service() -> Optional['ClaudeService']:
+def get_default_service() -> Optional['GeminiService']:
     """
-    Retourne le service Claude configuré avec la clé serveur (ANTHROPIC_API_KEY),
+    Retourne le service Gemini configuré avec la clé serveur (GEMINI_API_KEY),
     ou None si aucune clé n'est configurée. Initialisation paresseuse.
     """
     global _default_service
     if _default_service is None:
         from django.conf import settings
-        api_key = getattr(settings, 'ANTHROPIC_API_KEY', '')
+        api_key = getattr(settings, 'GEMINI_API_KEY', '')
         if api_key:
-            model = getattr(settings, 'CLAUDE_MODEL', DEFAULT_MODEL)
-            _default_service = ClaudeService(api_key, model=model)
+            model = getattr(settings, 'GEMINI_MODEL', DEFAULT_MODEL)
+            _default_service = GeminiService(api_key, model=model)
         else:
             logger.warning(
-                "ANTHROPIC_API_KEY non configurée: l'assistant IA est désactivé. "
+                "GEMINI_API_KEY non configurée: l'assistant IA est désactivé. "
                 "Définissez la variable d'environnement pour l'activer."
             )
     return _default_service
 
 
-def get_service_for_key(api_key: str) -> 'ClaudeService':
-    """Retourne un ClaudeService pour une clé API donnée (avec cache)"""
+def get_service_for_key(api_key: str) -> 'GeminiService':
+    """Retourne un GeminiService pour une clé API donnée (avec cache)"""
     if api_key not in _user_services:
-        _user_services[api_key] = ClaudeService(api_key)
+        _user_services[api_key] = GeminiService(api_key)
         # Limiter la taille du cache
         if len(_user_services) > 100:
             oldest = list(_user_services.keys())[0]
             del _user_services[oldest]
     return _user_services[api_key]
+
+
+def test_api_key(api_key: str, model: str = None) -> Tuple[bool, str, int]:
+    """
+    Teste une clé API Gemini par un appel minimal réel (et non par le seul
+    préfixe). Utilisé lors de l'enregistrement d'une clé personnelle.
+
+    Returns:
+        (ok, message_erreur, http_status) — ok=True si la clé fonctionne.
+    """
+    try:
+        client = genai.Client(api_key=api_key)
+        client.models.generate_content(
+            model=model or DEFAULT_MODEL,
+            contents='ping',
+            config=genai_types.GenerateContentConfig(max_output_tokens=1),
+        )
+        return True, '', 200
+    except genai_errors.APIError as e:
+        if is_auth_error(e):
+            return (False, 'Clé API invalide ou révoquée. '
+                           'Vérifiez-la dans Google AI Studio (aistudio.google.com).', 400)
+        if is_quota_error(e):
+            return (False, 'Cette clé API a atteint sa limite de requêtes (quota gratuit épuisé). '
+                           'Réessayez dans quelques minutes.', 400)
+        if isinstance(e, genai_errors.ServerError):
+            return (False, 'L\'API Gemini est temporairement indisponible pour tester la clé. '
+                           'Réessayez plus tard.', 502)
+        return False, f'Clé API invalide ou non fonctionnelle: {str(e)[:100]}', 400
+    except Exception as e:
+        return (False, 'Impossible de joindre l\'API Gemini pour tester la clé. '
+                       f'Réessayez plus tard. ({str(e)[:80]})', 502)
