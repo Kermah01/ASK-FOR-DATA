@@ -275,27 +275,38 @@ function initSearchForm() {
                 body: JSON.stringify({ query })
             });
 
-            const data = await response.json();
+            // Le serveur peut renvoyer autre chose que du JSON (page d'erreur
+            // HTML 500, proxy, etc.) : on ne doit jamais rester silencieux.
+            let data = null;
+            try {
+                data = await response.json();
+            } catch (parseError) {
+                console.error('Réponse non-JSON du serveur:', parseError);
+            }
 
             // Stop loading animation
             stopLoadingAnimation();
+            hideLoading();
 
-            if (data.success) {
-                hideLoading();
+            if (data && data.success) {
                 lastQueryText = query;
                 displayResults(data);
-            } else if (data.needs_login) {
-                hideLoading();
+            } else if (data && data.needs_login) {
                 showError(data.message + ' <a href="/accounts/login/" style="color: var(--primary); font-weight: 700; text-decoration: underline;">Se connecter</a> ou <a href="/accounts/signup/" style="color: var(--primary); font-weight: 700; text-decoration: underline;">Créer un compte</a>');
+            } else if (data && data.message) {
+                // Message d'erreur renvoyé par le serveur : on l'affiche tel quel
+                showError(data.message);
+            } else if (!response.ok) {
+                showError(`Le serveur a renvoyé une erreur (HTTP ${response.status}). ` +
+                    'Veuillez réessayer dans quelques instants.');
             } else {
-                hideLoading();
-                showError(data.message || 'Une erreur est survenue. Veuillez reformuler votre question.');
+                showError('Une erreur est survenue. Veuillez reformuler votre question.');
             }
         } catch (error) {
             console.error('Error:', error);
             stopLoadingAnimation();
             hideLoading();
-            showError('Impossible de se connecter au serveur. Veuillez réessayer.');
+            showError('Impossible de contacter le serveur (connexion interrompue). Veuillez réessayer.');
         }
     });
 }

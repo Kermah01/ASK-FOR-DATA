@@ -169,6 +169,9 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'api.authentication.CsrfExemptSessionAuthentication',
     ],
+    # Toute exception non gérée dans une vue API renvoie un JSON propre
+    # (jamais la page d'erreur HTML de Django, illisible pour le front).
+    'EXCEPTION_HANDLER': 'api.exceptions.api_exception_handler',
 }
 
 # django-allauth configuration
