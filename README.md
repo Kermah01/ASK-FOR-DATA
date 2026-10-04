@@ -1,148 +1,130 @@
-# Ask For Data - Cote d'Ivoire
+# Ask For Data — Côte d'Ivoire
 
-Plateforme web intelligente qui vulgarise l'acces aux statistiques ivoiriennes grace a l'IA (Google Gemini).
+Plateforme web qui démocratise l'accès aux statistiques économiques et sociales de la Côte d'Ivoire. Posez une question en langage naturel — *« Quel est le PIB de 2015 à 2024 ? »* — et l'assistant IA (Claude, d'Anthropic) identifie l'indicateur pertinent, affiche les données sous forme de tableau et de graphique, puis en propose une analyse rédigée en français.
 
-## Fonctionnalites
+## Fonctionnalités
 
-- **Recherche en langage naturel** — posez des questions comme *"Quel est le PIB de 2015 a 2024 ?"*
-- **Dashboard interactif** — 12 sections thematiques (macro, demo, education, sante, emploi, international...) alimentees par les donnees reelles de la Banque mondiale
-- **Catalogue de 1 521 indicateurs** — filtrable, avec detail par code
-- **Chat IA** — interpretation des requetes via Gemini, reponse structuree (texte + tableau + graphique + source)
-- **Authentification** — inscription/connexion email + Google OAuth, quota de requetes, cle API personnelle
+- **Assistant IA en langage naturel** — interprétation des questions via l'API Claude d'Anthropic : identification de l'indicateur, récupération des données réelles, analyse rédigée (aucun chiffre inventé : le modèle ne commente que les données fournies)
+- **Chat IA multi-tours** — conversations persistantes avec contexte, injection automatique des séries de données pertinentes dans la discussion
+- **Dashboard interactif** — 12 sections thématiques (macroéconomie, démographie, finances publiques, commerce extérieur, santé, éducation…) alimentées par les données réelles
+- **Catalogue de plus de 1 500 indicateurs** — Banque mondiale (WDI) + sources nationales (TOFE, Douanes, DGE, DGF), filtrable avec autocomplétion
+- **Robustesse** — cache des réponses avec système de feedback, recherche par mots-clés en secours si l'appel IA échoue, quotas par utilisateur
+- **Authentification** — email + Google OAuth (django-allauth), quota de requêtes gratuites, possibilité d'utiliser sa propre clé API Anthropic (chiffrée en base avec Fernet/AES)
 
 ## Stack technique
 
 | Couche | Technologie |
 |--------|------------|
 | Backend | Django 5.2, Django REST Framework |
-| IA | Google Gemini API (`gemini-2.5-flash`) |
-| Donnees | Excel (`data.xlsx`) lu en memoire via pandas |
+| IA | API Claude d'Anthropic (SDK `anthropic`, modèle `claude-sonnet-5-5`) |
+| Données | Fichiers Excel lus en mémoire via pandas / openpyxl |
 | Frontend | HTML / CSS / JavaScript, ECharts, Leaflet |
-| Auth | django-allauth (email + Google) |
-| Static | WhiteNoise (compression + cache) |
-| Serveur | Gunicorn |
+| Auth | django-allauth (email + Google OAuth) |
+| Sécurité | Chiffrement Fernet des clés utilisateurs, clés en variables d'environnement |
+| Déploiement | Gunicorn + WhiteNoise, prêt pour Render (`render.yaml`) / Heroku (`Procfile`) / PM2 |
 
-## Structure du projet
+## Architecture de l'assistant IA
 
-```
-webapp/
-├── api/
-│   ├── data_service.py        # Lecture Excel, cache singleton
-│   ├── gemini_service.py      # Integration Gemini
-│   ├── models.py              # UserProfile, QueryCache
-│   ├── views.py               # Vues pages + API REST
-│   ├── urls.py                # Routes /api/*
-│   ├── authentication.py      # CSRF-exempt session auth
-│   ├── static/
-│   │   ├── css/               # dashboard-v3.css, home-v2.css, style.css
-│   │   ├── js/                # dashboard-v3.js, home-v2.js, chat.js, sectors.js
-│   │   └── img/               # logo.png, photos
-│   └── templates/             # home_v2, dashboard_v3, chat, about, account/*
-├── askfordata/
-│   ├── settings.py            # Config Django (env vars)
-│   ├── urls.py                # Routes principales
-│   └── wsgi.py
-├── data.xlsx                  # 1 521 indicateurs Banque mondiale
-├── requirements.txt
-├── Procfile                   # Deploiement Heroku/Render/Railway
-├── ecosystem.config.cjs       # Deploiement PM2
-├── start.sh                   # Script de demarrage production
-├── .env.example               # Variables d'environnement requises
-└── README.md
-```
+L'intégration IA (`api/ai_service.py`) fonctionne en deux phases pour garantir des réponses fiables :
+
+1. **Phase 1 — Identification** : la question est enrichie par un dictionnaire de synonymes métier, puis Claude sélectionne le code de l'indicateur le plus pertinent dans un catalogue pré-filtré (réponse JSON structurée).
+2. **Phase 2 — Analyse** : les données réelles de l'indicateur (plus des statistiques pré-calculées : min, max, moyenne, variation) sont fournies à Claude, qui rédige une analyse d'économiste sans jamais inventer de chiffres.
+
+En cas d'indisponibilité de l'API (clé absente, quota), l'application reste pleinement utilisable : messages d'erreur clairs côté interface et repli sur une recherche par mots-clés.
 
 ## Installation
 
 ```bash
-# 1. Cloner et entrer dans le projet
-git clone <repo-url> && cd webapp
+# 1. Cloner le projet
+git clone <repo-url> && cd ASK-FOR-DATA
 
-# 2. Creer un environnement virtuel
+# 2. Créer un environnement virtuel
 python -m venv .venv
 source .venv/bin/activate   # Linux/Mac
 .venv\Scripts\activate      # Windows
 
-# 3. Installer les dependances
+# 3. Installer les dépendances
 pip install -r requirements.txt
 
 # 4. Configurer les variables d'environnement
 cp .env.example .env
-# Editer .env avec vos valeurs (SECRET_KEY, GEMINI_API_KEY, etc.)
+# Éditer .env : DJANGO_SECRET_KEY, ANTHROPIC_API_KEY, FERNET_KEY...
 
-# 5. Migrations
+# 5. Migrations + fichiers statiques
 python manage.py migrate
-
-# 6. Collecter les fichiers statiques
 python manage.py collectstatic --noinput
 ```
 
-## Lancement
+### Obtenir une clé API Anthropic
 
-### Developpement
+1. Créer un compte sur [platform.claude.com](https://platform.claude.com/)
+2. Ajouter quelques crédits (facturation à l'usage — une question coûte une fraction de centime)
+3. **Settings → API Keys → Create Key**, puis copier la clé (`sk-ant-...`) dans `.env` :
 
 ```bash
-DJANGO_DEBUG=True python manage.py runserver 8000
+ANTHROPIC_API_KEY=sk-ant-votre-cle
 ```
 
-### Production
+Sans clé configurée, le site fonctionne (dashboard, catalogue, données) mais l'assistant IA affiche un message explicite au lieu de répondre.
+
+## Lancement
 
 ```bash
-# Option 1 : Script direct
-bash start.sh
+# Développement
+DJANGO_DEBUG=True python manage.py runserver 8000
 
-# Option 2 : PM2
-pm2 start ecosystem.config.cjs
-
-# Option 3 : Procfile (Heroku/Render)
-# Automatique via le Procfile
+# Production
+bash start.sh                        # Gunicorn
+# ou : pm2 start ecosystem.config.cjs
+# ou : déploiement Render automatique via render.yaml
 ```
 
 ## Variables d'environnement
 
 | Variable | Requis | Description |
 |----------|--------|-------------|
-| `DJANGO_SECRET_KEY` | Oui | Cle secrete Django (50+ caracteres aleatoires) |
-| `DJANGO_DEBUG` | Non | `True` pour dev, `False` par defaut |
-| `DJANGO_ALLOWED_HOSTS` | Oui | Domaines autorises, separes par virgule |
-| `GEMINI_API_KEY` | Oui | Cle API Google Gemini |
-| `FERNET_KEY` | Oui | Cle de chiffrement pour les cles API utilisateurs |
-| `GOOGLE_CLIENT_ID` | Non | OAuth Google (optionnel) |
-| `GOOGLE_CLIENT_SECRET` | Non | OAuth Google (optionnel) |
+| `DJANGO_SECRET_KEY` | Oui | Clé secrète Django (50+ caractères aléatoires) |
+| `ANTHROPIC_API_KEY` | Oui (pour l'IA) | Clé API Anthropic (Claude) — `sk-ant-...` |
+| `CLAUDE_MODEL` | Non | Modèle Claude (défaut : `claude-sonnet-5-5`) |
+| `FERNET_KEY` | Oui | Clé de chiffrement des clés API utilisateurs |
+| `DJANGO_DEBUG` | Non | `True` en dev, `False` par défaut |
+| `DJANGO_ALLOWED_HOSTS` | Oui (prod) | Domaines autorisés, séparés par des virgules |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Non | OAuth Google (optionnel) |
+| `FREE_QUERIES_PER_DAY` / `ANONYMOUS_QUERIES_LIMIT` | Non | Quotas de requêtes IA |
+
+Générer une clé Fernet :
+
+```bash
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
 
 ## API REST
 
-| Methode | Endpoint | Description |
+| Méthode | Endpoint | Description |
 |---------|----------|-------------|
-| `POST` | `/api/query` | Requete en langage naturel |
-| `GET` | `/api/indicators` | Liste des indicateurs (`?search=...`) |
-| `GET` | `/api/indicator/<code>` | Detail d'un indicateur |
-| `GET` | `/api/dashboard-data` | Donnees KPI + series pour les dashboards |
-| `GET` | `/api/suggest?q=...` | Autocompletion |
+| `POST` | `/api/query` | Question en langage naturel → données + graphique |
+| `POST` | `/api/query-analysis` | Analyse IA détaillée (chargée en différé) |
+| `POST` | `/api/chat/send` | Message dans une conversation IA |
+| `GET` | `/api/indicators` | Catalogue des indicateurs (`?search=...`) |
+| `GET` | `/api/indicator/<code>` | Détail d'un indicateur |
+| `GET` | `/api/dashboard-data` | KPIs + séries pour les dashboards |
+| `GET` | `/api/suggest?q=...` | Autocomplétion |
+| `POST` | `/api/feedback` | Feedback sur une réponse IA |
 | `GET` | `/api/health` | Health check |
-| `GET` | `/api/user-status` | Statut utilisateur (quota, cle) |
-| `POST` | `/api/save-api-key` | Sauvegarder sa cle Gemini |
-| `POST` | `/api/delete-api-key` | Supprimer sa cle Gemini |
+| `POST` | `/api/save-api-key` | Enregistrer sa clé Anthropic personnelle |
 
-## Pages
+## Données
 
-| URL | Description |
-|-----|-------------|
-| `/` | Page d'accueil avec recherche |
-| `/dashboard/` | Dashboard interactif (12 sections) |
-| `/chat/` | Interface chat IA (auth requise) |
-| `/sectors/` | Explorateur de secteurs |
-| `/about/` | A propos |
-| `/setup-api-key/` | Configuration cle API personnelle |
-| `/accounts/login/` | Connexion |
-| `/accounts/signup/` | Inscription |
+Toutes les données embarquées sont des **statistiques macroéconomiques publiques et agrégées** :
 
-## Donnees
+- **`data.xlsx`** — 1 521 indicateurs de la Banque mondiale (World Development Indicators), 2000-2024, licence CC BY 4.0
+- **`TOFE.xlsx`** — Tableau des Opérations Financières de l'État (Ministère des Finances et du Budget)
+- **`douanes.xlsx`** — Commerce extérieur et recettes douanières (Direction Générale des Douanes)
+- **`financements.xlsx`** — Dette publique et financements (Direction Générale des Financements)
+- **`Données de la base éco.xlsx`** — Structure de l'économie, agro-industrie (DGE / ANStat)
 
-- **Source** : Banque mondiale (World Development Indicators)
-- **Fichier** : `data.xlsx` (feuilles `Data` + `Series - Metadata`)
-- **Indicateurs** : 1 521
-- **Periode** : 2000-2024
+Aucune donnée personnelle ou confidentielle n'est incluse.
 
 ## Licence
 
-Donnees sous licence Creative Commons Attribution 4.0 (CC BY 4.0) — Banque mondiale.
+Code sous licence MIT. Données Banque mondiale sous licence Creative Commons Attribution 4.0 (CC BY 4.0).
