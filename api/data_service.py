@@ -385,7 +385,7 @@ class DataService:
     
     def get_full_dataset_summary(self) -> str:
         """
-        Génère un résumé complet des données pour Gemini
+        Génère un résumé complet des données pour le modèle IA
         Inclut tous les indicateurs avec leurs codes
         """
         summary = "# BASE DE DONNÉES COMPLÈTE - INDICATEURS CÔTE D'IVOIRE\n\n"
@@ -407,7 +407,7 @@ class DataService:
     
     def get_compact_indicator_list(self, search_terms: Optional[List[str]] = None, max_results: int = 80) -> str:
         """
-        Génère une liste compacte code|nom|description pré-filtrée pour le prompt Gemini Phase 1.
+        Génère une liste compacte code|nom|description pré-filtrée pour le prompt IA Phase 1.
         Inclut un extrait de méthodologie pour aider l'IA à comprendre ce que mesure chaque indicateur.
         Si search_terms fourni, ne retourne que les indicateurs pertinents (~2-3K tokens).
         Sinon, retourne les indicateurs les plus courants.

@@ -102,7 +102,7 @@
                     </p>
                     <div style="background: rgba(255,140,0,0.1); border: 1px solid rgba(255,140,0,0.3); padding: 0.6rem 0.8rem; border-radius: 6px; margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-dark);">
                         <i class="fas fa-exclamation-triangle" style="color: #FF8C00;"></i>
-                        <strong>Important :</strong> La clé ressemble à <code>AIzaSy...</code> (39 caractères). Copiez-la intégralement.
+                        <strong>Important :</strong> La clé ressemble à <code>AIzaSy...</code> ou <code>AQ....</code> (nouveau format). Copiez-la intégralement.
                     </div>
                 </div>
             </div>
@@ -130,7 +130,7 @@
                         Nous allons <strong>tester la clé</strong> avant de la sauvegarder. Si elle fonctionne, elle sera chiffrée et stockée de manière sécurisée.
                     </p>
                     <div style="display: flex; gap: 0.5rem;">
-                        <input type="text" id="api-key-input" placeholder="AIzaSy..."
+                        <input type="text" id="api-key-input" placeholder="AIzaSy... ou AQ...."
                             style="flex: 1; padding: 0.75rem 1rem; border: 2px solid var(--border-light); border-radius: 8px; font-family: monospace; font-size: 0.95rem; background: var(--bg-surface); color: var(--text-dark);">
                         <button class="btn btn-primary" onclick="saveApiKey()" id="save-btn">
                             <i class="fas fa-save"></i> Tester et enregistrer
@@ -167,7 +167,7 @@
                     Comment savoir si ma clé est bien utilisée ?
                 </summary>
                 <p class="text-muted" style="margin-top: 0.5rem; font-size: 0.9rem;">
-                    Le panneau <strong>"Clé API active"</strong> en haut de cette page affiche quelle clé est utilisée (masquée). Si votre clé personnelle est active, vous verrez son début <code>AIzaSy...</code> et sa fin. Sinon, c'est la clé partagée du serveur.
+                    Le panneau <strong>"Clé API active"</strong> en haut de cette page affiche quelle clé est utilisée (masquée). Si votre clé personnelle est active, vous verrez son début (<code>AIzaSy...</code> ou <code>AQ....</code>) et sa fin. Sinon, c'est la clé partagée du serveur.
                 </p>
             </details>
             <details style="margin-bottom: 1rem;">
@@ -226,8 +226,8 @@ async function saveApiKey() {
     const btn = document.getElementById('save-btn');
     const key = input.value.trim();
 
-    if (!key || !key.startsWith('AIza')) {
-        showMessage('La clé doit commencer par "AIza..."', true);
+    if (!key || !(key.startsWith('AIza') || key.startsWith('AQ.'))) {
+        showMessage('La clé doit commencer par "AIza..." ou "AQ."', true);
         return;
     }
 

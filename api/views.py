@@ -17,7 +17,7 @@ logger = logging.getLogger('api')
 from .data_service import data_service
 from .national_data_service import national_data_service as nds
 from .anstat_sdmx_service import anstat_sdmx_service as anstat
-from .gemini_service import gemini_service, get_service_for_key
+from .ai_service import get_default_service, get_service_for_key
 from .models import UserProfile, QueryCache, Conversation, Message
 
 
@@ -76,7 +76,8 @@ def setup_api_key_page(request):
         except Exception:
             profile.clear_api_key()
     
-    server_key_masked = conf_settings.GEMINI_API_KEY[:8] + '...' + conf_settings.GEMINI_API_KEY[-4:]
+    server_key = conf_settings.GEMINI_API_KEY
+    server_key_masked = (server_key[:10] + '...' + server_key[-4:]) if server_key else 'non configurée'
     
     return render(request, 'setup_api_key.html', {
         'has_own_key': has_valid_key,
@@ -155,23 +156,26 @@ def query_data(request):
                 'remaining': 0
             }, status=status.HTTP_429_TOO_MANY_REQUESTS)
 
-    # Déterminer quel service Gemini utiliser
+    # Déterminer quel service IA utiliser (clé personnelle ou clé serveur)
     if is_authenticated and profile.has_own_key:
         user_api_key = profile.get_api_key()
         from django.conf import settings as conf_settings
         if user_api_key == conf_settings.GEMINI_API_KEY:
             logger.warning(f"User {request.user.email} has_own_key=True but decryption fell back to server key!")
+            service = get_default_service()
         else:
             logger.info(f"User {request.user.email} using personal API key (***{user_api_key[-4:]})")
-        service = get_service_for_key(user_api_key)
+            service = get_service_for_key(user_api_key)
     else:
-        service = gemini_service
-    
+        service = get_default_service()
+
     if service is None:
         return Response({
             'success': False,
-            'message': 'Le service d\'analyse n\'est pas configuré.'
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            'message': 'L\'assistant IA n\'est pas configuré sur ce serveur '
+                       '(variable d\'environnement GEMINI_API_KEY manquante). '
+                       'Les données restent consultables via le tableau de bord et le catalogue d\'indicateurs.'
+        }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
     
     # Interpréter la requête
     result = service.interpret_query(query)
@@ -232,20 +236,23 @@ def query_analysis(request):
         cached.save(update_fields=['hit_count'])
         return Response(cached.response_json)
 
-    # Determine which Gemini service to use
+    # Determine which AI service to use
     is_authenticated = request.user.is_authenticated
+    service = get_default_service()
     if is_authenticated:
         profile = _get_or_create_profile(request.user)
         if profile.has_own_key:
             user_api_key = profile.get_api_key()
-            service = get_service_for_key(user_api_key)
-        else:
-            service = gemini_service
-    else:
-        service = gemini_service
+            from django.conf import settings as conf_settings
+            if user_api_key != conf_settings.GEMINI_API_KEY:
+                service = get_service_for_key(user_api_key)
 
     if service is None:
-        return Response({'success': False, 'message': 'Service IA non configuré.'}, status=500)
+        return Response({
+            'success': False,
+            'message': 'L\'assistant IA n\'est pas configuré sur ce serveur '
+                       '(variable d\'environnement GEMINI_API_KEY manquante).'
+        }, status=503)
 
     result = service.generate_analysis(indicator_code, query, match_type, proxy_explanation)
 
@@ -728,34 +735,27 @@ def suggest_indicators(request):
 @csrf_exempt
 @api_view(['POST'])
 def save_api_key(request):
-    """Sauvegarde la clé API Gemini de l'utilisateur"""
+    """Sauvegarde la clé API Gemini (Google AI) de l'utilisateur"""
     if not request.user.is_authenticated:
         return Response({'success': False, 'message': 'Non authentifié.'}, status=401)
 
     api_key = request.data.get('api_key', '').strip()
-    if not api_key or not api_key.startswith('AIza'):
+    # Les clés Google AI commencent par "AIza" (format historique) ou "AQ."
+    # (nouveau format). Le vrai test est l'appel API minimal ci-dessous.
+    if not api_key or not (api_key.startswith('AIza') or api_key.startswith('AQ.')):
         return Response({
             'success': False,
-            'message': 'Clé API invalide. Elle doit commencer par "AIza".'
+            'message': 'Clé API invalide. Une clé Google AI commence par "AIza" ou "AQ.".'
         }, status=400)
 
-    # Vérifier que la clé fonctionne
-    import google.generativeai as genai
-    try:
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-2.5-flash')
-        model.generate_content('test')
-    except Exception as e:
-        error_str = str(e).lower()
-        if '429' in error_str or 'quota' in error_str:
-            return Response({
-                'success': False,
-                'message': 'Cette clé API a déjà épuisé son quota. Vérifiez que l\'API est bien activée sur votre projet Google.'
-            }, status=400)
-        return Response({
-            'success': False,
-            'message': f'Clé API invalide ou non fonctionnelle: {str(e)[:100]}'
-        }, status=400)
+    # Vérifier que la clé fonctionne avec un appel minimal réel
+    from django.conf import settings as conf_settings
+    from .ai_service import test_api_key
+    ok, error_message, error_status = test_api_key(
+        api_key, model=conf_settings.GEMINI_MODEL
+    )
+    if not ok:
+        return Response({'success': False, 'message': error_message}, status=error_status)
 
     profile = _get_or_create_profile(request.user)
     profile.set_api_key(api_key)
@@ -884,22 +884,20 @@ def chat_send(request):
     # Exclude the message we just added (it'll be passed as new_message)
     history = [{'role': m['role'], 'content': m['content']} for m in history[:-1]]
 
-    # Determine which Gemini service to use
+    # Determine which AI service to use
+    service = get_default_service()
     if profile.has_own_key:
         user_api_key = profile.get_api_key()
         from django.conf import settings as conf_settings
         if user_api_key != conf_settings.GEMINI_API_KEY:
             service = get_service_for_key(user_api_key)
-        else:
-            service = gemini_service
-    else:
-        service = gemini_service
 
     if service is None:
         return Response({
             'success': False,
-            'message': 'Le service d\'IA n\'est pas configuré.'
-        }, status=500)
+            'message': 'L\'assistant IA n\'est pas configuré sur ce serveur '
+                       '(variable d\'environnement GEMINI_API_KEY manquante).'
+        }, status=503)
 
     # Call Gemini chat
     result = service.chat_message(history, message_text)
