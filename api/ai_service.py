@@ -1,17 +1,19 @@
 """
-Service pour l'intégration avec l'API Gemini
+Service pour l'intégration avec l'API Claude (Anthropic)
 """
-import google.generativeai as genai
+import anthropic
 import json
 import re
 import os
-import time
 import logging
 from typing import Dict, Optional, List
 from .data_service import data_service
 from .national_data_service import national_data_service as nds
 
 logger = logging.getLogger(__name__)
+
+# Modèle par défaut (surchargé via la variable d'environnement CLAUDE_MODEL)
+DEFAULT_MODEL = os.environ.get('CLAUDE_MODEL', 'claude-sonnet-5-5')
 
 
 # Dictionnaire de synonymes pour mapper le langage naturel aux concepts des indicateurs
@@ -287,64 +289,49 @@ DIRECT_INDICATOR_MAP = {
 }
 
 
-class GeminiService:
-    """Service pour interpréter les requêtes utilisateur via Gemini"""
-    
-    MAX_RETRIES = 3
-    RETRY_BASE_DELAY = 2  # seconds
-    
-    def __init__(self, api_key: str):
+class ClaudeService:
+    """Service pour interpréter les requêtes utilisateur via l'API Claude (Anthropic)"""
+
+    def __init__(self, api_key: str, model: str = None):
         """
-        Initialise le service Gemini
-        
+        Initialise le service Claude
+
         Args:
-            api_key: Clé API Gemini
+            api_key: Clé API Anthropic (sk-ant-...)
+            model: Identifiant du modèle (défaut: DEFAULT_MODEL)
         """
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-2.5-flash')
-        self.fallback_model = genai.GenerativeModel('gemini-2.0-flash-lite')
-        self._quota_exhausted = False
-    
-    def _call_gemini(self, prompt: str, use_fallback: bool = False) -> str:
+        # Le SDK réessaie automatiquement les erreurs 429/5xx avec backoff exponentiel
+        self.client = anthropic.Anthropic(api_key=api_key, max_retries=3)
+        self.model = model or DEFAULT_MODEL
+
+    def _call_claude(self, prompt: str, system: str = None, max_tokens: int = 2048,
+                     messages: List[Dict] = None) -> str:
         """
-        Appelle l'API Gemini avec retry automatique et fallback model.
-        Retourne le texte de la réponse.
-        Lève une exception si tous les essais échouent.
+        Appelle l'API Claude et retourne le texte de la réponse.
+        Lève une exception anthropic.* en cas d'échec (après retries du SDK).
+
+        Args:
+            prompt: Message utilisateur (ignoré si `messages` est fourni)
+            system: Prompt système optionnel
+            max_tokens: Limite de tokens en sortie
+            messages: Historique complet optionnel [{'role', 'content'}, ...]
         """
-        models_to_try = [self.model, self.fallback_model] if not use_fallback else [self.fallback_model]
-        if self._quota_exhausted:
-            models_to_try = [self.fallback_model]
-        
-        last_error = None
-        for model in models_to_try:
-            for attempt in range(self.MAX_RETRIES):
-                try:
-                    response = model.generate_content(prompt)
-                    self._quota_exhausted = False
-                    return response.text
-                except Exception as e:
-                    last_error = e
-                    error_str = str(e).lower()
-                    is_quota_error = '429' in error_str or 'quota' in error_str or 'resource_exhausted' in error_str or 'resourceexhausted' in str(type(e).__name__).lower()
-                    if is_quota_error:
-                        logger.warning(f"Quota exceeded for {model.model_name} (attempt {attempt+1}/{self.MAX_RETRIES})")
-                        # If daily quota hit (limit: 0), no point retrying
-                        if 'limit: 0' in error_str or 'perdayperproject' in error_str.replace(' ', '').replace('_', ''):
-                            if model == self.model:
-                                self._quota_exhausted = True
-                                break  # Try fallback model
-                            else:
-                                raise  # Both models exhausted, fail fast
-                        if model == self.model:
-                            self._quota_exhausted = True
-                            break  # Switch to fallback model immediately
-                        delay = self.RETRY_BASE_DELAY * (2 ** attempt)
-                        time.sleep(delay)
-                    else:
-                        logger.error(f"Gemini API error: {e}")
-                        raise
-        
-        raise last_error
+        kwargs = {
+            'model': self.model,
+            'max_tokens': max_tokens,
+            'messages': messages if messages is not None
+                        else [{'role': 'user', 'content': prompt}],
+            # Fallback serveur en cas de refus de sécurité: l'API relance la
+            # requête sur un modèle adapté au lieu de s'arrêter.
+            'betas': ['server-side-fallback-2026-07-01'],
+            'fallbacks': 'default',
+        }
+        if system:
+            kwargs['system'] = system
+        response = self.client.beta.messages.create(**kwargs)
+        return ''.join(
+            block.text for block in response.content if block.type == 'text'
+        ).strip()
     
     def _enrich_query(self, user_query: str) -> str:
         """
@@ -368,7 +355,7 @@ class GeminiService:
     def _try_fallback_search(self, user_query: str) -> Optional[Dict]:
         """
         Tente une recherche par mots-clés dans la base de données
-        quand Gemini ne trouve pas de correspondance.
+        quand l'IA ne trouve pas de correspondance.
         Retourne le meilleur indicateur trouvé ou None.
         """
         query_lower = user_query.lower()
@@ -460,7 +447,7 @@ class GeminiService:
         return best_match
     
     def _clean_json_response(self, response_text: str) -> str:
-        """Nettoie la réponse de Gemini pour extraire le JSON valide."""
+        """Nettoie la réponse du modèle pour extraire le JSON valide."""
         text = response_text.strip()
         if text.startswith('```json'):
             text = text[7:]
@@ -477,7 +464,7 @@ class GeminiService:
                                      definition: str = None) -> str:
         """
         Construit un prompt d'analyse statistique avec les données réelles.
-        Phase 2: Gemini analyse les données comme un économiste/statisticien.
+        Phase 2: Claude analyse les données comme un économiste/statisticien.
         Gère les cas exact match vs proxy indicator.
         """
         # Formater les données
@@ -657,26 +644,26 @@ Réponds UNIQUEMENT en JSON:
         
         try:
             # Phase 1: Identifier l'indicateur
-            response_text = self._call_gemini(phase1_prompt)
+            response_text = self._call_claude(phase1_prompt)
             response_text = self._clean_json_response(response_text)
-            gemini_response = json.loads(response_text)
+            ai_response = json.loads(response_text)
             
-            indicator_code = gemini_response.get('indicator_code')
-            match_type = gemini_response.get('match_type', 'exact')
-            proxy_explanation = gemini_response.get('proxy_explanation')
-            start_year = gemini_response.get('start_year')
-            end_year = gemini_response.get('end_year')
-            calculation = gemini_response.get('calculation_requested')
+            indicator_code = ai_response.get('indicator_code')
+            match_type = ai_response.get('match_type', 'exact')
+            proxy_explanation = ai_response.get('proxy_explanation')
+            start_year = ai_response.get('start_year')
+            end_year = ai_response.get('end_year')
+            calculation = ai_response.get('calculation_requested')
             
-            # Fallback si Gemini échoue
-            if not gemini_response.get('success', False) or not indicator_code:
+            # Fallback si l'IA échoue
+            if not ai_response.get('success', False) or not indicator_code:
                 fallback_match = self._try_fallback_search(user_query)
                 if fallback_match:
                     indicator_code = fallback_match['code']
                 else:
                     return {
                         'success': False,
-                        'message': gemini_response.get('message',
+                        'message': ai_response.get('message',
                             'Désolé, je n\'ai pas trouvé d\'indicateur correspondant. '
                             'Essayez de préciser le thème (population, économie, santé, éducation...).'),
                         'data': [],
@@ -771,19 +758,29 @@ Réponds UNIQUEMENT en JSON:
             
         except json.JSONDecodeError as e:
             return self._handle_fallback(user_query, str(e))
+        except anthropic.AuthenticationError as e:
+            logger.error(f"Claude API: clé invalide: {e}")
+            return {
+                'success': False,
+                'message': 'La clé API du service IA est invalide ou expirée. '
+                           'Contactez l\'administrateur. En attendant, les données '
+                           'restent consultables via le tableau de bord.',
+                'data': [],
+                'chart_type': 'none',
+                'error': 'invalid_api_key'
+            }
+        except anthropic.RateLimitError as e:
+            logger.error(f"Claude API: quota dépassé: {e}")
+            return {
+                'success': False,
+                'message': '⚠️ Le service d\'intelligence artificielle est temporairement indisponible '
+                           '(limite de requêtes atteinte). Veuillez réessayer dans quelques minutes. '
+                           'En attendant, les données sont toujours consultables via le tableau de bord.',
+                'data': [],
+                'chart_type': 'none',
+                'error': 'quota_exceeded'
+            }
         except Exception as e:
-            error_str = str(e).lower()
-            if '429' in error_str or 'quota' in error_str or 'resourceexhausted' in str(type(e).__name__).lower():
-                logger.error(f"Gemini quota exhausted: {e}")
-                return {
-                    'success': False,
-                    'message': '⚠️ Le service d\'intelligence artificielle est temporairement indisponible '
-                               '(quota API dépassé). Veuillez réessayer dans quelques minutes. '
-                               'En attendant, les données sont toujours consultables via le tableau de bord.',
-                    'data': [],
-                    'chart_type': 'none',
-                    'error': 'quota_exceeded'
-                }
             return self._handle_fallback(user_query, str(e))
     
     def generate_analysis(self, indicator_code: str, user_query: str,
@@ -821,7 +818,7 @@ Réponds UNIQUEMENT en JSON:
                 definition=definition_fr
             )
             
-            analysis_text = self._call_gemini(analysis_prompt)
+            analysis_text = self._call_claude(analysis_prompt)
             analysis_text = self._clean_json_response(analysis_text)
             analysis_json = json.loads(analysis_text)
             message = analysis_json.get('analysis', '')
@@ -851,7 +848,7 @@ Réponds UNIQUEMENT en JSON:
             }
 
     def _handle_fallback(self, user_query: str, error_msg: str = '') -> Dict:
-        """Gestion unifiée du fallback quand Gemini échoue."""
+        """Gestion unifiée du fallback quand l'appel IA échoue."""
         fallback_match = self._try_fallback_search(user_query)
         if fallback_match:
             try:
@@ -981,7 +978,7 @@ Source: {source_display}""")
 --- FIN DONNÉES ---
 IMPORTANT: Cite la SOURCE de chaque indicateur (ex: "Banque Mondiale", "ANStat", "TOFE"). Ne cite JAMAIS les codes techniques."""
 
-        # Build conversation for Gemini
+        # Build conversation for Claude
         system_prompt = f"""Tu es **Ask For Data AI**, un assistant conversationnel expert en statistiques et économie, spécialisé sur la Côte d'Ivoire mais avec des connaissances généralistes en statistiques, économétrie, économie et sciences sociales.
 
 ## Ton identité
@@ -1007,33 +1004,35 @@ IMPORTANT: Cite la SOURCE de chaque indicateur (ex: "Banque Mondiale", "ANStat",
 - Si l'utilisateur pose une question vague, guide-le avec des suggestions.
 {data_section}"""
 
-        # Build message list for Gemini
-        prompt_parts = [system_prompt + "\n\n"]
-        
+        # Build message list for Claude (native multi-turn format)
         # Add conversation history (last 20 messages max)
-        recent_history = messages_history[-20:]
-        for msg in recent_history:
-            role_label = "UTILISATEUR" if msg['role'] == 'user' else "ASK FOR DATA AI"
-            prompt_parts.append(f"{role_label}: {msg['content']}\n\n")
-        
-        # Add the new message
-        prompt_parts.append(f"UTILISATEUR: {new_message}\n\nASK FOR DATA AI:")
-        
-        full_prompt = "".join(prompt_parts)
-        
+        messages = [
+            {'role': msg['role'], 'content': msg['content']}
+            for msg in messages_history[-20:]
+            if msg.get('content')
+        ]
+        messages.append({'role': 'user', 'content': new_message})
+        # L'API exige que le premier message soit un message utilisateur
+        while messages and messages[0]['role'] != 'user':
+            messages.pop(0)
+
         try:
-            response_text = self._call_gemini(full_prompt)
-            # Clean up any leading/trailing whitespace
-            response_text = response_text.strip()
+            response_text = self._call_claude(
+                prompt=None,
+                system=system_prompt,
+                max_tokens=4096,
+                messages=messages,
+            )
+        except anthropic.RateLimitError:
+            response_text = ("⚠️ Le service d'IA est temporairement surchargé (limite de requêtes atteinte). "
+                            "Veuillez réessayer dans quelques minutes.")
+        except anthropic.AuthenticationError:
+            response_text = ("⚠️ La clé API du service d'IA est invalide ou expirée. "
+                            "Contactez l'administrateur du site.")
         except Exception as e:
-            error_str = str(e).lower()
-            if '429' in error_str or 'quota' in error_str:
-                response_text = ("⚠️ Le service d'IA est temporairement surchargé (quota API dépassé). "
-                                "Veuillez réessayer dans quelques minutes.")
-            else:
-                logger.error(f"Chat error: {e}")
-                response_text = ("Désolé, une erreur est survenue lors du traitement de votre message. "
-                                "Veuillez réessayer.")
+            logger.error(f"Chat error: {e}")
+            response_text = ("Désolé, une erreur est survenue lors du traitement de votre message. "
+                            "Veuillez réessayer.")
         
         # Generate title suggestion for new conversations
         title_suggestion = None
@@ -1050,7 +1049,7 @@ IMPORTANT: Cite la SOURCE de chaque indicateur (ex: "Banque Mondiale", "ANStat",
     
     def _chat_identify_indicators(self, message: str) -> List[str]:
         """
-        Use Gemini Phase 1 to identify the correct indicator codes from a user message.
+        Use Claude Phase 1 to identify the correct indicator codes from a user message.
         Lightweight call (~1-2K tokens). Same approach as homepage interpret_query Phase 1.
         Returns list of indicator codes.
         """
@@ -1094,12 +1093,12 @@ Réponds UNIQUEMENT en JSON:
 {{"codes": ["CODE1"]}}"""
         
         try:
-            response_text = self._call_gemini(prompt)
+            response_text = self._call_claude(prompt)
             response_text = self._clean_json_response(response_text)
             result = json.loads(response_text)
             codes = result.get('codes', [])
             valid_codes = [c for c in codes if isinstance(c, str) and c]
-            logger.info(f"Chat Gemini Phase 1: {valid_codes}")
+            logger.info(f"Chat Claude Phase 1: {valid_codes}")
             return valid_codes
         except Exception as e:
             logger.error(f"Chat indicator identification error: {e}")
@@ -1110,8 +1109,8 @@ Réponds UNIQUEMENT en JSON:
         Detects if the user message requires data from the database.
         Uses a 3-tier approach:
           1. Direct map (fast, for simple queries)
-          2. Gemini Phase 1 (accurate, for complex queries)
-          3. Keyword fallback (if Gemini fails)
+          2. Claude Phase 1 (accurate, for complex queries)
+          3. Keyword fallback (if Claude fails)
         Returns a LIST of data contexts (supports multiple indicators per message).
         """
         msg_lower = message.lower()
@@ -1154,7 +1153,7 @@ Réponds UNIQUEMENT en JSON:
         longest_match_len = max((len(k) for k in matched_keys), default=0)
         
         # For SIMPLE queries (short, or longest match covers most of the query),
-        # trust the direct map. For COMPLEX queries, prefer Gemini Phase 1.
+        # trust the direct map. For COMPLEX queries, prefer Claude Phase 1.
         is_simple = query_words <= 3 or (longest_match_len / max(len(msg_lower), 1)) > 0.5
         
         if is_simple and matched_keys:
@@ -1165,10 +1164,10 @@ Réponds UNIQUEMENT en JSON:
                     codes_to_fetch.append(code)
                     logger.info(f"Chat direct map: '{key}' → {code}")
         
-        # Step 2: Gemini Phase 1 for complex queries or when direct map fails
+        # Step 2: Claude Phase 1 for complex queries or when direct map fails
         if not codes_to_fetch or not is_simple:
-            gemini_codes = self._chat_identify_indicators(message)
-            for code in gemini_codes:
+            ai_codes = self._chat_identify_indicators(message)
+            for code in ai_codes:
                 if code not in seen_codes:
                     seen_codes.add(code)
                     codes_to_fetch.append(code)
@@ -1227,25 +1226,38 @@ Réponds UNIQUEMENT en JSON:
 
 
 # Instance globale (sera initialisée dans settings.py)
-gemini_service = None
+_default_service = None
 
 # Cache des services par clé API (pour ne pas recréer à chaque requête)
 _user_services = {}
 
 
-def get_service_for_key(api_key: str) -> 'GeminiService':
-    """Retourne un GeminiService pour une clé API donnée (avec cache)"""
+def get_default_service() -> Optional['ClaudeService']:
+    """
+    Retourne le service Claude configuré avec la clé serveur (ANTHROPIC_API_KEY),
+    ou None si aucune clé n'est configurée. Initialisation paresseuse.
+    """
+    global _default_service
+    if _default_service is None:
+        from django.conf import settings
+        api_key = getattr(settings, 'ANTHROPIC_API_KEY', '')
+        if api_key:
+            model = getattr(settings, 'CLAUDE_MODEL', DEFAULT_MODEL)
+            _default_service = ClaudeService(api_key, model=model)
+        else:
+            logger.warning(
+                "ANTHROPIC_API_KEY non configurée: l'assistant IA est désactivé. "
+                "Définissez la variable d'environnement pour l'activer."
+            )
+    return _default_service
+
+
+def get_service_for_key(api_key: str) -> 'ClaudeService':
+    """Retourne un ClaudeService pour une clé API donnée (avec cache)"""
     if api_key not in _user_services:
-        _user_services[api_key] = GeminiService(api_key)
+        _user_services[api_key] = ClaudeService(api_key)
         # Limiter la taille du cache
         if len(_user_services) > 100:
             oldest = list(_user_services.keys())[0]
             del _user_services[oldest]
     return _user_services[api_key]
-
-
-def init_gemini_service(api_key: str):
-    """Initialise le service Gemini avec la clé API"""
-    global gemini_service
-    gemini_service = GeminiService(api_key)
-    return gemini_service

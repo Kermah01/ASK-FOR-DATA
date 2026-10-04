@@ -20,7 +20,9 @@ load_dotenv(Path(__file__).resolve().parent.parent / '.env')
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ─── Security ────────────────────────────────────────────────────────
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-j7#!y5y4ypa%65c_-%b=%9-80!xm!(z!vv9r1^y9e19=+2ns^*')
+# En production, DJANGO_SECRET_KEY doit impérativement être définie (le
+# fallback ci-dessous ne sert qu'au développement local).
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-dev-only-ne-pas-utiliser-en-production')
 
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() in ('true', '1', 'yes')
 
@@ -153,7 +155,10 @@ STATICFILES_STORAGE = 'whitenoise.storage.StaticFilesStorage'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ─── API Keys (use environment variables in production!) ─────────────
-GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
+# Clé API Anthropic (Claude) — jamais en dur dans le code.
+ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
+# Modèle Claude utilisé par l'assistant IA (optionnel)
+CLAUDE_MODEL = os.environ.get('CLAUDE_MODEL', 'claude-sonnet-5-5')
 FERNET_KEY = os.environ.get('FERNET_KEY', '')
 
 # REST Framework
@@ -220,7 +225,6 @@ LOGGING = {
     },
 }
 
-# ─── Initialize Gemini at startup ────────────────────────────────────
-if GEMINI_API_KEY:
-    from api.gemini_service import init_gemini_service
-    init_gemini_service(GEMINI_API_KEY)
+# Le service IA (api/ai_service.py) est initialisé paresseusement au premier
+# appel via get_default_service(); si ANTHROPIC_API_KEY est absente, les
+# endpoints IA renvoient un message clair au lieu de planter.

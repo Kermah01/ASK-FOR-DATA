@@ -6,7 +6,7 @@ from cryptography.fernet import Fernet
 
 
 class UserProfile(models.Model):
-    """Profil utilisateur avec clé API Gemini et suivi de quota"""
+    """Profil utilisateur avec clé API Anthropic (Claude) et suivi de quota"""
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     encrypted_api_key = models.TextField(blank=True, null=True)
     has_own_key = models.BooleanField(default=False)
@@ -32,8 +32,8 @@ class UserProfile(models.Model):
                 f = Fernet(settings.FERNET_KEY.encode())
                 return f.decrypt(self.encrypted_api_key.encode()).decode()
             except Exception:
-                return settings.GEMINI_API_KEY
-        return settings.GEMINI_API_KEY
+                return settings.ANTHROPIC_API_KEY
+        return settings.ANTHROPIC_API_KEY
 
     def clear_api_key(self):
         """Supprime la clé API personnelle"""
@@ -106,7 +106,7 @@ class Message(models.Model):
 
 
 class QueryCache(models.Model):
-    """Cache des réponses Gemini pour éviter les appels redondants"""
+    """Cache des réponses IA pour éviter les appels redondants"""
     query_hash = models.CharField(max_length=64, unique=True, db_index=True)
     query_text = models.TextField()
     response_json = models.JSONField()
