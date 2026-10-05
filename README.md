@@ -16,7 +16,7 @@ Plateforme web qui démocratise l'accès aux statistiques économiques et social
 | Couche | Technologie |
 |--------|------------|
 | Backend | Django 5.2, Django REST Framework |
-| IA | API Gemini de Google (SDK officiel `google-genai`, modèle `gemini-2.5-flash`) |
+| IA | API Gemini de Google (SDK `google-generativeai`, modèle `gemini-2.5-flash`, secours `gemini-3.5-flash-lite`) |
 | Données | Fichiers Excel lus en mémoire via pandas / openpyxl |
 | Frontend | HTML / CSS / JavaScript, ECharts, Leaflet |
 | Auth | django-allauth (email + Google OAuth) |
@@ -25,7 +25,7 @@ Plateforme web qui démocratise l'accès aux statistiques économiques et social
 
 ## Architecture de l'assistant IA
 
-L'intégration IA (`api/ai_service.py`) fonctionne en deux phases pour garantir des réponses fiables :
+L'intégration IA (`api/gemini_service.py`) fonctionne en deux phases pour garantir des réponses fiables :
 
 1. **Phase 1 — Identification** : la question est enrichie par un dictionnaire de synonymes métier, puis Gemini sélectionne le code de l'indicateur le plus pertinent dans un catalogue pré-filtré (réponse JSON structurée).
 2. **Phase 2 — Analyse** : les données réelles de l'indicateur (plus des statistiques pré-calculées : min, max, moyenne, variation) sont fournies à Gemini, qui rédige une analyse d'économiste sans jamais inventer de chiffres.
@@ -87,7 +87,6 @@ bash start.sh                        # Gunicorn
 |----------|--------|-------------|
 | `DJANGO_SECRET_KEY` | Oui | Clé secrète Django (50+ caractères aléatoires) |
 | `GEMINI_API_KEY` | Oui (pour l'IA) | Clé API Gemini (Google AI) — `AIza...` ou `AQ....` |
-| `GEMINI_MODEL` | Non | Modèle Gemini (défaut : `gemini-2.5-flash`) |
 | `FERNET_KEY` | Oui | Clé de chiffrement des clés API utilisateurs |
 | `DJANGO_DEBUG` | Non | `True` en dev, `False` par défaut |
 | `DJANGO_ALLOWED_HOSTS` | Oui (prod) | Domaines autorisés, séparés par des virgules |

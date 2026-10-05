@@ -157,8 +157,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # ─── API Keys (use environment variables in production!) ─────────────
 # Clé API Gemini (Google AI) — jamais en dur dans le code.
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
-# Modèle Gemini utilisé par l'assistant IA (optionnel)
-GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-2.5-flash')
 FERNET_KEY = os.environ.get('FERNET_KEY', '')
 
 # REST Framework
@@ -228,6 +226,7 @@ LOGGING = {
     },
 }
 
-# Le service IA (api/ai_service.py) est initialisé paresseusement au premier
-# appel via get_default_service(); si GEMINI_API_KEY est absente, les
+# ─── Gemini ──────────────────────────────────────────────────────────
+# Le service Gemini (api/gemini_service.py) est initialisé paresseusement au
+# premier appel via get_default_service() ; si GEMINI_API_KEY est absente, les
 # endpoints IA renvoient un message clair au lieu de planter.
