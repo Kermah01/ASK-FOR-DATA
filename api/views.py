@@ -17,7 +17,7 @@ logger = logging.getLogger('api')
 from .data_service import data_service
 from .national_data_service import national_data_service as nds
 from .anstat_sdmx_service import anstat_sdmx_service as anstat
-from .ai_service import get_default_service, get_service_for_key
+from .gemini_service import get_default_service, get_service_for_key
 from .models import UserProfile, QueryCache, Conversation, Message
 
 
@@ -77,7 +77,7 @@ def setup_api_key_page(request):
             profile.clear_api_key()
     
     server_key = conf_settings.GEMINI_API_KEY
-    server_key_masked = (server_key[:10] + '...' + server_key[-4:]) if server_key else 'non configurée'
+    server_key_masked = (server_key[:8] + '...' + server_key[-4:]) if server_key else 'non configurée'
     
     return render(request, 'setup_api_key.html', {
         'has_own_key': has_valid_key,
@@ -174,7 +174,7 @@ def query_data(request):
                 'remaining': 0
             }, status=status.HTTP_429_TOO_MANY_REQUESTS)
 
-    # Déterminer quel service IA utiliser (clé personnelle ou clé serveur)
+    # Déterminer quel service Gemini utiliser
     if is_authenticated and profile.has_own_key:
         user_api_key = profile.get_api_key()
         from django.conf import settings as conf_settings
@@ -213,8 +213,9 @@ def query_data(request):
         except Exception:
             logger.exception("Écriture de session impossible (quota anonyme ignoré).")
 
-    # Mettre en cache les résultats réussis
-    if result.get('success'):
+    # Mettre en cache les résultats réussis (sauf réponse dégradée produite
+    # sans l'IA, ex. quota Gemini atteint : elle serait resservie telle quelle)
+    if result.get('success') and not result.get('fallback'):
         try:
             QueryCache.objects.update_or_create(
                 query_hash=query_hash,
@@ -265,7 +266,7 @@ def query_analysis(request):
             logger.exception("Mise à jour du compteur de cache impossible (ignorée).")
         return Response(cached.response_json)
 
-    # Determine which AI service to use
+    # Determine which Gemini service to use
     is_authenticated = request.user.is_authenticated
     service = get_default_service()
     if is_authenticated:
@@ -285,8 +286,8 @@ def query_analysis(request):
 
     result = service.generate_analysis(indicator_code, query, match_type, proxy_explanation)
 
-    # Cache successful analysis
-    if result.get('success'):
+    # Cache successful analysis (sauf analyse dégradée produite sans l'IA)
+    if result.get('success') and not result.get('fallback'):
         try:
             QueryCache.objects.update_or_create(
                 query_hash=analysis_cache_key,
@@ -764,27 +765,36 @@ def suggest_indicators(request):
 @csrf_exempt
 @api_view(['POST'])
 def save_api_key(request):
-    """Sauvegarde la clé API Gemini (Google AI) de l'utilisateur"""
+    """Sauvegarde la clé API Gemini de l'utilisateur"""
     if not request.user.is_authenticated:
         return Response({'success': False, 'message': 'Non authentifié.'}, status=401)
 
     api_key = request.data.get('api_key', '').strip()
     # Les clés Google AI commencent par "AIza" (format historique) ou "AQ."
-    # (nouveau format). Le vrai test est l'appel API minimal ci-dessous.
+    # (nouveau format délivré par Google AI Studio).
     if not api_key or not (api_key.startswith('AIza') or api_key.startswith('AQ.')):
         return Response({
             'success': False,
-            'message': 'Clé API invalide. Une clé Google AI commence par "AIza" ou "AQ.".'
+            'message': 'Clé API invalide. Elle doit commencer par "AIza" ou "AQ.".'
         }, status=400)
 
-    # Vérifier que la clé fonctionne avec un appel minimal réel
-    from django.conf import settings as conf_settings
-    from .ai_service import test_api_key
-    ok, error_message, error_status = test_api_key(
-        api_key, model=conf_settings.GEMINI_MODEL
-    )
-    if not ok:
-        return Response({'success': False, 'message': error_message}, status=error_status)
+    # Vérifier que la clé fonctionne
+    import google.generativeai as genai
+    try:
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        model.generate_content('test')
+    except Exception as e:
+        error_str = str(e).lower()
+        if '429' in error_str or 'quota' in error_str:
+            return Response({
+                'success': False,
+                'message': 'Cette clé API a déjà épuisé son quota. Vérifiez que l\'API est bien activée sur votre projet Google.'
+            }, status=400)
+        return Response({
+            'success': False,
+            'message': f'Clé API invalide ou non fonctionnelle: {str(e)[:100]}'
+        }, status=400)
 
     profile = _get_or_create_profile(request.user)
     profile.set_api_key(api_key)
@@ -913,7 +923,7 @@ def chat_send(request):
     # Exclude the message we just added (it'll be passed as new_message)
     history = [{'role': m['role'], 'content': m['content']} for m in history[:-1]]
 
-    # Determine which AI service to use
+    # Determine which Gemini service to use
     service = get_default_service()
     if profile.has_own_key:
         user_api_key = profile.get_api_key()

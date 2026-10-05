@@ -1,43 +1,18 @@
 """
-Service pour l'intégration avec l'API Gemini (Google)
-
-Utilise le SDK officiel actuel `google-genai` (et non l'ancien
-`google-generativeai`, abandonné par Google).
+Service pour l'intégration avec l'API Gemini
 """
+import google.generativeai as genai
+from google.generativeai import client as genai_client
 import json
 import re
 import os
+import time
 import logging
-from typing import Dict, Optional, List, Tuple
-
-from google import genai
-from google.genai import types as genai_types
-from google.genai import errors as genai_errors
-
+from typing import Dict, Optional, List
 from .data_service import data_service
 from .national_data_service import national_data_service as nds
 
 logger = logging.getLogger(__name__)
-
-# Modèle par défaut : un modèle flash disponible dans le niveau gratuit de
-# l'API Gemini (surchargeable via la variable d'environnement GEMINI_MODEL)
-DEFAULT_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-2.5-flash')
-
-
-def is_auth_error(e: Exception) -> bool:
-    """Vrai si l'erreur API correspond à une clé invalide/révoquée."""
-    if isinstance(e, genai_errors.APIError):
-        if e.code in (401, 403):
-            return True
-        # L'API Gemini renvoie 400 INVALID_ARGUMENT pour une clé mal formée
-        msg = (e.message or '').lower()
-        return e.code == 400 and 'api key' in msg
-    return False
-
-
-def is_quota_error(e: Exception) -> bool:
-    """Vrai si l'erreur API correspond à un quota/limite de débit dépassé (429)."""
-    return isinstance(e, genai_errors.APIError) and e.code == 429
 
 
 # Dictionnaire de synonymes pour mapper le langage naturel aux concepts des indicateurs
@@ -314,72 +289,77 @@ DIRECT_INDICATOR_MAP = {
 
 
 class GeminiService:
-    """Service pour interpréter les requêtes utilisateur via l'API Gemini (Google)"""
-
-    def __init__(self, api_key: str, model: str = None):
+    """Service pour interpréter les requêtes utilisateur via Gemini"""
+    
+    MAX_RETRIES = 3
+    RETRY_BASE_DELAY = 2  # seconds
+    
+    def __init__(self, api_key: str):
         """
         Initialise le service Gemini
-
+        
         Args:
-            api_key: Clé API Google AI (AIza... ou AQ....)
-            model: Identifiant du modèle (défaut: DEFAULT_MODEL)
+            api_key: Clé API Gemini
         """
-        # Retries automatiques sur 429/5xx avec backoff exponentiel
-        self.client = genai.Client(
-            api_key=api_key,
-            http_options=genai_types.HttpOptions(
-                retry_options=genai_types.HttpRetryOptions(attempts=3),
-            ),
-        )
-        self.model = model or DEFAULT_MODEL
-
-    def _build_config(self, system: str = None, max_tokens: int = 2048,
-                      json_output: bool = False) -> genai_types.GenerateContentConfig:
-        """Construit la configuration de génération pour l'API Gemini."""
-        kwargs = {'max_output_tokens': max_tokens}
-        if system:
-            kwargs['system_instruction'] = system
-        if json_output:
-            kwargs['response_mime_type'] = 'application/json'
-        # Les modèles 2.5 Flash "réfléchissent" par défaut, ce qui consomme le
-        # budget de tokens et ralentit la réponse : on désactive le thinking
-        # (non supporté par les modèles Pro, d'où le garde-fou sur le nom).
-        model_name = (self.model or '').lower()
-        if '2.5' in model_name and 'pro' not in model_name:
-            kwargs['thinking_config'] = genai_types.ThinkingConfig(thinking_budget=0)
-        return genai_types.GenerateContentConfig(**kwargs)
-
-    def _call_gemini(self, prompt: str, system: str = None, max_tokens: int = 2048,
-                     messages: List[Dict] = None, json_output: bool = False) -> str:
+        genai.configure(api_key=api_key)
+        self.model = genai.GenerativeModel('gemini-2.5-flash')
+        # Modèle de secours (utilisé quand gemini-2.5-flash renvoie 429) :
+        # 'gemini-2.0-flash-lite' (modèle d'origine) a été retiré par Google
+        # (404 "no longer available"), et 'gemini-2.5-flash-lite' n'est plus
+        # ouvert aux nouveaux utilisateurs ; on utilise le modèle "lite"
+        # recommandé par Google dans le message d'erreur. Surchargeable via
+        # la variable d'environnement GEMINI_FALLBACK_MODEL.
+        self.fallback_model = genai.GenerativeModel(
+            os.environ.get('GEMINI_FALLBACK_MODEL', 'gemini-3.5-flash-lite'))
+        # genai.configure() est global au module : on lie explicitement les
+        # modèles au client créé pour CETTE clé, pour que la clé personnelle
+        # d'un utilisateur (ou le test d'une clé) ne remplace pas la clé
+        # serveur des autres instances.
+        _client = genai_client.get_default_generative_client()
+        self.model._client = _client
+        self.fallback_model._client = _client
+        self._quota_exhausted = False
+    
+    def _call_gemini(self, prompt: str, use_fallback: bool = False) -> str:
         """
-        Appelle l'API Gemini et retourne le texte de la réponse.
-        Lève une exception google.genai.errors.* en cas d'échec (après retries).
-
-        Args:
-            prompt: Message utilisateur (ignoré si `messages` est fourni)
-            system: Prompt système optionnel
-            max_tokens: Limite de tokens en sortie
-            messages: Historique complet optionnel [{'role', 'content'}, ...]
-                      (rôles 'user'/'assistant', convertis au format Gemini)
-            json_output: Si True, force une réponse au format JSON
+        Appelle l'API Gemini avec retry automatique et fallback model.
+        Retourne le texte de la réponse.
+        Lève une exception si tous les essais échouent.
         """
-        if messages is not None:
-            # Format multi-tours natif Gemini: role 'user' ou 'model'
-            contents = [
-                genai_types.Content(
-                    role='model' if msg['role'] == 'assistant' else 'user',
-                    parts=[genai_types.Part.from_text(text=msg['content'])],
-                )
-                for msg in messages
-            ]
-        else:
-            contents = prompt
-        response = self.client.models.generate_content(
-            model=self.model,
-            contents=contents,
-            config=self._build_config(system, max_tokens, json_output),
-        )
-        return (response.text or '').strip()
+        models_to_try = [self.model, self.fallback_model] if not use_fallback else [self.fallback_model]
+        if self._quota_exhausted:
+            models_to_try = [self.fallback_model]
+        
+        last_error = None
+        for model in models_to_try:
+            for attempt in range(self.MAX_RETRIES):
+                try:
+                    response = model.generate_content(prompt)
+                    self._quota_exhausted = False
+                    return response.text
+                except Exception as e:
+                    last_error = e
+                    error_str = str(e).lower()
+                    is_quota_error = '429' in error_str or 'quota' in error_str or 'resource_exhausted' in error_str or 'resourceexhausted' in str(type(e).__name__).lower()
+                    if is_quota_error:
+                        logger.warning(f"Quota exceeded for {model.model_name} (attempt {attempt+1}/{self.MAX_RETRIES})")
+                        # If daily quota hit (limit: 0), no point retrying
+                        if 'limit: 0' in error_str or 'perdayperproject' in error_str.replace(' ', '').replace('_', ''):
+                            if model == self.model:
+                                self._quota_exhausted = True
+                                break  # Try fallback model
+                            else:
+                                raise  # Both models exhausted, fail fast
+                        if model == self.model:
+                            self._quota_exhausted = True
+                            break  # Switch to fallback model immediately
+                        delay = self.RETRY_BASE_DELAY * (2 ** attempt)
+                        time.sleep(delay)
+                    else:
+                        logger.error(f"Gemini API error: {e}")
+                        raise
+        
+        raise last_error
     
     def _enrich_query(self, user_query: str) -> str:
         """
@@ -403,7 +383,7 @@ class GeminiService:
     def _try_fallback_search(self, user_query: str) -> Optional[Dict]:
         """
         Tente une recherche par mots-clés dans la base de données
-        quand l'IA ne trouve pas de correspondance.
+        quand Gemini ne trouve pas de correspondance.
         Retourne le meilleur indicateur trouvé ou None.
         """
         query_lower = user_query.lower()
@@ -495,7 +475,7 @@ class GeminiService:
         return best_match
     
     def _clean_json_response(self, response_text: str) -> str:
-        """Nettoie la réponse du modèle pour extraire le JSON valide."""
+        """Nettoie la réponse de Gemini pour extraire le JSON valide."""
         text = response_text.strip()
         if text.startswith('```json'):
             text = text[7:]
@@ -692,26 +672,26 @@ Réponds UNIQUEMENT en JSON:
         
         try:
             # Phase 1: Identifier l'indicateur
-            response_text = self._call_gemini(phase1_prompt, json_output=True)
+            response_text = self._call_gemini(phase1_prompt)
             response_text = self._clean_json_response(response_text)
-            ai_response = json.loads(response_text)
+            gemini_response = json.loads(response_text)
             
-            indicator_code = ai_response.get('indicator_code')
-            match_type = ai_response.get('match_type', 'exact')
-            proxy_explanation = ai_response.get('proxy_explanation')
-            start_year = ai_response.get('start_year')
-            end_year = ai_response.get('end_year')
-            calculation = ai_response.get('calculation_requested')
+            indicator_code = gemini_response.get('indicator_code')
+            match_type = gemini_response.get('match_type', 'exact')
+            proxy_explanation = gemini_response.get('proxy_explanation')
+            start_year = gemini_response.get('start_year')
+            end_year = gemini_response.get('end_year')
+            calculation = gemini_response.get('calculation_requested')
             
-            # Fallback si l'IA échoue
-            if not ai_response.get('success', False) or not indicator_code:
+            # Fallback si Gemini échoue
+            if not gemini_response.get('success', False) or not indicator_code:
                 fallback_match = self._try_fallback_search(user_query)
                 if fallback_match:
                     indicator_code = fallback_match['code']
                 else:
                     return {
                         'success': False,
-                        'message': ai_response.get('message',
+                        'message': gemini_response.get('message',
                             'Désolé, je n\'ai pas trouvé d\'indicateur correspondant. '
                             'Essayez de préciser le thème (population, économie, santé, éducation...).'),
                         'data': [],
@@ -806,32 +786,19 @@ Réponds UNIQUEMENT en JSON:
             
         except json.JSONDecodeError as e:
             return self._handle_fallback(user_query, str(e))
-        except genai_errors.APIError as e:
-            if is_auth_error(e):
-                logger.error(f"Gemini API: clé invalide: {e}")
-                return {
-                    'success': False,
-                    'message': 'La clé API du service IA est invalide ou expirée. '
-                               'Contactez l\'administrateur. En attendant, les données '
-                               'restent consultables via le tableau de bord.',
-                    'data': [],
-                    'chart_type': 'none',
-                    'error': 'invalid_api_key'
-                }
-            if is_quota_error(e):
-                logger.error(f"Gemini API: quota dépassé: {e}")
+        except Exception as e:
+            error_str = str(e).lower()
+            if '429' in error_str or 'quota' in error_str or 'resourceexhausted' in str(type(e).__name__).lower():
+                logger.error(f"Gemini quota exhausted: {e}")
                 return {
                     'success': False,
                     'message': '⚠️ Le service d\'intelligence artificielle est temporairement indisponible '
-                               '(limite de requêtes atteinte). Veuillez réessayer dans quelques minutes. '
+                               '(quota API dépassé). Veuillez réessayer dans quelques minutes. '
                                'En attendant, les données sont toujours consultables via le tableau de bord.',
                     'data': [],
                     'chart_type': 'none',
                     'error': 'quota_exceeded'
                 }
-            logger.error(f"Gemini API: erreur {e.code}: {e}")
-            return self._handle_fallback(user_query, str(e))
-        except Exception as e:
             return self._handle_fallback(user_query, str(e))
     
     def generate_analysis(self, indicator_code: str, user_query: str,
@@ -869,7 +836,7 @@ Réponds UNIQUEMENT en JSON:
                 definition=definition_fr
             )
             
-            analysis_text = self._call_gemini(analysis_prompt, json_output=True)
+            analysis_text = self._call_gemini(analysis_prompt)
             analysis_text = self._clean_json_response(analysis_text)
             analysis_json = json.loads(analysis_text)
             message = analysis_json.get('analysis', '')
@@ -895,11 +862,12 @@ Réponds UNIQUEMENT en JSON:
             return {
                 'success': True,
                 'message': msg,
-                'related_indicators': []
+                'related_indicators': [],
+                'fallback': True  # réponse dégradée : ne pas la mettre en cache
             }
 
     def _handle_fallback(self, user_query: str, error_msg: str = '') -> Dict:
-        """Gestion unifiée du fallback quand l'appel IA échoue."""
+        """Gestion unifiée du fallback quand Gemini échoue."""
         fallback_match = self._try_fallback_search(user_query)
         if fallback_match:
             try:
@@ -933,7 +901,8 @@ Réponds UNIQUEMENT en JSON:
                         'calculation_result': None,
                         'calculation_formula': None,
                         'chart_type': 'line' if len(values) > 1 else 'bar',
-                        'related_indicators': data_service.get_related_indicators(fallback_match['code'], limit=5)
+                        'related_indicators': data_service.get_related_indicators(fallback_match['code'], limit=5),
+                        'fallback': True  # réponse dégradée : ne pas la mettre en cache
                     }
             except:
                 pass
@@ -1055,40 +1024,33 @@ IMPORTANT: Cite la SOURCE de chaque indicateur (ex: "Banque Mondiale", "ANStat",
 - Si l'utilisateur pose une question vague, guide-le avec des suggestions.
 {data_section}"""
 
-        # Build message list for Gemini (native multi-turn format)
+        # Build message list for Gemini
+        prompt_parts = [system_prompt + "\n\n"]
+        
         # Add conversation history (last 20 messages max)
-        messages = [
-            {'role': msg['role'], 'content': msg['content']}
-            for msg in messages_history[-20:]
-            if msg.get('content')
-        ]
-        messages.append({'role': 'user', 'content': new_message})
-        # L'API exige que le premier message soit un message utilisateur
-        while messages and messages[0]['role'] != 'user':
-            messages.pop(0)
-
+        recent_history = messages_history[-20:]
+        for msg in recent_history:
+            role_label = "UTILISATEUR" if msg['role'] == 'user' else "ASK FOR DATA AI"
+            prompt_parts.append(f"{role_label}: {msg['content']}\n\n")
+        
+        # Add the new message
+        prompt_parts.append(f"UTILISATEUR: {new_message}\n\nASK FOR DATA AI:")
+        
+        full_prompt = "".join(prompt_parts)
+        
         try:
-            response_text = self._call_gemini(
-                prompt=None,
-                system=system_prompt,
-                max_tokens=4096,
-                messages=messages,
-            )
-        except genai_errors.APIError as e:
-            if is_quota_error(e):
-                response_text = ("⚠️ Le service d'IA est temporairement surchargé (limite de requêtes atteinte). "
+            response_text = self._call_gemini(full_prompt)
+            # Clean up any leading/trailing whitespace
+            response_text = response_text.strip()
+        except Exception as e:
+            error_str = str(e).lower()
+            if '429' in error_str or 'quota' in error_str:
+                response_text = ("⚠️ Le service d'IA est temporairement surchargé (quota API dépassé). "
                                 "Veuillez réessayer dans quelques minutes.")
-            elif is_auth_error(e):
-                response_text = ("⚠️ La clé API du service d'IA est invalide ou expirée. "
-                                "Contactez l'administrateur du site.")
             else:
-                logger.error(f"Chat Gemini API error {e.code}: {e}")
+                logger.error(f"Chat error: {e}")
                 response_text = ("Désolé, une erreur est survenue lors du traitement de votre message. "
                                 "Veuillez réessayer.")
-        except Exception as e:
-            logger.error(f"Chat error: {e}")
-            response_text = ("Désolé, une erreur est survenue lors du traitement de votre message. "
-                            "Veuillez réessayer.")
         
         # Generate title suggestion for new conversations
         title_suggestion = None
@@ -1149,7 +1111,7 @@ Réponds UNIQUEMENT en JSON:
 {{"codes": ["CODE1"]}}"""
         
         try:
-            response_text = self._call_gemini(prompt, json_output=True)
+            response_text = self._call_gemini(prompt)
             response_text = self._clean_json_response(response_text)
             result = json.loads(response_text)
             codes = result.get('codes', [])
@@ -1222,8 +1184,8 @@ Réponds UNIQUEMENT en JSON:
         
         # Step 2: Gemini Phase 1 for complex queries or when direct map fails
         if not codes_to_fetch or not is_simple:
-            ai_codes = self._chat_identify_indicators(message)
-            for code in ai_codes:
+            gemini_codes = self._chat_identify_indicators(message)
+            for code in gemini_codes:
                 if code not in seen_codes:
                     seen_codes.add(code)
                     codes_to_fetch.append(code)
@@ -1281,31 +1243,11 @@ Réponds UNIQUEMENT en JSON:
             return "Banque Mondiale (World Development Indicators)"
 
 
-# Instance globale (initialisée paresseusement)
-_default_service = None
+# Instance globale (sera initialisée dans settings.py)
+gemini_service = None
 
 # Cache des services par clé API (pour ne pas recréer à chaque requête)
 _user_services = {}
-
-
-def get_default_service() -> Optional['GeminiService']:
-    """
-    Retourne le service Gemini configuré avec la clé serveur (GEMINI_API_KEY),
-    ou None si aucune clé n'est configurée. Initialisation paresseuse.
-    """
-    global _default_service
-    if _default_service is None:
-        from django.conf import settings
-        api_key = getattr(settings, 'GEMINI_API_KEY', '')
-        if api_key:
-            model = getattr(settings, 'GEMINI_MODEL', DEFAULT_MODEL)
-            _default_service = GeminiService(api_key, model=model)
-        else:
-            logger.warning(
-                "GEMINI_API_KEY non configurée: l'assistant IA est désactivé. "
-                "Définissez la variable d'environnement pour l'activer."
-            )
-    return _default_service
 
 
 def get_service_for_key(api_key: str) -> 'GeminiService':
@@ -1319,33 +1261,24 @@ def get_service_for_key(api_key: str) -> 'GeminiService':
     return _user_services[api_key]
 
 
-def test_api_key(api_key: str, model: str = None) -> Tuple[bool, str, int]:
-    """
-    Teste une clé API Gemini par un appel minimal réel (et non par le seul
-    préfixe). Utilisé lors de l'enregistrement d'une clé personnelle.
+def init_gemini_service(api_key: str):
+    """Initialise le service Gemini avec la clé API"""
+    global gemini_service
+    gemini_service = GeminiService(api_key)
+    return gemini_service
 
-    Returns:
-        (ok, message_erreur, http_status) — ok=True si la clé fonctionne.
+
+def get_default_service() -> Optional['GeminiService']:
     """
-    try:
-        client = genai.Client(api_key=api_key)
-        client.models.generate_content(
-            model=model or DEFAULT_MODEL,
-            contents='ping',
-            config=genai_types.GenerateContentConfig(max_output_tokens=1),
-        )
-        return True, '', 200
-    except genai_errors.APIError as e:
-        if is_auth_error(e):
-            return (False, 'Clé API invalide ou révoquée. '
-                           'Vérifiez-la dans Google AI Studio (aistudio.google.com).', 400)
-        if is_quota_error(e):
-            return (False, 'Cette clé API a atteint sa limite de requêtes (quota gratuit épuisé). '
-                           'Réessayez dans quelques minutes.', 400)
-        if isinstance(e, genai_errors.ServerError):
-            return (False, 'L\'API Gemini est temporairement indisponible pour tester la clé. '
-                           'Réessayez plus tard.', 502)
-        return False, f'Clé API invalide ou non fonctionnelle: {str(e)[:100]}', 400
-    except Exception as e:
-        return (False, 'Impossible de joindre l\'API Gemini pour tester la clé. '
-                       f'Réessayez plus tard. ({str(e)[:80]})', 502)
+    Retourne le service Gemini de la clé serveur (variable d'environnement
+    GEMINI_API_KEY), initialisé au premier appel. Retourne None si la clé
+    n'est pas configurée (les vues renvoient alors un message clair).
+    """
+    if gemini_service is None:
+        from django.conf import settings
+        api_key = getattr(settings, 'GEMINI_API_KEY', '')
+        if api_key:
+            init_gemini_service(api_key)
+        else:
+            logger.warning("GEMINI_API_KEY non configurée : l'assistant IA est désactivé.")
+    return gemini_service

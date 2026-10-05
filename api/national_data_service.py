@@ -930,7 +930,7 @@ class NationalDataService:
 
     def get_compact_indicator_list(self):
         """
-        Retourne une liste compacte CODE|NOM|DESCRIPTION pour le prompt IA Phase 1.
+        Retourne une liste compacte CODE|NOM|DESCRIPTION pour le prompt Gemini Phase 1.
         """
         lines = []
         for full_key, meta in self.INDICATOR_META.items():

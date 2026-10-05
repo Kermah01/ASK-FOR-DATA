@@ -6,7 +6,7 @@ from cryptography.fernet import Fernet
 
 
 class UserProfile(models.Model):
-    """Profil utilisateur avec clé API Gemini (Google) et suivi de quota"""
+    """Profil utilisateur avec clé API Gemini et suivi de quota"""
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     encrypted_api_key = models.TextField(blank=True, null=True)
     has_own_key = models.BooleanField(default=False)
@@ -106,7 +106,7 @@ class Message(models.Model):
 
 
 class QueryCache(models.Model):
-    """Cache des réponses IA pour éviter les appels redondants"""
+    """Cache des réponses Gemini pour éviter les appels redondants"""
     query_hash = models.CharField(max_length=64, unique=True, db_index=True)
     query_text = models.TextField()
     response_json = models.JSONField()
