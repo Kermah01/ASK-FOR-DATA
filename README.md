@@ -99,6 +99,24 @@ Générer une clé Fernet :
 python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 ```
 
+### Maintien en éveil sur Render (offre gratuite)
+
+Render endort un service gratuit après 15 min sans trafic entrant (réveil ≈ 1 min). Au démarrage, `app.py` (et `askfordata/wsgi.py`, `wsgi.py`) lance l'auto-réveil (`askfordata/keepalive.py`) : un thread démon visite l'URL publique `/api/health` toutes les 10 min, **du lundi au vendredi de 08:00 à 19:00 UTC uniquement** ; hors créneau, le site s'endort normalement. Un verrou fichier garantit un seul thread quel que soit le nombre de workers gunicorn. Un workflow GitHub du dépôt IABE (`render-keep-alive.yml`) sert de réveil de secours en début de journée.
+
+**Budget** : l'offre gratuite donne 750 h d'instance par mois pour **tout le compte** (Ask for Data + IABE + e-SNDS). Ce créneau consomme ≈ 2 × 11 h × 23 jours ≈ 506 h ; 24h/24 épuiserait le quota vers le 15 du mois et suspendrait tous les services gratuits.
+
+Aucune variable à définir : l'URL vient de `RENDER_EXTERNAL_URL`, fournie automatiquement par Render (sans elle, en local par exemple, le module est inactif). Réglages optionnels :
+
+| Variable | Défaut | Rôle |
+|----------|--------|------|
+| `KEEPALIVE_DISABLED` | — | `1` pour désactiver |
+| `KEEPALIVE_URL` | `RENDER_EXTERNAL_URL` + `/api/health` | URL complète à visiter |
+| `KEEPALIVE_DAYS` | `1-5` | Jours ISO (1 = lundi … 7 = dimanche) |
+| `KEEPALIVE_START_HOUR` / `KEEPALIVE_END_HOUR` | `8` / `19` | Créneau UTC (début inclus, fin exclue) |
+| `KEEPALIVE_INTERVAL_SECONDS` | `600` | Intervalle (rester < 900 s) |
+
+Tests : `python manage.py test askfordata`.
+
 ## API REST
 
 | Méthode | Endpoint | Description |
