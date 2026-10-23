@@ -60,3 +60,9 @@ _run_startup_migrations()
 from django.core.wsgi import get_wsgi_application  # noqa: E402
 
 app = get_wsgi_application()
+
+# Auto-réveil pendant les heures ouvrées (offre gratuite Render, quota 750 h/mois) :
+# inactif hors Render (pas de RENDER_EXTERNAL_URL) ; voir askfordata/keepalive.py.
+from askfordata import keepalive  # noqa: E402
+
+keepalive.start(default_path='/api/health')
