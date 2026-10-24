@@ -72,6 +72,8 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    # Accès privé tant que l'appli n'est pas lancée (actif seulement si DEMO_ACCESS_CODE est défini).
+    'askfordata.demo_gate.DemoGateMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -79,6 +81,9 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'askfordata.urls'
+
+# Code d'accès à la démo privée (vide = appli ouverte). Voir askfordata/demo_gate.py.
+DEMO_ACCESS_CODE = os.environ.get('DEMO_ACCESS_CODE', '').strip()
 
 TEMPLATES = [
     {
