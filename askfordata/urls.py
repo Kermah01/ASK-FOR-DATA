@@ -19,8 +19,10 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from api import views
+from askfordata.demo_gate import demo_gate_view
 
 urlpatterns = [
+    path('demo/', demo_gate_view, name='demo_gate'),
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),
     path('accounts/', include('allauth.urls')),
